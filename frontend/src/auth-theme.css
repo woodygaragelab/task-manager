@@ -1,0 +1,32 @@
+[data-amplify-authenticator] {
+  --amplify-colors-background-primary: var(--paper);
+  --amplify-colors-background-secondary: var(--panel);
+  --amplify-colors-font-primary: var(--ink);
+  --amplify-colors-font-secondary: var(--ink-soft);
+  --amplify-colors-border-primary: var(--paper-line);
+  --amplify-radii-small: 4px;
+  --amplify-radii-medium: 6px;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--paper);
+}
+
+[data-amplify-authenticator] [data-amplify-container] {
+  border: 1px solid var(--paper-line);
+  box-shadow: 0 1px 0 rgba(31, 36, 33, 0.04);
+}
+
+[data-amplify-authenticator] .amplify-heading {
+  font-family: var(--font-display);
+  letter-spacing: 0.04em;
+}
+
+[data-amplify-authenticator] .amplify-button--primary {
+  background: var(--seal-green);
+}
+
+[data-amplify-authenticator] .amplify-button--primary:hover {
+  background: #324c3b;
+}

@@ -1,0 +1,17 @@
+# Python
+__pycache__/
+*.pyc
+
+# SAM
+.aws-sam/
+samconfig.toml
+
+# Node / frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/

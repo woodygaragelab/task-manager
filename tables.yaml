@@ -1,0 +1,82 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >
+  Task management system - DynamoDB tables (Tasks / TaskCases / TaskCounters) only.
+  The Lambda (MCP server) is deployed separately via template.yaml.
+
+Resources:
+
+  # ------------------------------------------------------------------
+  # 1. Tasks table (actual task records, ~100,000 items expected)
+  # ------------------------------------------------------------------
+  TasksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: Tasks
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: taskId
+          AttributeType: N
+        - AttributeName: customerName
+          AttributeType: S
+        - AttributeName: statusSort
+          AttributeType: S
+      KeySchema:
+        - AttributeName: taskId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: CustomerStatusIndex
+          KeySchema:
+            - AttributeName: customerName
+              KeyType: HASH
+            - AttributeName: statusSort
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+
+  # ------------------------------------------------------------------
+  # 2. Cases table (case-name master, prefix-search only, ~1,000 items)
+  # ------------------------------------------------------------------
+  CasesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TaskCases
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: lookupBucket
+          AttributeType: S
+        - AttributeName: customerName
+          AttributeType: S
+      KeySchema:
+        - AttributeName: lookupBucket
+          KeyType: HASH
+        - AttributeName: customerName
+          KeyType: RANGE
+
+  # ------------------------------------------------------------------
+  # 3. Counters table (atomic counter for issuing taskId)
+  # ------------------------------------------------------------------
+  CountersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TaskCounters
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: counterName
+          AttributeType: S
+      KeySchema:
+        - AttributeName: counterName
+          KeyType: HASH
+
+Outputs:
+  TasksTableName:
+    Value: !Ref TasksTable
+  TasksTableArn:
+    Value: !GetAtt TasksTable.Arn
+  CasesTableName:
+    Value: !Ref CasesTable
+  CasesTableArn:
+    Value: !GetAtt CasesTable.Arn
+  CountersTableName:
+    Value: !Ref CountersTable
+  CountersTableArn:
+    Value: !GetAtt CountersTable.Arn

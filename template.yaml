@@ -1,0 +1,198 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Task management system - FastMCP Lambda (Streamable HTTP) + Web API (Cognito-authenticated).
+  DynamoDB tables (Tasks/TaskCases/TaskCounters) are deployed separately via tables.yaml
+  and referenced here by their fixed table names.
+
+Parameters:
+  McpAuthToken:
+    Type: String
+    NoEcho: true
+    Description: >
+      Shared secret token for the MCP server. Claude Desktop/Code must send this as
+      "Authorization: Bearer <token>" on every request.
+
+Globals:
+  Function:
+    Timeout: 30
+    MemorySize: 256
+    Runtime: python3.13
+
+Resources:
+
+  # ------------------------------------------------------------------
+  # Shared Lambda Layer: task_repository (DynamoDB CRUD logic).
+  # Used by both the MCP server and the Web API Lambda.
+  # ------------------------------------------------------------------
+  TaskRepositoryLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: task-repository
+      ContentUri: layer/
+      CompatibleRuntimes:
+        - python3.13
+      RetentionPolicy: Delete
+
+  # ------------------------------------------------------------------
+  # FastMCP Lambda (Streamable HTTP, stateless_http=True)
+  # Function URL has AuthType: NONE; auth is enforced inside app.py
+  # via a Bearer-token check (Claude Desktop) OR Anthropic's published
+  # outbound IP range (claude.ai / mobile custom connectors).
+  # ------------------------------------------------------------------
+  TaskMcpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: task-mcp-server
+      CodeUri: src/
+      Handler: app.handler
+      Layers:
+        - !Ref TaskRepositoryLayer
+      Environment:
+        Variables:
+          TASKS_TABLE: Tasks
+          CASES_TABLE: TaskCases
+          COUNTERS_TABLE: TaskCounters
+          MCP_AUTH_TOKEN: !Ref McpAuthToken
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Tasks
+        - DynamoDBCrudPolicy:
+            TableName: TaskCases
+        - DynamoDBCrudPolicy:
+            TableName: TaskCounters
+      FunctionUrlConfig:
+        AuthType: NONE
+        InvokeMode: BUFFERED
+
+  # ------------------------------------------------------------------
+  # Cognito User Pool (internal staff accounts only; self sign-up disabled)
+  # ------------------------------------------------------------------
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: task-manager-users
+      AutoVerifiedAttributes:
+        - email
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 10
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      UserPoolId: !Ref UserPool
+      ClientName: task-manager-webapp
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_SRP_AUTH
+
+  # ------------------------------------------------------------------
+  # HTTP API (API Gateway v2) with Cognito JWT Authorizer
+  # ------------------------------------------------------------------
+  HttpApi:
+    Type: AWS::Serverless::HttpApi
+    Properties:
+      Auth:
+        Authorizers:
+          CognitoAuth:
+            JwtConfiguration:
+              issuer: !Sub "https://cognito-idp.${AWS::Region}.amazonaws.com/${UserPool}"
+              audience:
+                - !Ref UserPoolClient
+            IdentitySource: "$request.header.Authorization"
+        DefaultAuthorizer: CognitoAuth
+      CorsConfiguration:
+        AllowOrigins:
+          - "*"   # In production, narrow this to the Amplify Hosting domain only
+        AllowHeaders:
+          - Authorization
+          - Content-Type
+        AllowMethods:
+          - GET
+          - POST
+          - PATCH
+          - OPTIONS
+
+  # ------------------------------------------------------------------
+  # Web API Lambda (internal web app backend, Cognito auth required)
+  # ------------------------------------------------------------------
+  TaskApiFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: task-api
+      CodeUri: api_src/
+      Handler: app.handler
+      Layers:
+        - !Ref TaskRepositoryLayer
+      Environment:
+        Variables:
+          TASKS_TABLE: Tasks
+          CASES_TABLE: TaskCases
+          COUNTERS_TABLE: TaskCounters
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Tasks
+        - DynamoDBCrudPolicy:
+            TableName: TaskCases
+        - DynamoDBCrudPolicy:
+            TableName: TaskCounters
+      Events:
+        GetCustomers:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /customers
+            Method: get
+        GetTasksByCustomer:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /customers/{customerName}/tasks
+            Method: get
+        GetTask:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /tasks/{taskId}
+            Method: get
+        CreateTask:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /tasks
+            Method: post
+        UpdateTask:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /tasks/{taskId}
+            Method: patch
+        LinkEmail:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /tasks/{taskId}/emails
+            Method: post
+
+Outputs:
+  TaskMcpFunctionUrl:
+    Description: "MCP server endpoint URL (register in Claude Desktop/Code mcp config)"
+    Value: !GetAtt TaskMcpFunctionUrl.FunctionUrl
+  WebApiEndpoint:
+    Description: "Web API base URL (for the frontend app)"
+    Value: !Sub "https://${HttpApi}.execute-api.${AWS::Region}.amazonaws.com"
+  UserPoolId:
+    Description: "Cognito User Pool ID (for admin user creation and Amplify config)"
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Description: "Cognito User Pool Client ID (for Amplify config)"
+    Value: !Ref UserPoolClient
