@@ -164,7 +164,7 @@ frontend/
 │   ├── StatusStamp.jsx      ステータスを印鑑風バッジで表示・クリックで進める
 │   ├── NewTaskForm.jsx      新規タスク作成フォーム
 │   └── main.jsx              Amplify設定 + ログイン画面(Authenticator)
-├── amplify.yml              Amplify Hostingのビルド設定
+├── amplify.yml              (リポジトリルートに配置。モノレポ形式でappRoot: frontendを指定)
 └── package.json
 ```
 
@@ -202,14 +202,17 @@ npm run dev
 
 `http://localhost:5173`にアクセスし、Cognitoユーザー(管理者が作成したアカウント)でログインする。
 
-### 3. Amplify Hostingへのデプロイ
+### 3. Amplify Hostingへのデプロイ(GitHub連携)
 
-AWSコンソールから:
-
-1. Amplify Hosting → 新しいアプリ → ホスティング
-2. リポジトリ未使用の場合は「手動デプロイ」を選び、`npm run build`で生成した`dist/`フォルダをZIP化してアップロード
-   (Gitリポジトリと連携する場合は、`frontend/`をサブディレクトリとして指定し、`amplify.yml`をビルド設定として使う)
-3. デプロイ完了後のURLを確認
+1. GitHubに本リポジトリをpush(プライベートリポジトリ推奨。社内業務データを扱うため)
+2. Amplify Hosting コンソール → 新しいアプリ → GitHubを選択して連携
+3. リポジトリ・ブランチを選択
+4. **モノレポ構成のため、`amplify.yml`はリポジトリのルートに配置**してある
+   (`applications`キーで`appRoot: frontend`を指定する形式。`frontend/`配下に単純な`amplify.yml`を
+   置くと「アプリのルートディレクトリ」設定との不整合で`Monorepo spec provided without "applications" key`
+   エラーになるため、必ずルート直下のものを使うこと)
+5. ビルド設定が自動検出されることを確認し、「保存してデプロイ」
+6. `main`ブランチへのpushのたびに自動ビルド・デプロイされる
 
 ### 4. 本番運用前の注意
 
