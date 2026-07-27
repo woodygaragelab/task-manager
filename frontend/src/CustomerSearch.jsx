@@ -2,34 +2,49 @@ import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 
 export function CustomerSearch({ onSelect }) {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
-  const [open, setOpen] = useState(false);
+  const [clientCode, setClientCode] = useState("");
+  const [newName, setNewName] = useState("");
+  const [client, setClient] = useState(null); // {clientCode, clientName} | null
+  const [notFound, setNotFound] = useState(false);
   const debounceRef = useRef();
 
   useEffect(() => {
-    if (!query.trim()) {
-      setResults([]);
-      return;
-    }
+    const code = clientCode.trim();
+    setClient(null);
+    setNotFound(false);
+    if (!code) return;
     clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(async () => {
       try {
-        const names = await api.searchCustomers(query.trim());
-        setResults(names);
-        setOpen(true);
+        const found = await api.getClient(code);
+        if (found) {
+          setClient(found);
+        } else {
+          setNotFound(true);
+        }
       } catch {
-        setResults([]);
+        setClient(null);
+        setNotFound(false);
       }
     }, 250);
     return () => clearTimeout(debounceRef.current);
-  }, [query]);
+  }, [clientCode]);
 
-  const choose = (name) => {
-    setQuery("");
-    setResults([]);
-    setOpen(false);
-    onSelect(name);
+  const selectExisting = () => {
+    onSelect(client);
+    setClientCode("");
+    setNewName("");
+    setClient(null);
+    setNotFound(false);
+  };
+
+  const registerNew = () => {
+    if (!newName.trim()) return;
+    onSelect({ clientCode: clientCode.trim(), clientName: newName.trim() });
+    setClientCode("");
+    setNewName("");
+    setClient(null);
+    setNotFound(false);
   };
 
   return (
@@ -37,27 +52,31 @@ export function CustomerSearch({ onSelect }) {
       <div style={{ flex: 1, position: "relative" }}>
         <input
           className="search__input"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          onFocus={() => results.length > 0 && setOpen(true)}
-          placeholder="案件名で検索(前方一致、例: GI)"
+          value={clientCode}
+          onChange={(e) => setClientCode(e.target.value)}
+          placeholder="案件コードで検索(完全一致、例: GI001)"
         />
-        {open && query.trim() && (
+        {client && (
           <ul className="search__results">
-            {results.map((name) => (
-              <li
-                key={name}
-                className="search__result"
-                onClick={() => choose(name)}
-              >
-                {name}
-              </li>
-            ))}
-            <li
-              className="search__result search__result--new"
-              onClick={() => choose(query.trim())}
-            >
-              「{query.trim()}」として新規登録 →
+            <li className="search__result" onClick={selectExisting}>
+              {client.clientName}({client.clientCode}) を選択 →
+            </li>
+          </ul>
+        )}
+        {notFound && (
+          <ul className="search__results">
+            <li className="search__result--new" style={{ padding: "8px" }}>
+              「{clientCode.trim()}」は未登録です。案件名を入力して新規登録できます。
+              <div style={{ display: "flex", gap: "4px", marginTop: "4px" }}>
+                <input
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="案件名"
+                />
+                <button type="button" onClick={registerNew}>
+                  新規登録して選択
+                </button>
+              </div>
             </li>
           </ul>
         )}

@@ -146,17 +146,17 @@ Resources:
         - DynamoDBCrudPolicy:
             TableName: TaskCounters
       Events:
-        GetCustomers:
+        GetCustomer:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
-            Path: /customers
+            Path: /customers/{clientCode}
             Method: get
         GetTasksByCustomer:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
-            Path: /customers/{customerName}/tasks
+            Path: /customers/{clientCode}/tasks
             Method: get
         GetTask:
           Type: HttpApi

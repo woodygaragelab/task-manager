@@ -54,12 +54,16 @@ def _next_task_id() -> int:
     return int(resp["Attributes"]["value"])
 
 
-def _ensure_case_exists(customer_name: str) -> None:
+def _ensure_case_exists(client_code: str, client_name: str) -> None:
     """案件マスタ(Casesテーブル)に未登録ならPutする(冪等・競合安全)。"""
     try:
         cases_table.put_item(
-            Item={"lookupBucket": LOOKUP_BUCKET, "customerName": customer_name},
-            ConditionExpression="attribute_not_exists(customerName)",
+            Item={
+                "lookupBucket": LOOKUP_BUCKET,
+                "clientCode": client_code,
+                "clientName": client_name,
+            },
+            ConditionExpression="attribute_not_exists(clientCode)",
         )
     except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
         pass  # 既に登録済み(同時実行時も含めて安全)
@@ -69,7 +73,8 @@ def _ensure_case_exists(customer_name: str) -> None:
 # 公開関数(MCPツール・Web APIハンドラ双方から呼ばれる)
 # ----------------------------------------------------------------------
 def create_task(
-    customer_name: str,
+    client_code: str,
+    client_name: str,
     task_name: str,
     status: str = "要対応",
     due_date: str = "-",
@@ -77,12 +82,13 @@ def create_task(
     assignee: str = "",
     thread_ids: Optional[list[str]] = None,
 ) -> dict:
-    """新しいタスクを作成する。customer_name は必須(案件マスタに自動登録される)。"""
+    """新しいタスクを作成する。client_code / client_name は必須(案件マスタに自動登録される)。"""
     task_id = _next_task_id()
     now = _now()
     item = {
         "taskId": task_id,
-        "customerName": customer_name,
+        "clientCode": client_code,
+        "clientName": client_name,
         "taskName": task_name,
         "status": status,
         "dueDate": due_date,
@@ -95,7 +101,7 @@ def create_task(
         "updatedAt": now,
     }
     tasks_table.put_item(Item=item)
-    _ensure_case_exists(customer_name)
+    _ensure_case_exists(client_code, client_name)
     return item
 
 
@@ -152,22 +158,21 @@ def update_task(
     return resp["Attributes"]
 
 
-def list_tasks_by_customer(customer_name: str) -> list[dict]:
-    """指定した案件名(完全一致)のタスクを、ステータス順(要対応→決定済→情報→完了)・期限順で一覧取得する。"""
+def list_tasks_by_client(client_code: str) -> list[dict]:
+    """指定した案件コード(完全一致)のタスクを、ステータス順(要対応→決定済→情報→完了)・期限順で一覧取得する。"""
     resp = tasks_table.query(
         IndexName="CustomerStatusIndex",
-        KeyConditionExpression=Key("customerName").eq(customer_name),
+        KeyConditionExpression=Key("clientCode").eq(client_code),
     )
     return resp.get("Items", [])
 
 
-def search_customer_names(prefix: str) -> list[str]:
-    """案件名を前方一致で検索し、候補一覧を返す(例: 'GI' -> 'GI商事 Webサイト更新案件' など)。"""
-    resp = cases_table.query(
-        KeyConditionExpression=Key("lookupBucket").eq(LOOKUP_BUCKET)
-        & Key("customerName").begins_with(prefix)
+def get_client_by_code(client_code: str) -> Optional[dict]:
+    """案件コードの完全一致で案件マスタを検索する。未登録なら None(新規案件として扱う)。"""
+    resp = cases_table.get_item(
+        Key={"lookupBucket": LOOKUP_BUCKET, "clientCode": client_code}
     )
-    return [item["customerName"] for item in resp.get("Items", [])]
+    return resp.get("Item")
 
 
 def link_email(task_id: int, thread_id: str) -> dict:

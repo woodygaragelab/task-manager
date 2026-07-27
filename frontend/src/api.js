@@ -34,11 +34,11 @@ async function request(path, { method = "GET", body } = {}) {
 }
 
 export const api = {
-  searchCustomers: (prefix) =>
-    request(`/customers?prefix=${encodeURIComponent(prefix)}`),
+  getClient: (clientCode) =>
+    request(`/customers/${encodeURIComponent(clientCode)}`),
 
-  listTasksByCustomer: (customerName) =>
-    request(`/customers/${encodeURIComponent(customerName)}/tasks`),
+  listTasksByClient: (clientCode) =>
+    request(`/customers/${encodeURIComponent(clientCode)}/tasks`),
 
   getTask: (taskId) => request(`/tasks/${taskId}`),
 

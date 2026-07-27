@@ -30,8 +30,8 @@ TOOL_FUNCTIONS = [
     repo.create_task,
     repo.get_task,
     repo.update_task,
-    repo.list_tasks_by_customer,
-    repo.search_customer_names,
+    repo.list_tasks_by_client,
+    repo.get_client_by_code,
     repo.link_email,
 ]
 

@@ -92,8 +92,8 @@ aws cognito-idp admin-create-user `
 
 | Method | Path | 用途 |
 |---|---|---|
-| GET | `/customers?prefix=GI` | 案件名の前方一致検索 |
-| GET | `/customers/{customerName}/tasks` | 指定案件のタスク一覧(ステータス順) |
+| GET | `/customers/{clientCode}` | 案件コードの完全一致検索(案件名を返す) |
+| GET | `/customers/{clientCode}/tasks` | 指定案件のタスク一覧(ステータス順) |
 | GET | `/tasks/{taskId}` | タスク詳細1件 |
 | POST | `/tasks` | 新規タスク作成 |
 | PATCH | `/tasks/{taskId}` | ステータス・結論・期限・担当者更新 |
@@ -101,7 +101,7 @@ aws cognito-idp admin-create-user `
 
 全エンドポイントは`Authorization: Bearer <Cognito IDトークン>`が必須(`DefaultAuthorizer: CognitoAuth`)。
 
-`customerName`は日本語を含むため、フロントエンド側で`encodeURIComponent`必須。
+`clientCode`をURLパスに埋め込む際は、フロントエンド側で`encodeURIComponent`必須。
 
 ## Claude Desktop / Claude Code への登録(MCPサーバー)
 
@@ -159,7 +159,7 @@ frontend/
 │   ├── config.js          Cognito User Pool / API エンドポイントの設定(sam deploy後に値を反映)
 │   ├── api.js              APIクライアント(Cognitoトークン自動添付、UTF-8明示エンコード)
 │   ├── App.jsx              案件選択 → タスク一覧 → 新規作成のメインフロー
-│   ├── CustomerSearch.jsx   案件名の前方一致検索ボックス
+│   ├── CustomerSearch.jsx   案件コードの完全一致検索ボックス
 │   ├── TaskTable.jsx        タスク一覧(インライン編集対応)
 │   ├── StatusStamp.jsx      ステータスを印鑑風バッジで表示・クリックで進める
 │   ├── NewTaskForm.jsx      新規タスク作成フォーム

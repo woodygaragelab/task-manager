@@ -16,7 +16,7 @@ Resources:
       AttributeDefinitions:
         - AttributeName: taskId
           AttributeType: N
-        - AttributeName: customerName
+        - AttributeName: clientCode
           AttributeType: S
         - AttributeName: statusSort
           AttributeType: S
@@ -26,7 +26,7 @@ Resources:
       GlobalSecondaryIndexes:
         - IndexName: CustomerStatusIndex
           KeySchema:
-            - AttributeName: customerName
+            - AttributeName: clientCode
               KeyType: HASH
             - AttributeName: statusSort
               KeyType: RANGE
@@ -44,12 +44,12 @@ Resources:
       AttributeDefinitions:
         - AttributeName: lookupBucket
           AttributeType: S
-        - AttributeName: customerName
+        - AttributeName: clientCode
           AttributeType: S
       KeySchema:
         - AttributeName: lookupBucket
           KeyType: HASH
-        - AttributeName: customerName
+        - AttributeName: clientCode
           KeyType: RANGE
 
   # ------------------------------------------------------------------

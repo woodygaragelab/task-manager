@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-export function NewTaskForm({ customerName, onCreate }) {
+export function NewTaskForm({ clientCode, clientName, onCreate }) {
   const [taskName, setTaskName] = useState("");
   const [dueDate, setDueDate] = useState("");
   const [assignee, setAssignee] = useState("");
@@ -12,7 +12,8 @@ export function NewTaskForm({ customerName, onCreate }) {
     setSubmitting(true);
     try {
       await onCreate({
-        customerName,
+        clientCode,
+        clientName,
         taskName: taskName.trim(),
         dueDate: dueDate.trim() || "-",
         assignee: assignee.trim(),

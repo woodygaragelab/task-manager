@@ -46,15 +46,15 @@ def handler(event, context):
         return _error(400, "リクエストボディのJSON解析に失敗しました")
 
     try:
-        # ---- GET /customers?prefix=GI ----
-        if route_key == "GET /customers":
-            prefix = query_params.get("prefix", "")
-            return _response(200, repo.search_customer_names(prefix))
+        # ---- GET /customers/{clientCode} ----
+        if route_key == "GET /customers/{clientCode}":
+            client_code = path_params["clientCode"]
+            return _response(200, repo.get_client_by_code(client_code))
 
-        # ---- GET /customers/{customerName}/tasks ----
-        if route_key == "GET /customers/{customerName}/tasks":
-            customer_name = path_params["customerName"]
-            return _response(200, repo.list_tasks_by_customer(customer_name))
+        # ---- GET /customers/{clientCode}/tasks ----
+        if route_key == "GET /customers/{clientCode}/tasks":
+            client_code = path_params["clientCode"]
+            return _response(200, repo.list_tasks_by_client(client_code))
 
         # ---- GET /tasks/{taskId} ----
         if route_key == "GET /tasks/{taskId}":
@@ -63,10 +63,11 @@ def handler(event, context):
 
         # ---- POST /tasks ----
         if route_key == "POST /tasks":
-            if "customerName" not in body or "taskName" not in body:
-                return _error(400, "customerName と taskName は必須です")
+            if "clientCode" not in body or "clientName" not in body or "taskName" not in body:
+                return _error(400, "clientCode と clientName と taskName は必須です")
             item = repo.create_task(
-                customer_name=body["customerName"],
+                client_code=body["clientCode"],
+                client_name=body["clientName"],
                 task_name=body["taskName"],
                 status=body.get("status", "要対応"),
                 due_date=body.get("dueDate", "-"),

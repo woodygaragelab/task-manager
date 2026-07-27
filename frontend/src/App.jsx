@@ -11,16 +11,16 @@ const POLL_INTERVAL_MS = 4000;
 
 export default function App() {
   const { user } = useAuthenticator((ctx) => [ctx.user]);
-  const [customerName, setCustomerName] = useState(null);
+  const [client, setClient] = useState(null); // {clientCode, clientName} | null
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastSynced, setLastSynced] = useState(null);
 
-  const refresh = useCallback(async (name) => {
-    if (!name) return;
+  const refresh = useCallback(async (clientCode) => {
+    if (!clientCode) return;
     try {
-      const items = await api.listTasksByCustomer(name);
+      const items = await api.listTasksByClient(clientCode);
       const sorted = [...items].sort((a, b) =>
         (a.statusSort || "").localeCompare(b.statusSort || "")
       );
@@ -34,17 +34,17 @@ export default function App() {
 
   // 案件を切り替えたら即座にロード
   useEffect(() => {
-    if (!customerName) return;
+    if (!client) return;
     setLoading(true);
-    refresh(customerName).finally(() => setLoading(false));
-  }, [customerName, refresh]);
+    refresh(client.clientCode).finally(() => setLoading(false));
+  }, [client, refresh]);
 
   // 複数人での即時反映のための軽量ポーリング
   useEffect(() => {
-    if (!customerName) return;
-    const id = setInterval(() => refresh(customerName), POLL_INTERVAL_MS);
+    if (!client) return;
+    const id = setInterval(() => refresh(client.clientCode), POLL_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [customerName, refresh]);
+  }, [client, refresh]);
 
   const handleUpdate = async (taskId, patch) => {
     // 楽観的UI更新:即座に画面へ反映してからAPIを呼ぶ
@@ -53,17 +53,17 @@ export default function App() {
     );
     try {
       await api.updateTask(taskId, patch);
-      await refresh(customerName);
+      await refresh(client.clientCode);
     } catch (e) {
       setError(e.message);
-      await refresh(customerName); // 失敗時はサーバー側の状態に揃える
+      await refresh(client.clientCode); // 失敗時はサーバー側の状態に揃える
     }
   };
 
   const handleCreate = async (newTask) => {
     try {
       await api.createTask(newTask);
-      await refresh(customerName);
+      await refresh(client.clientCode);
     } catch (e) {
       setError(e.message);
     }
@@ -82,16 +82,16 @@ export default function App() {
         </div>
       </header>
 
-      <CustomerSearch onSelect={setCustomerName} />
+      <CustomerSearch onSelect={setClient} />
 
       {error && <div className="error-banner">{error}</div>}
 
-      {customerName ? (
+      {client ? (
         <section className="panel">
           <div className="panel__header">
             <h2 className="panel__title">
               <span className="panel__title-eyebrow">案件</span>
-              {customerName}
+              {client.clientName}({client.clientCode})
             </h2>
             {lastSynced && (
               <span className="status-line">
@@ -106,12 +106,16 @@ export default function App() {
             <TaskTable tasks={tasks} onUpdate={handleUpdate} />
           )}
 
-          <NewTaskForm customerName={customerName} onCreate={handleCreate} />
+          <NewTaskForm
+            clientCode={client.clientCode}
+            clientName={client.clientName}
+            onCreate={handleCreate}
+          />
         </section>
       ) : (
         <div className="empty">
           <div className="empty__title">案件を検索してください</div>
-          上の検索欄に案件名の一部を入力すると候補が表示されます。
+          上の検索欄に案件コードを入力してください(完全一致)。
         </div>
       )}
     </div>
