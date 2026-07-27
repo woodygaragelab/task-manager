@@ -34,22 +34,26 @@ async function request(path, { method = "GET", body } = {}) {
 }
 
 export const api = {
-  getClient: (clientCode) =>
-    request(`/customers/${encodeURIComponent(clientCode)}`),
+  listClients: () => request(`/clients`),
+
+  createClient: (clientCode, clientName) =>
+    request(`/clients`, {
+      method: "POST",
+      body: { clientCode, clientName },
+    }),
+
+  listSeries: () => request(`/series`),
+
+  listFrames: () => request(`/frames`),
 
   listTasksByClient: (clientCode) =>
-    request(`/customers/${encodeURIComponent(clientCode)}/tasks`),
-
-  getTask: (taskId) => request(`/tasks/${taskId}`),
+    request(`/clients/${encodeURIComponent(clientCode)}/tasks`),
 
   createTask: (task) => request(`/tasks`, { method: "POST", body: task }),
 
-  updateTask: (taskId, patch) =>
-    request(`/tasks/${taskId}`, { method: "PATCH", body: patch }),
-
-  linkEmail: (taskId, threadId) =>
-    request(`/tasks/${taskId}/emails`, {
-      method: "POST",
-      body: { threadId },
-    }),
+  updateTask: (clientCode, seriesCode, frameCode, patch) =>
+    request(
+      `/tasks/${encodeURIComponent(clientCode)}/${encodeURIComponent(seriesCode)}/${encodeURIComponent(frameCode)}`,
+      { method: "PATCH", body: patch }
+    ),
 };

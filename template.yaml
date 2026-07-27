@@ -2,8 +2,8 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
   Task management system - FastMCP Lambda (Streamable HTTP) + Web API (Cognito-authenticated).
-  DynamoDB tables (Tasks/TaskCases/TaskCounters) are deployed separately via tables.yaml
-  and referenced here by their fixed table names.
+  DynamoDB tables (Tasks/TaskClients/TaskSeries/TaskFrames) are deployed separately via
+  tables.yaml and referenced here by their fixed table names.
 
 Parameters:
   McpAuthToken:
@@ -51,16 +51,19 @@ Resources:
       Environment:
         Variables:
           TASKS_TABLE: Tasks
-          CASES_TABLE: TaskCases
-          COUNTERS_TABLE: TaskCounters
+          CLIENTS_TABLE: TaskClients
+          SERIES_TABLE: TaskSeries
+          FRAMES_TABLE: TaskFrames
           MCP_AUTH_TOKEN: !Ref McpAuthToken
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Tasks
         - DynamoDBCrudPolicy:
-            TableName: TaskCases
+            TableName: TaskClients
         - DynamoDBCrudPolicy:
-            TableName: TaskCounters
+            TableName: TaskSeries
+        - DynamoDBCrudPolicy:
+            TableName: TaskFrames
       FunctionUrlConfig:
         AuthType: NONE
         InvokeMode: BUFFERED
@@ -136,33 +139,54 @@ Resources:
       Environment:
         Variables:
           TASKS_TABLE: Tasks
-          CASES_TABLE: TaskCases
-          COUNTERS_TABLE: TaskCounters
+          CLIENTS_TABLE: TaskClients
+          SERIES_TABLE: TaskSeries
+          FRAMES_TABLE: TaskFrames
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Tasks
         - DynamoDBCrudPolicy:
-            TableName: TaskCases
+            TableName: TaskClients
         - DynamoDBCrudPolicy:
-            TableName: TaskCounters
+            TableName: TaskSeries
+        - DynamoDBCrudPolicy:
+            TableName: TaskFrames
       Events:
-        GetCustomer:
+        ListClients:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
-            Path: /customers/{clientCode}
+            Path: /clients
             Method: get
-        GetTasksByCustomer:
+        CreateClient:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
-            Path: /customers/{clientCode}/tasks
+            Path: /clients
+            Method: post
+        ListSeries:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /series
+            Method: get
+        ListFrames:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /frames
+            Method: get
+        ListTasksByClient:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /clients/{clientCode}/tasks
             Method: get
         GetTask:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
-            Path: /tasks/{taskId}
+            Path: /tasks/{clientCode}/{seriesCode}/{frameCode}
             Method: get
         CreateTask:
           Type: HttpApi
@@ -174,14 +198,8 @@ Resources:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
-            Path: /tasks/{taskId}
+            Path: /tasks/{clientCode}/{seriesCode}/{frameCode}
             Method: patch
-        LinkEmail:
-          Type: HttpApi
-          Properties:
-            ApiId: !Ref HttpApi
-            Path: /tasks/{taskId}/emails
-            Method: post
 
 Outputs:
   TaskMcpFunctionUrl:

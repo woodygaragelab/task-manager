@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { signOut } from "aws-amplify/auth";
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { CustomerSearch } from "./CustomerSearch";
+import { ClientSelector } from "./ClientSelector";
 import { TaskTable } from "./TaskTable";
 import { NewTaskForm } from "./NewTaskForm";
 import { api } from "./api";
@@ -13,16 +13,35 @@ export default function App() {
   const { user } = useAuthenticator((ctx) => [ctx.user]);
   const [client, setClient] = useState(null); // {clientCode, clientName} | null
   const [tasks, setTasks] = useState([]);
+  const [seriesList, setSeriesList] = useState([]);
+  const [frameList, setFrameList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastSynced, setLastSynced] = useState(null);
+
+  const refreshMasters = useCallback(async () => {
+    try {
+      const [series, frames] = await Promise.all([
+        api.listSeries(),
+        api.listFrames(),
+      ]);
+      setSeriesList(series);
+      setFrameList(frames);
+    } catch (e) {
+      setError(e.message);
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshMasters();
+  }, [refreshMasters]);
 
   const refresh = useCallback(async (clientCode) => {
     if (!clientCode) return;
     try {
       const items = await api.listTasksByClient(clientCode);
       const sorted = [...items].sort((a, b) =>
-        (a.statusSort || "").localeCompare(b.statusSort || "")
+        (a.taskKey || "").localeCompare(b.taskKey || "")
       );
       setTasks(sorted);
       setError(null);
@@ -32,7 +51,7 @@ export default function App() {
     }
   }, []);
 
-  // 案件を切り替えたら即座にロード
+  // クライアントを切り替えたら即座にロード
   useEffect(() => {
     if (!client) return;
     setLoading(true);
@@ -46,13 +65,17 @@ export default function App() {
     return () => clearInterval(id);
   }, [client, refresh]);
 
-  const handleUpdate = async (taskId, patch) => {
+  const handleUpdate = async (seriesCode, frameCode, patch) => {
     // 楽観的UI更新:即座に画面へ反映してからAPIを呼ぶ
     setTasks((prev) =>
-      prev.map((t) => (t.taskId === taskId ? { ...t, ...patch } : t))
+      prev.map((t) =>
+        t.seriesCode === seriesCode && t.frameCode === frameCode
+          ? { ...t, ...patch }
+          : t
+      )
     );
     try {
-      await api.updateTask(taskId, patch);
+      await api.updateTask(client.clientCode, seriesCode, frameCode, patch);
       await refresh(client.clientCode);
     } catch (e) {
       setError(e.message);
@@ -63,11 +86,21 @@ export default function App() {
   const handleCreate = async (newTask) => {
     try {
       await api.createTask(newTask);
-      await refresh(client.clientCode);
+      // 新規シリーズ/フレームが自動登録された可能性があるためマスタも合わせて再取得する
+      await Promise.all([refresh(client.clientCode), refreshMasters()]);
     } catch (e) {
       setError(e.message);
     }
   };
+
+  const seriesNameByCode = useMemo(
+    () => Object.fromEntries(seriesList.map((s) => [s.seriesCode, s.seriesName])),
+    [seriesList]
+  );
+  const frameNameByCode = useMemo(
+    () => Object.fromEntries(frameList.map((f) => [f.frameCode, f.frameName])),
+    [frameList]
+  );
 
   return (
     <div className="app">
@@ -82,7 +115,7 @@ export default function App() {
         </div>
       </header>
 
-      <CustomerSearch onSelect={setClient} />
+      <ClientSelector onSelect={setClient} />
 
       {error && <div className="error-banner">{error}</div>}
 
@@ -90,7 +123,7 @@ export default function App() {
         <section className="panel">
           <div className="panel__header">
             <h2 className="panel__title">
-              <span className="panel__title-eyebrow">案件</span>
+              <span className="panel__title-eyebrow">クライアント</span>
               {client.clientName}({client.clientCode})
             </h2>
             {lastSynced && (
@@ -103,19 +136,25 @@ export default function App() {
           {loading ? (
             <div className="status-line">読み込み中…</div>
           ) : (
-            <TaskTable tasks={tasks} onUpdate={handleUpdate} />
+            <TaskTable
+              tasks={tasks}
+              seriesNameByCode={seriesNameByCode}
+              frameNameByCode={frameNameByCode}
+              onUpdate={handleUpdate}
+            />
           )}
 
           <NewTaskForm
             clientCode={client.clientCode}
-            clientName={client.clientName}
+            seriesList={seriesList}
+            frameList={frameList}
             onCreate={handleCreate}
           />
         </section>
       ) : (
         <div className="empty">
-          <div className="empty__title">案件を検索してください</div>
-          上の検索欄に案件コードを入力してください(完全一致)。
+          <div className="empty__title">クライアントを選択してください</div>
+          上の検索欄からクライアントを選んでください。
         </div>
       )}
     </div>

@@ -1,12 +1,12 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >
-  Task management system - DynamoDB tables (Tasks / TaskCases / TaskCounters) only.
+  Task management system - DynamoDB tables (Tasks / TaskClients / TaskSeries / TaskFrames) only.
   The Lambda (MCP server) is deployed separately via template.yaml.
 
 Resources:
 
   # ------------------------------------------------------------------
-  # 1. Tasks table (actual task records, ~100,000 items expected)
+  # 1. Tasks table (actual task records: one item per Client x Series x Frame)
   # ------------------------------------------------------------------
   TasksTable:
     Type: AWS::DynamoDB::Table
@@ -14,32 +14,23 @@ Resources:
       TableName: Tasks
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: taskId
-          AttributeType: N
         - AttributeName: clientCode
           AttributeType: S
-        - AttributeName: statusSort
+        - AttributeName: taskKey
           AttributeType: S
       KeySchema:
-        - AttributeName: taskId
+        - AttributeName: clientCode
           KeyType: HASH
-      GlobalSecondaryIndexes:
-        - IndexName: CustomerStatusIndex
-          KeySchema:
-            - AttributeName: clientCode
-              KeyType: HASH
-            - AttributeName: statusSort
-              KeyType: RANGE
-          Projection:
-            ProjectionType: ALL
+        - AttributeName: taskKey
+          KeyType: RANGE
 
   # ------------------------------------------------------------------
-  # 2. Cases table (case-name master, prefix-search only, ~1,000 items)
+  # 2. Clients table (client master)
   # ------------------------------------------------------------------
-  CasesTable:
+  ClientsTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: TaskCases
+      TableName: TaskClients
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
         - AttributeName: lookupBucket
@@ -53,30 +44,57 @@ Resources:
           KeyType: RANGE
 
   # ------------------------------------------------------------------
-  # 3. Counters table (atomic counter for issuing taskId)
+  # 3. Series table (series master, e.g. document types like "document receipt")
   # ------------------------------------------------------------------
-  CountersTable:
+  SeriesTable:
     Type: AWS::DynamoDB::Table
     Properties:
-      TableName: TaskCounters
+      TableName: TaskSeries
       BillingMode: PAY_PER_REQUEST
       AttributeDefinitions:
-        - AttributeName: counterName
+        - AttributeName: lookupBucket
+          AttributeType: S
+        - AttributeName: seriesCode
           AttributeType: S
       KeySchema:
-        - AttributeName: counterName
+        - AttributeName: lookupBucket
           KeyType: HASH
+        - AttributeName: seriesCode
+          KeyType: RANGE
+
+  # ------------------------------------------------------------------
+  # 4. Frames table (time-frame master, e.g. "202606")
+  # ------------------------------------------------------------------
+  FramesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TaskFrames
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: lookupBucket
+          AttributeType: S
+        - AttributeName: frameCode
+          AttributeType: S
+      KeySchema:
+        - AttributeName: lookupBucket
+          KeyType: HASH
+        - AttributeName: frameCode
+          KeyType: RANGE
 
 Outputs:
   TasksTableName:
     Value: !Ref TasksTable
   TasksTableArn:
     Value: !GetAtt TasksTable.Arn
-  CasesTableName:
-    Value: !Ref CasesTable
-  CasesTableArn:
-    Value: !GetAtt CasesTable.Arn
-  CountersTableName:
-    Value: !Ref CountersTable
-  CountersTableArn:
-    Value: !GetAtt CountersTable.Arn
+  ClientsTableName:
+    Value: !Ref ClientsTable
+  ClientsTableArn:
+    Value: !GetAtt ClientsTable.Arn
+  SeriesTableName:
+    Value: !Ref SeriesTable
+  SeriesTableArn:
+    Value: !GetAtt SeriesTable.Arn
+  FramesTableName:
+    Value: !Ref FramesTable
+  FramesTableArn:
+    Value: !GetAtt FramesTable.Arn

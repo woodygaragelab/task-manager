@@ -211,23 +211,6 @@
   font-size: 13px;
 }
 
-.tasks__conclusion {
-  width: 100%;
-  border: none;
-  background: transparent;
-  font-family: var(--font-body);
-  font-size: 13px;
-  color: var(--ink);
-  resize: none;
-  padding: 2px 4px;
-  border-radius: 3px;
-}
-
-.tasks__conclusion:hover,
-.tasks__conclusion:focus-visible {
-  background: var(--paper);
-}
-
 .tasks__assignee {
   border: none;
   background: transparent;
@@ -262,19 +245,14 @@
   line-height: 1.6;
 }
 
-.stamp--要対応 {
-  color: var(--stamp-red);
-  background: var(--stamp-red-soft);
-}
-
-.stamp--決定済 {
-  color: var(--gold);
-  background: var(--gold-soft);
-}
-
-.stamp--情報 {
+.stamp--未着手 {
   color: var(--slate);
   background: var(--slate-soft);
+}
+
+.stamp--進行中 {
+  color: var(--gold);
+  background: var(--gold-soft);
 }
 
 .stamp--完了 {

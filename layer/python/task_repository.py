@@ -1,12 +1,17 @@
 """
 task_repository
 ================
-DynamoDB(Tasks / TaskCases / TaskCounters)に対するCRUDロジックの共通モジュール。
+DynamoDB(Tasks / TaskClients / TaskSeries / TaskFrames)に対するCRUDロジックの共通モジュール。
 
 task-mcp-server(FastMCP)と task-api(Web API用Lambda)の両方から
 Lambda Layer として import される。ロジックの二重実装を避けるため、
 MCPツールのデコレータや Web API のルーティングには一切依存しない
 プレーンな関数のみをここに置く。
+
+タスクは Client x Series x Frame の組み合わせを最小単位として持つ
+(例: 「クライアントAの資料受領・2026年6月分」)。Series/Frameはクライアント
+横断の共通マスタで、タスク作成時に未登録なら自動登録される。Clientのみ、
+ドロップダウンからの明示的な新規登録操作があるため create_client を持つ。
 """
 
 import os
@@ -18,16 +23,21 @@ from boto3.dynamodb.conditions import Key
 
 dynamodb = boto3.resource("dynamodb")
 tasks_table = dynamodb.Table(os.environ["TASKS_TABLE"])
-cases_table = dynamodb.Table(os.environ["CASES_TABLE"])
-counters_table = dynamodb.Table(os.environ["COUNTERS_TABLE"])
+clients_table = dynamodb.Table(os.environ["CLIENTS_TABLE"])
+series_table = dynamodb.Table(os.environ["SERIES_TABLE"])
+frames_table = dynamodb.Table(os.environ["FRAMES_TABLE"])
 
-STATUS_RANK = {"要対応": 0, "決定済": 1, "情報": 2, "完了": 3}
-DEFAULT_DUE = "9999-12-31"
-LOOKUP_BUCKET = "CASE"
+CLIENT_BUCKET = "CLIENT"
+SERIES_BUCKET = "SERIES"
+FRAME_BUCKET = "FRAME"
 
 
 class TaskNotFoundError(Exception):
-    """指定されたtaskIdが存在しない場合に送出する。"""
+    """指定されたタスク(clientCode+seriesCode+frameCode)が存在しない場合に送出する。"""
+
+
+class ClientAlreadyExistsError(Exception):
+    """create_clientで既に登録済みのclientCodeを指定した場合に送出する。"""
 
 
 # ----------------------------------------------------------------------
@@ -37,33 +47,37 @@ def _now() -> str:
     return datetime.now(timezone.utc).isoformat()
 
 
-def _status_sort(status: str, due_date: Optional[str], task_id: int) -> str:
-    rank = STATUS_RANK.get(status, 9)
-    due = due_date if due_date and due_date != "-" else DEFAULT_DUE
-    return f"{rank}#{due}#{task_id:06d}"
+def _task_key(series_code: str, frame_code: str) -> str:
+    # SortKeyをこの連結文字列にすることで、GSIなしで「シリーズ内でフレーム順」の
+    # 並びが手に入る(frameCodeがYYYYMM形式のため同一シリーズ内は時系列順)。
+    return f"{series_code}#{frame_code}"
 
 
-def _next_task_id() -> int:
-    resp = counters_table.update_item(
-        Key={"counterName": "taskId"},
-        UpdateExpression="ADD #v :inc",
-        ExpressionAttributeNames={"#v": "value"},
-        ExpressionAttributeValues={":inc": 1},
-        ReturnValues="UPDATED_NEW",
-    )
-    return int(resp["Attributes"]["value"])
-
-
-def _ensure_case_exists(client_code: str, client_name: str) -> None:
-    """案件マスタ(Casesテーブル)に未登録ならPutする(冪等・競合安全)。"""
+def _ensure_series_exists(series_code: str, series_name: str) -> None:
+    """シリーズマスタに未登録ならPutする(冪等・競合安全)。"""
     try:
-        cases_table.put_item(
+        series_table.put_item(
             Item={
-                "lookupBucket": LOOKUP_BUCKET,
-                "clientCode": client_code,
-                "clientName": client_name,
+                "lookupBucket": SERIES_BUCKET,
+                "seriesCode": series_code,
+                "seriesName": series_name,
             },
-            ConditionExpression="attribute_not_exists(clientCode)",
+            ConditionExpression="attribute_not_exists(seriesCode)",
+        )
+    except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+        pass  # 既に登録済み(同時実行時も含めて安全)
+
+
+def _ensure_frame_exists(frame_code: str, frame_name: str) -> None:
+    """フレームマスタに未登録ならPutする(冪等・競合安全)。"""
+    try:
+        frames_table.put_item(
+            Item={
+                "lookupBucket": FRAME_BUCKET,
+                "frameCode": frame_code,
+                "frameName": frame_name,
+            },
+            ConditionExpression="attribute_not_exists(frameCode)",
         )
     except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
         pass  # 既に登録済み(同時実行時も含めて安全)
@@ -72,84 +86,133 @@ def _ensure_case_exists(client_code: str, client_name: str) -> None:
 # ----------------------------------------------------------------------
 # 公開関数(MCPツール・Web APIハンドラ双方から呼ばれる)
 # ----------------------------------------------------------------------
-def create_task(
-    client_code: str,
-    client_name: str,
-    task_name: str,
-    status: str = "要対応",
-    due_date: str = "-",
-    conclusion: str = "",
-    assignee: str = "",
-    thread_ids: Optional[list[str]] = None,
-) -> dict:
-    """新しいタスクを作成する。client_code / client_name は必須(案件マスタに自動登録される)。"""
-    task_id = _next_task_id()
-    now = _now()
+def list_clients() -> list[dict]:
+    """登録済みの全クライアントを一覧取得する(クライアント選択ドロップダウン用)。"""
+    resp = clients_table.query(
+        KeyConditionExpression=Key("lookupBucket").eq(CLIENT_BUCKET)
+    )
+    return resp.get("Items", [])
+
+
+def create_client(client_code: str, client_name: str) -> dict:
+    """クライアントを新規登録する(ドロップダウンの「新規作成」操作専用)。
+
+    Series/Frameと異なりタスク作成に先立って単独で登録される操作のため、
+    既に存在するclientCodeが指定された場合はConditionalCheckFailedExceptionを
+    握りつぶさずClientAlreadyExistsErrorとして呼び出し元に伝える。
+    """
     item = {
-        "taskId": task_id,
+        "lookupBucket": CLIENT_BUCKET,
         "clientCode": client_code,
         "clientName": client_name,
-        "taskName": task_name,
+    }
+    try:
+        clients_table.put_item(
+            Item=item,
+            ConditionExpression="attribute_not_exists(clientCode)",
+        )
+    except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+        raise ClientAlreadyExistsError(f"clientCode {client_code} は既に登録されています")
+    return item
+
+
+def list_series() -> list[dict]:
+    """登録済みの全シリーズを一覧取得する(タスク作成時のドロップダウン用)。"""
+    resp = series_table.query(
+        KeyConditionExpression=Key("lookupBucket").eq(SERIES_BUCKET)
+    )
+    return resp.get("Items", [])
+
+
+def list_frames() -> list[dict]:
+    """登録済みの全フレームを一覧取得する(タスク作成時のドロップダウン用)。"""
+    resp = frames_table.query(
+        KeyConditionExpression=Key("lookupBucket").eq(FRAME_BUCKET)
+    )
+    return resp.get("Items", [])
+
+
+def create_task(
+    client_code: str,
+    series_code: str,
+    series_name: str,
+    frame_code: str,
+    frame_name: str,
+    status: str = "未着手",
+    assignee: str = "",
+    complete_date: Optional[str] = None,
+) -> dict:
+    """新しいタスクを作成する。
+
+    series_code/frame_codeが未登録の場合はそれぞれのマスタに自動登録される。
+    client_codeは自動登録しない(Clientのみ事前にcreate_client()で登録済みであることを前提とする。
+    Series/Frameと異なりドロップダウンでの明示的な新規登録操作を持つため)。
+    既に同じclientCode+seriesCode+frameCodeのタスクが存在する場合は単純に上書きする。
+    """
+    now = _now()
+    item = {
+        "clientCode": client_code,
+        "taskKey": _task_key(series_code, frame_code),
+        "seriesCode": series_code,
+        "frameCode": frame_code,
         "status": status,
-        "dueDate": due_date,
-        "conclusion": conclusion,
         "assignee": assignee,
-        "sourceThreadIds": thread_ids or [],
-        "dependsOn": [],
-        "statusSort": _status_sort(status, due_date, task_id),
+        "completeDate": complete_date,
         "createdAt": now,
         "updatedAt": now,
     }
     tasks_table.put_item(Item=item)
-    _ensure_case_exists(client_code, client_name)
+    _ensure_series_exists(series_code, series_name)
+    _ensure_frame_exists(frame_code, frame_name)
     return item
 
 
-def get_task(task_id: int) -> dict:
-    """taskIdを指定してタスクを1件取得する。"""
-    resp = tasks_table.get_item(Key={"taskId": task_id})
+def get_task(client_code: str, series_code: str, frame_code: str) -> dict:
+    """clientCode/seriesCode/frameCodeを指定してタスクを1件取得する。"""
+    resp = tasks_table.get_item(
+        Key={"clientCode": client_code, "taskKey": _task_key(series_code, frame_code)}
+    )
     item = resp.get("Item")
     if not item:
-        raise TaskNotFoundError(f"taskId {task_id} が見つかりません")
+        raise TaskNotFoundError(
+            f"タスク(clientCode={client_code}, seriesCode={series_code}, frameCode={frame_code}) が見つかりません"
+        )
     return item
 
 
 def update_task(
-    task_id: int,
+    client_code: str,
+    series_code: str,
+    frame_code: str,
     status: Optional[str] = None,
-    conclusion: Optional[str] = None,
-    due_date: Optional[str] = None,
     assignee: Optional[str] = None,
+    complete_date: Optional[str] = None,
 ) -> dict:
-    """既存タスクのステータス・結論・期限・担当者を更新する(指定した項目のみ変更)。"""
-    resp = tasks_table.get_item(Key={"taskId": task_id})
-    current = resp.get("Item")
-    if not current:
-        raise TaskNotFoundError(f"taskId {task_id} が見つかりません")
+    """既存タスクのステータス・担当者・完了日を更新する(指定した項目のみ変更)。"""
+    key = {"clientCode": client_code, "taskKey": _task_key(series_code, frame_code)}
+    resp = tasks_table.get_item(Key=key)
+    if not resp.get("Item"):
+        raise TaskNotFoundError(
+            f"タスク(clientCode={client_code}, seriesCode={series_code}, frameCode={frame_code}) が見つかりません"
+        )
 
-    new_status = status if status is not None else current["status"]
-    new_due = due_date if due_date is not None else current["dueDate"]
-
-    update_expr = ["#u = :now", "#ss = :ss"]
-    expr_names = {"#u": "updatedAt", "#ss": "statusSort"}
-    expr_values = {":now": _now(), ":ss": _status_sort(new_status, new_due, task_id)}
+    update_expr = ["#u = :now"]
+    expr_names = {"#u": "updatedAt"}
+    expr_values = {":now": _now()}
 
     if status is not None:
         update_expr.append("#s = :s")
         expr_names["#s"] = "status"
         expr_values[":s"] = status
-    if conclusion is not None:
-        update_expr.append("conclusion = :c")
-        expr_values[":c"] = conclusion
-    if due_date is not None:
-        update_expr.append("dueDate = :d")
-        expr_values[":d"] = due_date
     if assignee is not None:
         update_expr.append("assignee = :a")
         expr_values[":a"] = assignee
+    if complete_date is not None:
+        update_expr.append("completeDate = :cd")
+        expr_values[":cd"] = complete_date
 
     resp = tasks_table.update_item(
-        Key={"taskId": task_id},
+        Key=key,
         UpdateExpression="SET " + ", ".join(update_expr),
         ExpressionAttributeNames=expr_names,
         ExpressionAttributeValues=expr_values,
@@ -159,35 +222,6 @@ def update_task(
 
 
 def list_tasks_by_client(client_code: str) -> list[dict]:
-    """指定した案件コード(完全一致)のタスクを、ステータス順(要対応→決定済→情報→完了)・期限順で一覧取得する。"""
-    resp = tasks_table.query(
-        IndexName="CustomerStatusIndex",
-        KeyConditionExpression=Key("clientCode").eq(client_code),
-    )
+    """指定したクライアントコード(完全一致)のタスクを、シリーズ内でフレーム順に一覧取得する。"""
+    resp = tasks_table.query(KeyConditionExpression=Key("clientCode").eq(client_code))
     return resp.get("Items", [])
-
-
-def get_client_by_code(client_code: str) -> Optional[dict]:
-    """案件コードの完全一致で案件マスタを検索する。未登録なら None(新規案件として扱う)。"""
-    resp = cases_table.get_item(
-        Key={"lookupBucket": LOOKUP_BUCKET, "clientCode": client_code}
-    )
-    return resp.get("Item")
-
-
-def link_email(task_id: int, thread_id: str) -> dict:
-    """タスクにGmailスレッドIDを追加で紐づける(関連メール表示用)。"""
-    resp = tasks_table.update_item(
-        Key={"taskId": task_id},
-        UpdateExpression=(
-            "SET sourceThreadIds = list_append("
-            "if_not_exists(sourceThreadIds, :empty), :tid), updatedAt = :now"
-        ),
-        ExpressionAttributeValues={
-            ":tid": [thread_id],
-            ":empty": [],
-            ":now": _now(),
-        },
-        ReturnValues="ALL_NEW",
-    )
-    return resp["Attributes"]

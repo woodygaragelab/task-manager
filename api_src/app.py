@@ -46,59 +46,75 @@ def handler(event, context):
         return _error(400, "リクエストボディのJSON解析に失敗しました")
 
     try:
-        # ---- GET /customers/{clientCode} ----
-        if route_key == "GET /customers/{clientCode}":
-            client_code = path_params["clientCode"]
-            return _response(200, repo.get_client_by_code(client_code))
+        # ---- GET /clients ----
+        if route_key == "GET /clients":
+            return _response(200, repo.list_clients())
 
-        # ---- GET /customers/{clientCode}/tasks ----
-        if route_key == "GET /customers/{clientCode}/tasks":
-            client_code = path_params["clientCode"]
-            return _response(200, repo.list_tasks_by_client(client_code))
-
-        # ---- GET /tasks/{taskId} ----
-        if route_key == "GET /tasks/{taskId}":
-            task_id = int(path_params["taskId"])
-            return _response(200, repo.get_task(task_id))
-
-        # ---- POST /tasks ----
-        if route_key == "POST /tasks":
-            if "clientCode" not in body or "clientName" not in body or "taskName" not in body:
-                return _error(400, "clientCode と clientName と taskName は必須です")
-            item = repo.create_task(
+        # ---- POST /clients ----
+        if route_key == "POST /clients":
+            if "clientCode" not in body or "clientName" not in body:
+                return _error(400, "clientCode と clientName は必須です")
+            item = repo.create_client(
                 client_code=body["clientCode"],
                 client_name=body["clientName"],
-                task_name=body["taskName"],
-                status=body.get("status", "要対応"),
-                due_date=body.get("dueDate", "-"),
-                conclusion=body.get("conclusion", ""),
-                assignee=body.get("assignee", ""),
-                thread_ids=body.get("threadIds"),
             )
             return _response(201, item)
 
-        # ---- PATCH /tasks/{taskId} ----
-        if route_key == "PATCH /tasks/{taskId}":
-            task_id = int(path_params["taskId"])
-            item = repo.update_task(
-                task_id=task_id,
-                status=body.get("status"),
-                conclusion=body.get("conclusion"),
-                due_date=body.get("dueDate"),
-                assignee=body.get("assignee"),
+        # ---- GET /series ----
+        if route_key == "GET /series":
+            return _response(200, repo.list_series())
+
+        # ---- GET /frames ----
+        if route_key == "GET /frames":
+            return _response(200, repo.list_frames())
+
+        # ---- GET /clients/{clientCode}/tasks ----
+        if route_key == "GET /clients/{clientCode}/tasks":
+            client_code = path_params["clientCode"]
+            return _response(200, repo.list_tasks_by_client(client_code))
+
+        # ---- GET /tasks/{clientCode}/{seriesCode}/{frameCode} ----
+        if route_key == "GET /tasks/{clientCode}/{seriesCode}/{frameCode}":
+            item = repo.get_task(
+                client_code=path_params["clientCode"],
+                series_code=path_params["seriesCode"],
+                frame_code=path_params["frameCode"],
             )
             return _response(200, item)
 
-        # ---- POST /tasks/{taskId}/emails ----
-        if route_key == "POST /tasks/{taskId}/emails":
-            task_id = int(path_params["taskId"])
-            if "threadId" not in body:
-                return _error(400, "threadId は必須です")
-            item = repo.link_email(task_id=task_id, thread_id=body["threadId"])
+        # ---- POST /tasks ----
+        if route_key == "POST /tasks":
+            required = ("clientCode", "seriesCode", "seriesName", "frameCode", "frameName")
+            if any(field not in body for field in required):
+                return _error(400, "clientCode, seriesCode, seriesName, frameCode, frameName は必須です")
+            item = repo.create_task(
+                client_code=body["clientCode"],
+                series_code=body["seriesCode"],
+                series_name=body["seriesName"],
+                frame_code=body["frameCode"],
+                frame_name=body["frameName"],
+                status=body.get("status", "未着手"),
+                assignee=body.get("assignee", ""),
+                complete_date=body.get("completeDate"),
+            )
+            return _response(201, item)
+
+        # ---- PATCH /tasks/{clientCode}/{seriesCode}/{frameCode} ----
+        if route_key == "PATCH /tasks/{clientCode}/{seriesCode}/{frameCode}":
+            item = repo.update_task(
+                client_code=path_params["clientCode"],
+                series_code=path_params["seriesCode"],
+                frame_code=path_params["frameCode"],
+                status=body.get("status"),
+                assignee=body.get("assignee"),
+                complete_date=body.get("completeDate"),
+            )
             return _response(200, item)
 
         return _error(404, f"未対応のルートです: {method} {event.get('rawPath', '')}")
 
+    except repo.ClientAlreadyExistsError as e:
+        return _error(409, str(e))
     except repo.TaskNotFoundError as e:
         return _error(404, str(e))
     except (KeyError, ValueError) as e:

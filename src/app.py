@@ -1,7 +1,7 @@
 """
 task-mcp-server
 ================
-DynamoDB(Tasks / TaskCases / TaskCounters)を操作する MCP サーバー。
+DynamoDB(Tasks / TaskClients / TaskSeries / TaskFrames)を操作する MCP サーバー。
 AWS Lambda 上で FastMCP (Streamable HTTP, stateless) として動作する。
 
 CRUDロジック本体は共通モジュール task_repository(Lambda Layer)に分離してあり、
@@ -27,12 +27,14 @@ import task_repository as repo
 MCP_AUTH_TOKEN = os.environ.get("MCP_AUTH_TOKEN", "")
 
 TOOL_FUNCTIONS = [
-    repo.create_task,
-    repo.get_task,
-    repo.update_task,
+    repo.list_clients,
+    repo.create_client,
+    repo.list_series,
+    repo.list_frames,
     repo.list_tasks_by_client,
-    repo.get_client_by_code,
-    repo.link_email,
+    repo.get_task,
+    repo.create_task,
+    repo.update_task,
 ]
 
 
