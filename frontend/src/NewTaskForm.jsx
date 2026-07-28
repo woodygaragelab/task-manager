@@ -19,11 +19,16 @@ export function NewTaskForm({ seriesList, onCreate }) {
     }
   };
 
+  // <option>は空白を折り畳んでしまうため、NBSPでパディングして
+  // 等幅フォント(series-select)と組み合わせることで「分類」列を揃える
+  const groupWidth = Math.max(0, ...seriesList.map((s) => (s.taskGroup || "").length));
+
   return (
     <form className="new-task" onSubmit={submit}>
       <div className="field">
         <select
           id="series-code"
+          className="series-select"
           value={seriesCode}
           onChange={(e) => setSeriesCode(e.target.value)}
           required
@@ -33,7 +38,9 @@ export function NewTaskForm({ seriesList, onCreate }) {
           </option>
           {seriesList.map((s) => (
             <option key={s.seriesCode} value={s.seriesCode}>
-              {s.taskGroup} {s.seriesName}
+              {(s.taskGroup || "").padEnd(groupWidth, " ")}
+              {"  "}
+              {s.seriesName}
             </option>
           ))}
         </select>

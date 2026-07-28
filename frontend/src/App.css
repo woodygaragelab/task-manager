@@ -497,13 +497,13 @@
   border-bottom: none;
 }
 
-.progress__group {
+.progress td.progress__group {
   text-align: left;
   color: var(--ink-soft);
   white-space: nowrap;
 }
 
-.progress__series {
+.progress td.progress__series {
   text-align: left;
   font-weight: 500;
   white-space: nowrap;
@@ -702,6 +702,11 @@
   border-radius: 4px;
   background: var(--paper);
   color: var(--ink);
+}
+
+.series-select {
+  /* NBSPパディングで「分類」列を揃えるため、等幅フォントでなければ意味がない */
+  font-family: var(--font-mono);
 }
 
 @media (max-width: 720px) {
