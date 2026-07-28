@@ -126,6 +126,11 @@ export default function App() {
           t.frameCode === selectedTaskKey.frameCode
       ) ?? null
     : null;
+  const selectedTaskCombinedKey =
+    selectedTaskKey && `${selectedTaskKey.seriesCode}#${selectedTaskKey.frameCode}`;
+
+  const selectTask = (task) =>
+    setSelectedTaskKey({ seriesCode: task.seriesCode, frameCode: task.frameCode });
 
   return (
     <div className="app">
@@ -183,6 +188,8 @@ export default function App() {
                     tasks={tasks}
                     seriesNameByCode={seriesNameByCode}
                     frameNameByCode={frameNameByCode}
+                    selectedTaskKey={selectedTaskCombinedKey}
+                    onSelect={selectTask}
                   />
                 ))}
 
@@ -195,16 +202,8 @@ export default function App() {
                       tasks={tasks}
                       seriesNameByCode={seriesNameByCode}
                       frameNameByCode={frameNameByCode}
-                      selectedTaskKey={
-                        selectedTaskKey &&
-                        `${selectedTaskKey.seriesCode}#${selectedTaskKey.frameCode}`
-                      }
-                      onSelect={(task) =>
-                        setSelectedTaskKey({
-                          seriesCode: task.seriesCode,
-                          frameCode: task.frameCode,
-                        })
-                      }
+                      selectedTaskKey={selectedTaskCombinedKey}
+                      onSelect={selectTask}
                     />
                   )}
 

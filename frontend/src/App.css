@@ -438,6 +438,18 @@
   color: var(--ink-soft);
 }
 
+.progress__cell--clickable {
+  cursor: pointer;
+}
+
+.progress__cell--clickable:hover {
+  background: var(--gold-soft);
+}
+
+.progress__cell--selected {
+  background: var(--seal-green-soft);
+}
+
 /* ---------- Status hanko (signature element) ---------- */
 .stamp {
   display: inline-flex;
