@@ -89,7 +89,7 @@ export default function App() {
     }
   };
 
-  const handleCreate = async ({ seriesCode, seriesName }) => {
+  const handleCreate = async ({ seriesCode, seriesName, taskGroup }) => {
     // シリーズ1件につき、登録済みの全フレーム分のタスクをまとめて作成する
     try {
       await Promise.all(
@@ -100,6 +100,7 @@ export default function App() {
             seriesName,
             frameCode: frame.frameCode,
             frameName: frame.frameName,
+            taskGroup,
           })
         )
       );
@@ -117,6 +118,10 @@ export default function App() {
   const frameNameByCode = useMemo(
     () => Object.fromEntries(frameList.map((f) => [f.frameCode, f.frameName])),
     [frameList]
+  );
+  const seriesGroupByCode = useMemo(
+    () => Object.fromEntries(seriesList.map((s) => [s.seriesCode, s.taskGroup])),
+    [seriesList]
   );
 
   const selectedTask = selectedTaskKey
@@ -202,6 +207,7 @@ export default function App() {
                       tasks={tasks}
                       seriesNameByCode={seriesNameByCode}
                       frameNameByCode={frameNameByCode}
+                      seriesGroupByCode={seriesGroupByCode}
                       selectedTaskKey={selectedTaskCombinedKey}
                       onSelect={selectTask}
                     />

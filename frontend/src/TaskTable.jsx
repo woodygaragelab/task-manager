@@ -6,6 +6,7 @@ export function TaskTable({
   tasks,
   seriesNameByCode,
   frameNameByCode,
+  seriesGroupByCode,
   selectedTaskKey,
   onSelect,
 }) {
@@ -24,6 +25,7 @@ export function TaskTable({
     <table className="tasks">
       <thead>
         <tr>
+          <th style={{ width: 110 }}>分類</th>
           <th>シリーズ</th>
           <th style={{ width: 110 }}>フレーム</th>
           <th style={{ width: 110 }}>状態</th>
@@ -41,6 +43,7 @@ export function TaskTable({
             }
             onClick={() => onSelect(task)}
           >
+            <td data-label="分類">{seriesGroupByCode[task.seriesCode] || "—"}</td>
             <td data-label="シリーズ" className="tasks__taskname">
               {seriesNameByCode[task.seriesCode] ?? task.seriesCode}
             </td>

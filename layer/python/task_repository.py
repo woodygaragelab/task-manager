@@ -53,7 +53,7 @@ def _task_key(series_code: str, frame_code: str) -> str:
     return f"{series_code}#{frame_code}"
 
 
-def _ensure_series_exists(series_code: str, series_name: str) -> None:
+def _ensure_series_exists(series_code: str, series_name: str, task_group: str = "") -> None:
     """シリーズマスタに未登録ならPutする(冪等・競合安全)。"""
     try:
         series_table.put_item(
@@ -61,6 +61,7 @@ def _ensure_series_exists(series_code: str, series_name: str) -> None:
                 "lookupBucket": SERIES_BUCKET,
                 "seriesCode": series_code,
                 "seriesName": series_name,
+                "taskGroup": task_group,
             },
             ConditionExpression="attribute_not_exists(seriesCode)",
         )
@@ -141,10 +142,13 @@ def create_task(
     status: str = "未着手",
     assignee: str = "",
     complete_date: Optional[str] = None,
+    task_group: str = "",
 ) -> dict:
     """新しいタスクを作成する。
 
     series_code/frame_codeが未登録の場合はそれぞれのマスタに自動登録される。
+    task_groupはシリーズマスタの属性(表示名: 分類)であり、シリーズが新規登録される
+    場合のみ使われる(既存シリーズの場合は_ensure_series_existsが何もしないため無視される)。
     client_codeは自動登録しない(Clientのみ事前にcreate_client()で登録済みであることを前提とする。
     Series/Frameと異なりドロップダウンでの明示的な新規登録操作を持つため)。
     既に同じclientCode+seriesCode+frameCodeのタスクが存在する場合は単純に上書きする。
@@ -162,7 +166,7 @@ def create_task(
         "updatedAt": now,
     }
     tasks_table.put_item(Item=item)
-    _ensure_series_exists(series_code, series_name)
+    _ensure_series_exists(series_code, series_name, task_group)
     _ensure_frame_exists(frame_code, frame_name)
     return item
 

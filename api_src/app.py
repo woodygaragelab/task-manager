@@ -96,6 +96,7 @@ def handler(event, context):
                 status=body.get("status", "未着手"),
                 assignee=body.get("assignee", ""),
                 complete_date=body.get("completeDate"),
+                task_group=body.get("taskGroup", ""),
             )
             return _response(201, item)
 

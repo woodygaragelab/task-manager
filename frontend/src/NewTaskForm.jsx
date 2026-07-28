@@ -6,29 +6,35 @@ export function NewTaskForm({ seriesList, onCreate }) {
   const [seriesCode, setSeriesCode] = useState("");
   const [newSeriesCode, setNewSeriesCode] = useState("");
   const [newSeriesName, setNewSeriesName] = useState("");
+  const [newTaskGroup, setNewTaskGroup] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   const reset = () => {
     setSeriesCode("");
     setNewSeriesCode("");
     setNewSeriesName("");
+    setNewTaskGroup("");
   };
 
   const submit = async (e) => {
     e.preventDefault();
 
-    const resolvedSeriesCode =
-      seriesCode === NEW_OPTION ? newSeriesCode.trim() : seriesCode;
-    const resolvedSeriesName =
-      seriesCode === NEW_OPTION
-        ? newSeriesName.trim()
-        : seriesList.find((s) => s.seriesCode === seriesCode)?.seriesName ?? "";
+    const isNewSeries = seriesCode === NEW_OPTION;
+    const resolvedSeriesCode = isNewSeries ? newSeriesCode.trim() : seriesCode;
+    const resolvedSeriesName = isNewSeries
+      ? newSeriesName.trim()
+      : seriesList.find((s) => s.seriesCode === seriesCode)?.seriesName ?? "";
+    const resolvedTaskGroup = isNewSeries ? newTaskGroup.trim() : "";
 
     if (!resolvedSeriesCode || !resolvedSeriesName) return;
 
     setSubmitting(true);
     try {
-      await onCreate({ seriesCode: resolvedSeriesCode, seriesName: resolvedSeriesName });
+      await onCreate({
+        seriesCode: resolvedSeriesCode,
+        seriesName: resolvedSeriesName,
+        taskGroup: resolvedTaskGroup,
+      });
       reset();
     } finally {
       setSubmitting(false);
@@ -67,6 +73,12 @@ export function NewTaskForm({ seriesList, onCreate }) {
               value={newSeriesName}
               onChange={(e) => setNewSeriesName(e.target.value)}
               placeholder="シリーズ名(例: 資料受領)"
+              required
+            />
+            <input
+              value={newTaskGroup}
+              onChange={(e) => setNewTaskGroup(e.target.value)}
+              placeholder="分類"
               required
             />
           </>
