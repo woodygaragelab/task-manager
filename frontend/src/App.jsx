@@ -3,6 +3,7 @@ import { signOut } from "aws-amplify/auth";
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { ClientSidebar } from "./ClientSidebar";
 import { TaskTable } from "./TaskTable";
+import { TaskDetailPanel } from "./TaskDetailPanel";
 import { NewTaskForm } from "./NewTaskForm";
 import { api } from "./api";
 import "./App.css";
@@ -18,6 +19,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [lastSynced, setLastSynced] = useState(null);
+  const [selectedTaskKey, setSelectedTaskKey] = useState(null); // {seriesCode, frameCode} | null
 
   const refreshMasters = useCallback(async () => {
     try {
@@ -51,8 +53,9 @@ export default function App() {
     }
   }, []);
 
-  // クライアントを切り替えたら即座にロード
+  // クライアントを切り替えたら即座にロードし、詳細パネルは閉じる
   useEffect(() => {
+    setSelectedTaskKey(null);
     if (!client) return;
     setLoading(true);
     refresh(client.clientCode).finally(() => setLoading(false));
@@ -102,6 +105,14 @@ export default function App() {
     [frameList]
   );
 
+  const selectedTask = selectedTaskKey
+    ? tasks.find(
+        (t) =>
+          t.seriesCode === selectedTaskKey.seriesCode &&
+          t.frameCode === selectedTaskKey.frameCode
+      ) ?? null
+    : null;
+
   return (
     <div className="app">
       <header className="header">
@@ -142,7 +153,16 @@ export default function App() {
                   tasks={tasks}
                   seriesNameByCode={seriesNameByCode}
                   frameNameByCode={frameNameByCode}
-                  onUpdate={handleUpdate}
+                  selectedTaskKey={
+                    selectedTaskKey &&
+                    `${selectedTaskKey.seriesCode}#${selectedTaskKey.frameCode}`
+                  }
+                  onSelect={(task) =>
+                    setSelectedTaskKey({
+                      seriesCode: task.seriesCode,
+                      frameCode: task.frameCode,
+                    })
+                  }
                 />
               )}
 
@@ -160,6 +180,16 @@ export default function App() {
             </div>
           )}
         </main>
+
+        {selectedTask && (
+          <TaskDetailPanel
+            task={selectedTask}
+            seriesNameByCode={seriesNameByCode}
+            frameNameByCode={frameNameByCode}
+            onUpdate={handleUpdate}
+            onClose={() => setSelectedTaskKey(null)}
+          />
+        )}
       </div>
     </div>
   );

@@ -1,26 +1,15 @@
-import { useState } from "react";
-import { StatusSelect } from "./StatusSelect";
+function formatCompleteDate(value) {
+  return value || "—";
+}
 
-export function TaskTable({ tasks, seriesNameByCode, frameNameByCode, onUpdate }) {
-  const [drafts, setDrafts] = useState({});
-
+export function TaskTable({
+  tasks,
+  seriesNameByCode,
+  frameNameByCode,
+  selectedTaskKey,
+  onSelect,
+}) {
   const rowKey = (task) => `${task.seriesCode}#${task.frameCode}`;
-
-  const draftFor = (task, field) =>
-    drafts[rowKey(task)]?.[field] ?? task[field] ?? "";
-
-  const setDraft = (task, field, value) => {
-    setDrafts((prev) => ({
-      ...prev,
-      [rowKey(task)]: { ...prev[rowKey(task)], [field]: value },
-    }));
-  };
-
-  const commit = (task, field) => {
-    const value = draftFor(task, field);
-    if (value === (task[field] ?? "")) return;
-    onUpdate(task.seriesCode, task.frameCode, { [field]: value });
-  };
 
   if (tasks.length === 0) {
     return (
@@ -44,7 +33,14 @@ export function TaskTable({ tasks, seriesNameByCode, frameNameByCode, onUpdate }
       </thead>
       <tbody>
         {tasks.map((task) => (
-          <tr key={rowKey(task)}>
+          <tr
+            key={rowKey(task)}
+            className={
+              "tasks__row" +
+              (rowKey(task) === selectedTaskKey ? " tasks__row--selected" : "")
+            }
+            onClick={() => onSelect(task)}
+          >
             <td data-label="シリーズ" className="tasks__taskname">
               {seriesNameByCode[task.seriesCode] ?? task.seriesCode}
             </td>
@@ -52,31 +48,10 @@ export function TaskTable({ tasks, seriesNameByCode, frameNameByCode, onUpdate }
               {frameNameByCode[task.frameCode] ?? task.frameCode}
             </td>
             <td data-label="状態">
-              <StatusSelect
-                status={task.status}
-                onChange={(status) =>
-                  onUpdate(task.seriesCode, task.frameCode, { status })
-                }
-              />
+              <span className={`stamp stamp--${task.status}`}>{task.status}</span>
             </td>
-            <td data-label="担当">
-              <input
-                className="tasks__assignee"
-                value={draftFor(task, "assignee")}
-                onChange={(e) => setDraft(task, "assignee", e.target.value)}
-                onBlur={() => commit(task, "assignee")}
-                placeholder="—"
-              />
-            </td>
-            <td data-label="完了日">
-              <input
-                type="date"
-                className="tasks__assignee"
-                value={draftFor(task, "completeDate")}
-                onChange={(e) => setDraft(task, "completeDate", e.target.value)}
-                onBlur={() => commit(task, "completeDate")}
-              />
-            </td>
+            <td data-label="担当">{task.assignee || "—"}</td>
+            <td data-label="完了日">{formatCompleteDate(task.completeDate)}</td>
           </tr>
         ))}
       </tbody>
