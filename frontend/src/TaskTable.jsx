@@ -26,8 +26,8 @@ export function TaskTable({
       <thead>
         <tr>
           <th style={{ width: 110 }}>分類</th>
-          <th>シリーズ</th>
-          <th style={{ width: 110 }}>フレーム</th>
+          <th>タスク</th>
+          <th style={{ width: 110 }}>月</th>
           <th style={{ width: 110 }}>状態</th>
           <th style={{ width: 80 }}>担当</th>
           <th style={{ width: 130 }}>完了日</th>
@@ -44,10 +44,10 @@ export function TaskTable({
             onClick={() => onSelect(task)}
           >
             <td data-label="分類">{seriesGroupByCode[task.seriesCode] || "—"}</td>
-            <td data-label="シリーズ" className="tasks__taskname">
+            <td data-label="タスク" className="tasks__taskname">
               {seriesNameByCode[task.seriesCode] ?? task.seriesCode}
             </td>
-            <td data-label="フレーム" className="tasks__due">
+            <td data-label="月" className="tasks__due">
               {frameNameByCode[task.frameCode] ?? task.frameCode}
             </td>
             <td data-label="状態">
