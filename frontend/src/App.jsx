@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { signOut } from "aws-amplify/auth";
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { ClientSelector } from "./ClientSelector";
+import { ClientSidebar } from "./ClientSidebar";
 import { TaskTable } from "./TaskTable";
 import { NewTaskForm } from "./NewTaskForm";
 import { api } from "./api";
@@ -115,48 +115,52 @@ export default function App() {
         </div>
       </header>
 
-      <ClientSelector onSelect={setClient} />
-
       {error && <div className="error-banner">{error}</div>}
 
-      {client ? (
-        <section className="panel">
-          <div className="panel__header">
-            <h2 className="panel__title">
-              <span className="panel__title-eyebrow">クライアント</span>
-              {client.clientName}({client.clientCode})
-            </h2>
-            {lastSynced && (
-              <span className="status-line">
-                最終同期 {lastSynced.toLocaleTimeString("ja-JP")}
-              </span>
-            )}
-          </div>
+      <div className="layout">
+        <ClientSidebar selectedClientCode={client?.clientCode} onSelect={setClient} />
 
-          {loading ? (
-            <div className="status-line">読み込み中…</div>
+        <main className="main">
+          {client ? (
+            <section className="panel">
+              <div className="panel__header">
+                <h2 className="panel__title">
+                  <span className="panel__title-eyebrow">クライアント</span>
+                  {client.clientName}({client.clientCode})
+                </h2>
+                {lastSynced && (
+                  <span className="status-line">
+                    最終同期 {lastSynced.toLocaleTimeString("ja-JP")}
+                  </span>
+                )}
+              </div>
+
+              {loading ? (
+                <div className="status-line">読み込み中…</div>
+              ) : (
+                <TaskTable
+                  tasks={tasks}
+                  seriesNameByCode={seriesNameByCode}
+                  frameNameByCode={frameNameByCode}
+                  onUpdate={handleUpdate}
+                />
+              )}
+
+              <NewTaskForm
+                clientCode={client.clientCode}
+                seriesList={seriesList}
+                frameList={frameList}
+                onCreate={handleCreate}
+              />
+            </section>
           ) : (
-            <TaskTable
-              tasks={tasks}
-              seriesNameByCode={seriesNameByCode}
-              frameNameByCode={frameNameByCode}
-              onUpdate={handleUpdate}
-            />
+            <div className="empty">
+              <div className="empty__title">クライアントを選択してください</div>
+              左のリストからクライアントを選んでください。
+            </div>
           )}
-
-          <NewTaskForm
-            clientCode={client.clientCode}
-            seriesList={seriesList}
-            frameList={frameList}
-            onCreate={handleCreate}
-          />
-        </section>
-      ) : (
-        <div className="empty">
-          <div className="empty__title">クライアントを選択してください</div>
-          上の検索欄からクライアントを選んでください。
-        </div>
-      )}
+        </main>
+      </div>
     </div>
   );
 }
