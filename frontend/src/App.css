@@ -558,6 +558,35 @@
   color: var(--ink-soft);
 }
 
+.simple-table__delete {
+  background: none;
+  border: 1px solid var(--stamp-red);
+  color: var(--stamp-red);
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.simple-table__delete:hover {
+  background: var(--stamp-red-soft);
+}
+
+/* ---------- Inline add form (master data list pages) ---------- */
+.list-form {
+  margin-top: 24px;
+  padding-top: 22px;
+  border-top: 1px dashed var(--paper-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: end;
+}
+
+.list-form .field input {
+  min-width: 160px;
+}
+
 /* ---------- Status hanko (signature element) ---------- */
 .stamp {
   display: inline-flex;

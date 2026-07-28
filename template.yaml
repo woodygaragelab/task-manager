@@ -123,6 +123,7 @@ Resources:
           - GET
           - POST
           - PATCH
+          - DELETE
           - OPTIONS
 
   # ------------------------------------------------------------------
@@ -164,18 +165,48 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /clients
             Method: post
+        DeleteClient:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /clients/{clientCode}
+            Method: delete
         ListSeries:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
             Path: /series
             Method: get
+        CreateSeries:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /series
+            Method: post
+        DeleteSeries:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /series/{seriesCode}
+            Method: delete
         ListFrames:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
             Path: /frames
             Method: get
+        CreateFrame:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /frames
+            Method: post
+        DeleteFrame:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /frames/{frameCode}
+            Method: delete
         ListTasksByClient:
           Type: HttpApi
           Properties:

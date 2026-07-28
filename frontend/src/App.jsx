@@ -95,8 +95,8 @@ export default function App() {
     }
   };
 
-  const handleCreate = async ({ seriesCode, seriesName, taskGroup }) => {
-    // シリーズ1件につき、登録済みの全フレーム分のタスクをまとめて作成する
+  const handleCreate = async ({ seriesCode, seriesName }) => {
+    // 既存シリーズ1件につき、登録済みの全フレーム分のタスクをまとめて作成する
     try {
       await Promise.all(
         frameList.map((frame) =>
@@ -106,12 +106,10 @@ export default function App() {
             seriesName,
             frameCode: frame.frameCode,
             frameName: frame.frameName,
-            taskGroup,
           })
         )
       );
-      // 新規シリーズが自動登録された可能性があるためマスタも合わせて再取得する
-      await Promise.all([refresh(client.clientCode), refreshMasters()]);
+      await refresh(client.clientCode);
     } catch (e) {
       setError(e.message);
     }
@@ -178,8 +176,12 @@ export default function App() {
       {error && <div className="error-banner">{error}</div>}
 
       {currentView === "クライアント" && <ClientListPage />}
-      {currentView === "タスクシリーズ" && <SeriesListPage seriesList={seriesList} />}
-      {currentView === "フレーム" && <FrameListPage frameList={frameList} />}
+      {currentView === "タスクシリーズ" && (
+        <SeriesListPage seriesList={seriesList} onRefresh={refreshMasters} />
+      )}
+      {currentView === "フレーム" && (
+        <FrameListPage frameList={frameList} onRefresh={refreshMasters} />
+      )}
 
       {currentView === "進捗" && (
         <div className="layout">

@@ -42,9 +42,30 @@ export const api = {
       body: { clientCode, clientName },
     }),
 
+  deleteClient: (clientCode) =>
+    request(`/clients/${encodeURIComponent(clientCode)}`, { method: "DELETE" }),
+
   listSeries: () => request(`/series`),
 
+  createSeries: (seriesCode, seriesName, taskGroup) =>
+    request(`/series`, {
+      method: "POST",
+      body: { seriesCode, seriesName, taskGroup },
+    }),
+
+  deleteSeries: (seriesCode) =>
+    request(`/series/${encodeURIComponent(seriesCode)}`, { method: "DELETE" }),
+
   listFrames: () => request(`/frames`),
+
+  createFrame: (frameCode, frameName) =>
+    request(`/frames`, {
+      method: "POST",
+      body: { frameCode, frameName },
+    }),
+
+  deleteFrame: (frameCode) =>
+    request(`/frames/${encodeURIComponent(frameCode)}`, { method: "DELETE" }),
 
   listTasksByClient: (clientCode) =>
     request(`/clients/${encodeURIComponent(clientCode)}/tasks`),

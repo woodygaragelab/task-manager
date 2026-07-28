@@ -40,6 +40,14 @@ class ClientAlreadyExistsError(Exception):
     """create_clientで既に登録済みのclientCodeを指定した場合に送出する。"""
 
 
+class SeriesAlreadyExistsError(Exception):
+    """create_seriesで既に登録済みのseriesCodeを指定した場合に送出する。"""
+
+
+class FrameAlreadyExistsError(Exception):
+    """create_frameで既に登録済みのframeCodeを指定した場合に送出する。"""
+
+
 # ----------------------------------------------------------------------
 # 内部ヘルパー
 # ----------------------------------------------------------------------
@@ -117,6 +125,11 @@ def create_client(client_code: str, client_name: str) -> dict:
     return item
 
 
+def delete_client(client_code: str) -> None:
+    """クライアントマスタから削除する(クライアント一覧画面の削除操作用)。"""
+    clients_table.delete_item(Key={"lookupBucket": CLIENT_BUCKET, "clientCode": client_code})
+
+
 def list_series() -> list[dict]:
     """登録済みの全シリーズを一覧取得する(タスク作成時のドロップダウン用)。"""
     resp = series_table.query(
@@ -125,12 +138,65 @@ def list_series() -> list[dict]:
     return resp.get("Items", [])
 
 
+def create_series(series_code: str, series_name: str, task_group: str = "") -> dict:
+    """シリーズを新規登録する(タスクシリーズ一覧画面の「新規作成」操作専用)。
+
+    create_task経由の自動登録(_ensure_series_exists)とは異なり、既に存在する
+    seriesCodeが指定された場合はSeriesAlreadyExistsErrorを送出する。
+    """
+    item = {
+        "lookupBucket": SERIES_BUCKET,
+        "seriesCode": series_code,
+        "seriesName": series_name,
+        "taskGroup": task_group,
+    }
+    try:
+        series_table.put_item(
+            Item=item,
+            ConditionExpression="attribute_not_exists(seriesCode)",
+        )
+    except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+        raise SeriesAlreadyExistsError(f"seriesCode {series_code} は既に登録されています")
+    return item
+
+
+def delete_series(series_code: str) -> None:
+    """シリーズマスタから削除する(タスクシリーズ一覧画面の削除操作用)。"""
+    series_table.delete_item(Key={"lookupBucket": SERIES_BUCKET, "seriesCode": series_code})
+
+
 def list_frames() -> list[dict]:
     """登録済みの全フレームを一覧取得する(タスク作成時のドロップダウン用)。"""
     resp = frames_table.query(
         KeyConditionExpression=Key("lookupBucket").eq(FRAME_BUCKET)
     )
     return resp.get("Items", [])
+
+
+def create_frame(frame_code: str, frame_name: str) -> dict:
+    """フレームを新規登録する(フレーム一覧画面の「新規作成」操作専用)。
+
+    create_task経由の自動登録(_ensure_frame_exists)とは異なり、既に存在する
+    frameCodeが指定された場合はFrameAlreadyExistsErrorを送出する。
+    """
+    item = {
+        "lookupBucket": FRAME_BUCKET,
+        "frameCode": frame_code,
+        "frameName": frame_name,
+    }
+    try:
+        frames_table.put_item(
+            Item=item,
+            ConditionExpression="attribute_not_exists(frameCode)",
+        )
+    except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+        raise FrameAlreadyExistsError(f"frameCode {frame_code} は既に登録されています")
+    return item
+
+
+def delete_frame(frame_code: str) -> None:
+    """フレームマスタから削除する(フレーム一覧画面の削除操作用)。"""
+    frames_table.delete_item(Key={"lookupBucket": FRAME_BUCKET, "frameCode": frame_code})
 
 
 def create_task(

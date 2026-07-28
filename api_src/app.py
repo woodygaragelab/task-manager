@@ -24,7 +24,7 @@ def _response(status_code: int, body: Any) -> dict:
             # 社内利用のみだが、フロントエンドのオリジンを後で限定する想定でCORSヘッダを用意
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "Authorization,Content-Type",
-            "Access-Control-Allow-Methods": "GET,POST,PATCH,OPTIONS",
+            "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
         },
         "body": json.dumps(body, ensure_ascii=False, default=str),
     }
@@ -60,13 +60,49 @@ def handler(event, context):
             )
             return _response(201, item)
 
+        # ---- DELETE /clients/{clientCode} ----
+        if route_key == "DELETE /clients/{clientCode}":
+            repo.delete_client(client_code=path_params["clientCode"])
+            return _response(200, {"clientCode": path_params["clientCode"]})
+
         # ---- GET /series ----
         if route_key == "GET /series":
             return _response(200, repo.list_series())
 
+        # ---- POST /series ----
+        if route_key == "POST /series":
+            if "seriesCode" not in body or "seriesName" not in body:
+                return _error(400, "seriesCode と seriesName は必須です")
+            item = repo.create_series(
+                series_code=body["seriesCode"],
+                series_name=body["seriesName"],
+                task_group=body.get("taskGroup", ""),
+            )
+            return _response(201, item)
+
+        # ---- DELETE /series/{seriesCode} ----
+        if route_key == "DELETE /series/{seriesCode}":
+            repo.delete_series(series_code=path_params["seriesCode"])
+            return _response(200, {"seriesCode": path_params["seriesCode"]})
+
         # ---- GET /frames ----
         if route_key == "GET /frames":
             return _response(200, repo.list_frames())
+
+        # ---- POST /frames ----
+        if route_key == "POST /frames":
+            if "frameCode" not in body or "frameName" not in body:
+                return _error(400, "frameCode と frameName は必須です")
+            item = repo.create_frame(
+                frame_code=body["frameCode"],
+                frame_name=body["frameName"],
+            )
+            return _response(201, item)
+
+        # ---- DELETE /frames/{frameCode} ----
+        if route_key == "DELETE /frames/{frameCode}":
+            repo.delete_frame(frame_code=path_params["frameCode"])
+            return _response(200, {"frameCode": path_params["frameCode"]})
 
         # ---- GET /clients/{clientCode}/tasks ----
         if route_key == "GET /clients/{clientCode}/tasks":
@@ -115,6 +151,10 @@ def handler(event, context):
         return _error(404, f"未対応のルートです: {method} {event.get('rawPath', '')}")
 
     except repo.ClientAlreadyExistsError as e:
+        return _error(409, str(e))
+    except repo.SeriesAlreadyExistsError as e:
+        return _error(409, str(e))
+    except repo.FrameAlreadyExistsError as e:
         return _error(409, str(e))
     except repo.TaskNotFoundError as e:
         return _error(404, str(e))
