@@ -153,7 +153,7 @@ export default function App() {
           >
             ☰
           </button>
-          <h1 className="header__title">タスクリスト</h1>
+          <h1 className="header__title">税理士業務タスク管理</h1>
           <NavMenu
             open={menuOpen}
             currentView={currentView}
