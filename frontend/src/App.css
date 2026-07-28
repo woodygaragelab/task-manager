@@ -607,19 +607,34 @@
 }
 
 .stamp--未着手 {
-  color: var(--slate);
-  background: var(--slate-soft);
+  color: var(--pale-yellow);
+  background: var(--pale-yellow-soft);
+}
+
+.stamp--依頼中 {
+  color: var(--pale-orange);
+  background: var(--pale-orange-soft);
+}
+
+.stamp--確認中 {
+  color: var(--orange);
+  background: var(--orange-soft);
 }
 
 .stamp--進行中 {
-  color: var(--gold);
-  background: var(--gold-soft);
+  color: var(--yellow);
+  background: var(--yellow-soft);
 }
 
 .stamp--完了 {
   color: var(--seal-green);
   background: var(--seal-green-soft);
   transform: rotate(0deg);
+}
+
+.stamp--NA {
+  color: var(--slate);
+  background: var(--slate-soft);
 }
 
 /* ---------- Empty / loading states ---------- */

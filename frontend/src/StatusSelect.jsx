@@ -1,4 +1,4 @@
-const OPTIONS = ["未着手", "進行中", "完了"];
+const OPTIONS = ["未着手", "依頼中", "確認中", "進行中", "完了", "NA"];
 
 export function StatusSelect({ status, onChange, disabled }) {
   return (
