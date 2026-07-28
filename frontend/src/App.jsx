@@ -86,10 +86,21 @@ export default function App() {
     }
   };
 
-  const handleCreate = async (newTask) => {
+  const handleCreate = async ({ seriesCode, seriesName }) => {
+    // シリーズ1件につき、登録済みの全フレーム分のタスクをまとめて作成する
     try {
-      await api.createTask(newTask);
-      // 新規シリーズ/フレームが自動登録された可能性があるためマスタも合わせて再取得する
+      await Promise.all(
+        frameList.map((frame) =>
+          api.createTask({
+            clientCode: client.clientCode,
+            seriesCode,
+            seriesName,
+            frameCode: frame.frameCode,
+            frameName: frame.frameName,
+          })
+        )
+      );
+      // 新規シリーズが自動登録された可能性があるためマスタも合わせて再取得する
       await Promise.all([refresh(client.clientCode), refreshMasters()]);
     } catch (e) {
       setError(e.message);
@@ -166,12 +177,7 @@ export default function App() {
                 />
               )}
 
-              <NewTaskForm
-                clientCode={client.clientCode}
-                seriesList={seriesList}
-                frameList={frameList}
-                onCreate={handleCreate}
-              />
+              <NewTaskForm seriesList={seriesList} onCreate={handleCreate} />
             </section>
           ) : (
             <div className="empty">

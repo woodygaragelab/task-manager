@@ -442,7 +442,7 @@
   padding-top: 22px;
   border-top: 1px dashed var(--paper-line);
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr auto;
+  grid-template-columns: 2fr auto;
   gap: 10px;
   align-items: end;
 }
