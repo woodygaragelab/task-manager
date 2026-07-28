@@ -428,6 +428,12 @@
   border-bottom: none;
 }
 
+.progress__group {
+  text-align: left;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
 .progress__series {
   text-align: left;
   font-weight: 500;

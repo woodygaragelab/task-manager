@@ -2,6 +2,7 @@ export function ProgressTable({
   tasks,
   seriesNameByCode,
   frameNameByCode,
+  seriesGroupByCode,
   selectedTaskKey,
   onSelect,
 }) {
@@ -24,6 +25,7 @@ export function ProgressTable({
     <table className="progress">
       <thead>
         <tr>
+          <th>分類</th>
           <th>タスク名</th>
           {frameCodes.map((frameCode) => (
             <th key={frameCode}>{frameNameByCode[frameCode] ?? frameCode}</th>
@@ -33,6 +35,7 @@ export function ProgressTable({
       <tbody>
         {seriesCodes.map((seriesCode) => (
           <tr key={seriesCode}>
+            <td className="progress__group">{seriesGroupByCode[seriesCode] || "—"}</td>
             <td className="progress__series">
               {seriesNameByCode[seriesCode] ?? seriesCode}
             </td>

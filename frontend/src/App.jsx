@@ -193,6 +193,7 @@ export default function App() {
                     tasks={tasks}
                     seriesNameByCode={seriesNameByCode}
                     frameNameByCode={frameNameByCode}
+                    seriesGroupByCode={seriesGroupByCode}
                     selectedTaskKey={selectedTaskCombinedKey}
                     onSelect={selectTask}
                   />
