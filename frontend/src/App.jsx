@@ -6,6 +6,10 @@ import { TaskTable } from "./TaskTable";
 import { ProgressTable } from "./ProgressTable";
 import { TaskDetailPanel } from "./TaskDetailPanel";
 import { NewTaskForm } from "./NewTaskForm";
+import { NavMenu } from "./NavMenu";
+import { ClientListPage } from "./ClientListPage";
+import { SeriesListPage } from "./SeriesListPage";
+import { FrameListPage } from "./FrameListPage";
 import { api } from "./api";
 import "./App.css";
 
@@ -23,6 +27,8 @@ export default function App() {
   const [lastSynced, setLastSynced] = useState(null);
   const [selectedTaskKey, setSelectedTaskKey] = useState(null); // {seriesCode, frameCode} | null
   const [activeTab, setActiveTab] = useState("タスク");
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [currentView, setCurrentView] = useState("進捗"); // 進捗 | クライアント | タスクシリーズ | フレーム
 
   const refreshMasters = useCallback(async () => {
     try {
@@ -140,7 +146,26 @@ export default function App() {
   return (
     <div className="app">
       <header className="header">
-        <h1 className="header__title">タスクリスト</h1>
+        <div className="header__left">
+          <button
+            type="button"
+            className="hamburger"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-label="メニュー"
+          >
+            ☰
+          </button>
+          <h1 className="header__title">タスクリスト</h1>
+          <NavMenu
+            open={menuOpen}
+            currentView={currentView}
+            onSelect={(view) => {
+              setCurrentView(view);
+              setMenuOpen(false);
+            }}
+            onClose={() => setMenuOpen(false)}
+          />
+        </div>
         <div className="header__meta">
           {user?.signInDetails?.loginId ?? user?.username}
           <br />
@@ -152,59 +177,49 @@ export default function App() {
 
       {error && <div className="error-banner">{error}</div>}
 
-      <div className="layout">
-        <ClientSidebar selectedClientCode={client?.clientCode} onSelect={setClient} />
+      {currentView === "クライアント" && <ClientListPage />}
+      {currentView === "タスクシリーズ" && <SeriesListPage seriesList={seriesList} />}
+      {currentView === "フレーム" && <FrameListPage frameList={frameList} />}
 
-        <main className="main">
-          {client ? (
-            <section className="panel">
-              <div className="panel__header">
-                <h2 className="panel__title">
-                  <span className="panel__title-eyebrow">クライアント</span>
-                  {client.clientName}({client.clientCode})
-                </h2>
-                {lastSynced && (
-                  <span className="status-line">
-                    最終同期 {lastSynced.toLocaleTimeString("ja-JP")}
-                  </span>
-                )}
-              </div>
+      {currentView === "進捗" && (
+        <div className="layout">
+          <ClientSidebar selectedClientCode={client?.clientCode} onSelect={setClient} />
 
-              <div className="tabs">
-                {TABS.map((tab) => (
-                  <button
-                    key={tab}
-                    type="button"
-                    className={
-                      "tabs__tab" + (activeTab === tab ? " tabs__tab--active" : "")
-                    }
-                    onClick={() => setActiveTab(tab)}
-                  >
-                    {tab}
-                  </button>
-                ))}
-              </div>
+          <main className="main">
+            {client ? (
+              <section className="panel">
+                <div className="panel__header">
+                  <h2 className="panel__title">
+                    <span className="panel__title-eyebrow">クライアント</span>
+                    {client.clientName}({client.clientCode})
+                  </h2>
+                  {lastSynced && (
+                    <span className="status-line">
+                      最終同期 {lastSynced.toLocaleTimeString("ja-JP")}
+                    </span>
+                  )}
+                </div>
 
-              {activeTab === "進捗" &&
-                (loading ? (
-                  <div className="status-line">読み込み中…</div>
-                ) : (
-                  <ProgressTable
-                    tasks={tasks}
-                    seriesNameByCode={seriesNameByCode}
-                    frameNameByCode={frameNameByCode}
-                    seriesGroupByCode={seriesGroupByCode}
-                    selectedTaskKey={selectedTaskCombinedKey}
-                    onSelect={selectTask}
-                  />
-                ))}
+                <div className="tabs">
+                  {TABS.map((tab) => (
+                    <button
+                      key={tab}
+                      type="button"
+                      className={
+                        "tabs__tab" + (activeTab === tab ? " tabs__tab--active" : "")
+                      }
+                      onClick={() => setActiveTab(tab)}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
 
-              {activeTab === "タスク" && (
-                <>
-                  {loading ? (
+                {activeTab === "進捗" &&
+                  (loading ? (
                     <div className="status-line">読み込み中…</div>
                   ) : (
-                    <TaskTable
+                    <ProgressTable
                       tasks={tasks}
                       seriesNameByCode={seriesNameByCode}
                       frameNameByCode={frameNameByCode}
@@ -212,30 +227,46 @@ export default function App() {
                       selectedTaskKey={selectedTaskCombinedKey}
                       onSelect={selectTask}
                     />
-                  )}
+                  ))}
 
-                  <NewTaskForm seriesList={seriesList} onCreate={handleCreate} />
-                </>
-              )}
-            </section>
-          ) : (
-            <div className="empty">
-              <div className="empty__title">クライアントを選択してください</div>
-              左のリストからクライアントを選んでください。
-            </div>
+                {activeTab === "タスク" && (
+                  <>
+                    {loading ? (
+                      <div className="status-line">読み込み中…</div>
+                    ) : (
+                      <TaskTable
+                        tasks={tasks}
+                        seriesNameByCode={seriesNameByCode}
+                        frameNameByCode={frameNameByCode}
+                        seriesGroupByCode={seriesGroupByCode}
+                        selectedTaskKey={selectedTaskCombinedKey}
+                        onSelect={selectTask}
+                      />
+                    )}
+
+                    <NewTaskForm seriesList={seriesList} onCreate={handleCreate} />
+                  </>
+                )}
+              </section>
+            ) : (
+              <div className="empty">
+                <div className="empty__title">クライアントを選択してください</div>
+                左のリストからクライアントを選んでください。
+              </div>
+            )}
+          </main>
+
+          {selectedTask && (
+            <TaskDetailPanel
+              task={selectedTask}
+              seriesNameByCode={seriesNameByCode}
+              frameNameByCode={frameNameByCode}
+              onUpdate={handleUpdate}
+              onClose={() => setSelectedTaskKey(null)}
+            />
           )}
-        </main>
-
-        {selectedTask && (
-          <TaskDetailPanel
-            task={selectedTask}
-            seriesNameByCode={seriesNameByCode}
-            frameNameByCode={frameNameByCode}
-            onUpdate={handleUpdate}
-            onClose={() => setSelectedTaskKey(null)}
-          />
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

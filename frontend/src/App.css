@@ -14,12 +14,81 @@
   margin-bottom: 36px;
 }
 
+.header__left {
+  position: relative;
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+
 .header__title {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 28px;
   letter-spacing: 0.08em;
   margin: 0;
+}
+
+.hamburger {
+  align-self: center;
+  background: none;
+  border: 1px solid var(--ink-soft);
+  border-radius: 4px;
+  color: var(--ink);
+  font-size: 18px;
+  line-height: 1;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+.hamburger:hover {
+  border-color: var(--ink);
+}
+
+.nav-menu__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+}
+
+.nav-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  min-width: 180px;
+  background: var(--panel);
+  border: 1px solid var(--paper-line);
+  border-radius: 6px;
+  box-shadow: 0 4px 16px rgba(31, 36, 33, 0.12);
+  overflow: hidden;
+}
+
+.nav-menu__item {
+  text-align: left;
+  background: none;
+  border: none;
+  border-bottom: 1px solid var(--paper-line);
+  padding: 12px 16px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.nav-menu__item:last-child {
+  border-bottom: none;
+}
+
+.nav-menu__item:hover {
+  background: var(--gold-soft);
+}
+
+.nav-menu__item--active {
+  color: var(--seal-green);
+  font-weight: 500;
 }
 
 .header__meta {
@@ -454,6 +523,39 @@
 
 .progress__cell--selected {
   background: var(--seal-green-soft);
+}
+
+/* ---------- Simple master data list (Clients / Series / Frames pages) ---------- */
+.simple-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.simple-table th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--ink);
+  padding: 0 10px 8px;
+}
+
+.simple-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--paper-line);
+}
+
+.simple-table tr:last-child td {
+  border-bottom: none;
+}
+
+.simple-table__code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-soft);
 }
 
 /* ---------- Status hanko (signature element) ---------- */
