@@ -3,6 +3,7 @@ import { signOut } from "aws-amplify/auth";
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { ClientSidebar } from "./ClientSidebar";
 import { TaskTable } from "./TaskTable";
+import { ProgressTable } from "./ProgressTable";
 import { TaskDetailPanel } from "./TaskDetailPanel";
 import { NewTaskForm } from "./NewTaskForm";
 import { api } from "./api";
@@ -173,6 +174,17 @@ export default function App() {
                   </button>
                 ))}
               </div>
+
+              {activeTab === "進捗" &&
+                (loading ? (
+                  <div className="status-line">読み込み中…</div>
+                ) : (
+                  <ProgressTable
+                    tasks={tasks}
+                    seriesNameByCode={seriesNameByCode}
+                    frameNameByCode={frameNameByCode}
+                  />
+                ))}
 
               {activeTab === "タスク" && (
                 <>
