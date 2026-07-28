@@ -22,7 +22,6 @@ export function NewTaskForm({ seriesList, onCreate }) {
   return (
     <form className="new-task" onSubmit={submit}>
       <div className="field">
-        <label htmlFor="series-code">シリーズ</label>
         <select
           id="series-code"
           value={seriesCode}
