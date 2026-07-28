@@ -33,14 +33,14 @@ export function NewTaskForm({ seriesList, onCreate }) {
           </option>
           {seriesList.map((s) => (
             <option key={s.seriesCode} value={s.seriesCode}>
-              {s.seriesName}({s.seriesCode})
+              {s.taskGroup} {s.seriesName}
             </option>
           ))}
         </select>
       </div>
 
       <button className="btn btn--primary" type="submit" disabled={submitting}>
-        {submitting ? "登録中…" : "登録済み全フレーム分のタスクを追加"}
+        {submitting ? "登録中…" : "全月分のタスクを追加"}
       </button>
     </form>
   );
