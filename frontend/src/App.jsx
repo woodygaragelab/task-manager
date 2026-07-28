@@ -9,6 +9,7 @@ import { api } from "./api";
 import "./App.css";
 
 const POLL_INTERVAL_MS = 4000;
+const TABS = ["進捗", "タスク", "エージェント"];
 
 export default function App() {
   const { user } = useAuthenticator((ctx) => [ctx.user]);
@@ -20,6 +21,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [lastSynced, setLastSynced] = useState(null);
   const [selectedTaskKey, setSelectedTaskKey] = useState(null); // {seriesCode, frameCode} | null
+  const [activeTab, setActiveTab] = useState("タスク");
 
   const refreshMasters = useCallback(async () => {
     try {
@@ -157,27 +159,46 @@ export default function App() {
                 )}
               </div>
 
-              {loading ? (
-                <div className="status-line">読み込み中…</div>
-              ) : (
-                <TaskTable
-                  tasks={tasks}
-                  seriesNameByCode={seriesNameByCode}
-                  frameNameByCode={frameNameByCode}
-                  selectedTaskKey={
-                    selectedTaskKey &&
-                    `${selectedTaskKey.seriesCode}#${selectedTaskKey.frameCode}`
-                  }
-                  onSelect={(task) =>
-                    setSelectedTaskKey({
-                      seriesCode: task.seriesCode,
-                      frameCode: task.frameCode,
-                    })
-                  }
-                />
-              )}
+              <div className="tabs">
+                {TABS.map((tab) => (
+                  <button
+                    key={tab}
+                    type="button"
+                    className={
+                      "tabs__tab" + (activeTab === tab ? " tabs__tab--active" : "")
+                    }
+                    onClick={() => setActiveTab(tab)}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
 
-              <NewTaskForm seriesList={seriesList} onCreate={handleCreate} />
+              {activeTab === "タスク" && (
+                <>
+                  {loading ? (
+                    <div className="status-line">読み込み中…</div>
+                  ) : (
+                    <TaskTable
+                      tasks={tasks}
+                      seriesNameByCode={seriesNameByCode}
+                      frameNameByCode={frameNameByCode}
+                      selectedTaskKey={
+                        selectedTaskKey &&
+                        `${selectedTaskKey.seriesCode}#${selectedTaskKey.frameCode}`
+                      }
+                      onSelect={(task) =>
+                        setSelectedTaskKey({
+                          seriesCode: task.seriesCode,
+                          frameCode: task.frameCode,
+                        })
+                      }
+                    />
+                  )}
+
+                  <NewTaskForm seriesList={seriesList} onCreate={handleCreate} />
+                </>
+              )}
             </section>
           ) : (
             <div className="empty">

@@ -279,6 +279,36 @@
   letter-spacing: 0.1em;
 }
 
+/* ---------- Panel tabs ---------- */
+.tabs {
+  display: flex;
+  gap: 4px;
+  border-bottom: 1px solid var(--paper-line);
+  margin-bottom: 20px;
+}
+
+.tabs__tab {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink-soft);
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 8px 16px;
+  margin-bottom: -1px;
+  cursor: pointer;
+}
+
+.tabs__tab:hover {
+  color: var(--ink);
+}
+
+.tabs__tab--active {
+  color: var(--seal-green);
+  border-bottom-color: var(--seal-green);
+}
+
 .btn {
   font-family: var(--font-body);
   font-size: 14px;
