@@ -26,7 +26,7 @@ export default function App() {
   const [error, setError] = useState(null);
   const [lastSynced, setLastSynced] = useState(null);
   const [selectedTaskKey, setSelectedTaskKey] = useState(null); // {seriesCode, frameCode} | null
-  const [activeTab, setActiveTab] = useState("タスク");
+  const [activeTab, setActiveTab] = useState("進捗");
   const [menuOpen, setMenuOpen] = useState(false);
   const [currentView, setCurrentView] = useState("進捗"); // 進捗 | クライアント | タスクシリーズ | フレーム
 
