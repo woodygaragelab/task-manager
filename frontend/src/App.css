@@ -758,6 +758,15 @@
   flex: 1 1 220px;
 }
 
+.history__toolbar {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.history__file-input {
+  display: none;
+}
+
 /* ---------- New task form ---------- */
 .new-task {
   margin-top: 24px;

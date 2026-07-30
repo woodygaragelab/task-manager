@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { StatusSelect } from "./StatusSelect";
 
@@ -10,12 +10,58 @@ const emptyDraft = () => ({
   content: "",
 });
 
+// クォート囲み・エスケープ("")・改行を含むフィールドに対応した最小限のCSVパーサー。
+function parseCsv(text) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let inQuotes = false;
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += ch;
+      }
+      continue;
+    }
+    if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ",") {
+      row.push(field);
+      field = "";
+    } else if (ch === "\r") {
+      // 無視(\r\nの\nで改行処理する)
+    } else if (ch === "\n") {
+      row.push(field);
+      rows.push(row);
+      row = [];
+      field = "";
+    } else {
+      field += ch;
+    }
+  }
+  row.push(field);
+  if (row.length > 1 || row[0] !== "") rows.push(row);
+
+  return rows.filter((r) => r.some((cell) => cell.trim() !== ""));
+}
+
 export function HistoryPanel({ clientCode }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [draft, setDraft] = useState(emptyDraft);
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef(null);
 
   const load = async () => {
     setError(null);
@@ -68,6 +114,36 @@ export function HistoryPanel({ clientCode }) {
     }
   };
 
+  const handleCsvSelected = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = ""; // 同じファイルを連続で選び直せるようにする
+    if (!file) return;
+
+    const text = await file.text();
+    const rows = parseCsv(text);
+    if (rows.length === 0) return;
+
+    setUploading(true);
+    setError(null);
+    try {
+      for (const row of rows) {
+        await api.createHistoryEntry(clientCode, {
+          date: "",
+          category: "",
+          assignee: "",
+          status: "",
+          content: row.map((cell) => cell.trim()).join(" "),
+        });
+      }
+      await load();
+    } catch (err) {
+      setError(err.message);
+      await load();
+    } finally {
+      setUploading(false);
+    }
+  };
+
   const handleDelete = async (historyId) => {
     setEntries((prev) => prev.filter((it) => it.historyId !== historyId));
     try {
@@ -83,6 +159,25 @@ export function HistoryPanel({ clientCode }) {
   return (
     <div className="history">
       {error && <div className="error-banner">{error}</div>}
+
+      <div className="history__toolbar">
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept=".csv,text/csv"
+          className="history__file-input"
+          onChange={handleCsvSelected}
+          disabled={uploading}
+        />
+        <button
+          type="button"
+          className="btn btn--ghost"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+        >
+          {uploading ? "アップロード中…" : "CSVアップロード"}
+        </button>
+      </div>
 
       {entries.length === 0 ? (
         <div className="empty">
