@@ -82,7 +82,7 @@ Resources:
           KeyType: RANGE
 
   # ------------------------------------------------------------------
-  # 5. History table (client task history log)
+  # 5. History table (client task history log; one item per history entry)
   # ------------------------------------------------------------------
   HistoryTable:
     Type: AWS::DynamoDB::Table
@@ -92,9 +92,13 @@ Resources:
       AttributeDefinitions:
         - AttributeName: clientCode
           AttributeType: S
+        - AttributeName: historyId
+          AttributeType: S
       KeySchema:
         - AttributeName: clientCode
           KeyType: HASH
+        - AttributeName: historyId
+          KeyType: RANGE
 
 Outputs:
   TasksTableName:

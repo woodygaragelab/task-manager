@@ -244,12 +244,24 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /clients/{clientCode}/history
             Method: get
-        UpdateHistory:
+        CreateHistoryEntry:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
             Path: /clients/{clientCode}/history
-            Method: put
+            Method: post
+        UpdateHistoryEntry:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /clients/{clientCode}/history/{historyId}
+            Method: patch
+        DeleteHistoryEntry:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /clients/{clientCode}/history/{historyId}
+            Method: delete
 
 Outputs:
   TaskMcpFunctionUrl:

@@ -150,15 +150,42 @@ def handler(event, context):
 
         # ---- GET /clients/{clientCode}/history ----
         if route_key == "GET /clients/{clientCode}/history":
-            return _response(200, repo.get_history(client_code=path_params["clientCode"]))
+            return _response(200, repo.list_history(client_code=path_params["clientCode"]))
 
-        # ---- PUT /clients/{clientCode}/history ----
-        if route_key == "PUT /clients/{clientCode}/history":
-            item = repo.update_history(
+        # ---- POST /clients/{clientCode}/history ----
+        if route_key == "POST /clients/{clientCode}/history":
+            if "date" not in body:
+                return _error(400, "date は必須です")
+            item = repo.create_history_entry(
                 client_code=path_params["clientCode"],
-                history=body.get("history", ""),
+                date=body["date"],
+                category=body.get("category", ""),
+                assignee=body.get("assignee", ""),
+                status=body.get("status", ""),
+                content=body.get("content", ""),
+            )
+            return _response(201, item)
+
+        # ---- PATCH /clients/{clientCode}/history/{historyId} ----
+        if route_key == "PATCH /clients/{clientCode}/history/{historyId}":
+            item = repo.update_history_entry(
+                client_code=path_params["clientCode"],
+                history_id=path_params["historyId"],
+                date=body.get("date"),
+                category=body.get("category"),
+                assignee=body.get("assignee"),
+                status=body.get("status"),
+                content=body.get("content"),
             )
             return _response(200, item)
+
+        # ---- DELETE /clients/{clientCode}/history/{historyId} ----
+        if route_key == "DELETE /clients/{clientCode}/history/{historyId}":
+            repo.delete_history_entry(
+                client_code=path_params["clientCode"],
+                history_id=path_params["historyId"],
+            )
+            return _response(200, {"historyId": path_params["historyId"]})
 
         return _error(404, f"未対応のルートです: {method} {event.get('rawPath', '')}")
 
@@ -169,6 +196,8 @@ def handler(event, context):
     except repo.FrameAlreadyExistsError as e:
         return _error(409, str(e))
     except repo.TaskNotFoundError as e:
+        return _error(404, str(e))
+    except repo.HistoryEntryNotFoundError as e:
         return _error(404, str(e))
     except (KeyError, ValueError) as e:
         return _error(400, f"リクエストの形式が不正です: {e}")

@@ -78,12 +78,24 @@ export const api = {
       { method: "PATCH", body: patch }
     ),
 
-  getHistory: (clientCode) =>
+  listHistory: (clientCode) =>
     request(`/clients/${encodeURIComponent(clientCode)}/history`),
 
-  updateHistory: (clientCode, history) =>
+  createHistoryEntry: (clientCode, entry) =>
     request(`/clients/${encodeURIComponent(clientCode)}/history`, {
-      method: "PUT",
-      body: { history },
+      method: "POST",
+      body: entry,
     }),
+
+  updateHistoryEntry: (clientCode, historyId, patch) =>
+    request(
+      `/clients/${encodeURIComponent(clientCode)}/history/${encodeURIComponent(historyId)}`,
+      { method: "PATCH", body: patch }
+    ),
+
+  deleteHistoryEntry: (clientCode, historyId) =>
+    request(
+      `/clients/${encodeURIComponent(clientCode)}/history/${encodeURIComponent(historyId)}`,
+      { method: "DELETE" }
+    ),
 };

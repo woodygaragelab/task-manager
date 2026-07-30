@@ -15,6 +15,7 @@ MCPツールのデコレータや Web API のルーティングには一切依�
 """
 
 import os
+import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -47,6 +48,10 @@ class SeriesAlreadyExistsError(Exception):
 
 class FrameAlreadyExistsError(Exception):
     """create_frameで既に登録済みのframeCodeを指定した場合に送出する。"""
+
+
+class HistoryEntryNotFoundError(Exception):
+    """指定された履歴エントリ(clientCode+historyId)が存在しない場合に送出する。"""
 
 
 # ----------------------------------------------------------------------
@@ -298,21 +303,88 @@ def list_tasks_by_client(client_code: str) -> list[dict]:
     return resp.get("Items", [])
 
 
-def get_history(client_code: str) -> dict:
-    """指定クライアントの履歴メモを取得する(未登録の場合は空文字を返す)。"""
-    resp = history_table.get_item(Key={"clientCode": client_code})
-    item = resp.get("Item")
-    if not item:
-        return {"clientCode": client_code, "history": ""}
-    return item
+def list_history(client_code: str) -> list[dict]:
+    """指定クライアントの履歴エントリを一覧取得する(日付降順)。"""
+    resp = history_table.query(KeyConditionExpression=Key("clientCode").eq(client_code))
+    items = resp.get("Items", [])
+    items.sort(key=lambda i: (i.get("date") or "", i.get("createdAt") or ""), reverse=True)
+    return items
 
 
-def update_history(client_code: str, history: str) -> dict:
-    """指定クライアントの履歴メモを作成・更新する(全文を丸ごと置き換える)。"""
+def create_history_entry(
+    client_code: str,
+    date: str,
+    category: str = "",
+    assignee: str = "",
+    status: str = "",
+    content: str = "",
+) -> dict:
+    """クライアントの履歴エントリを1件追加する(日付・分類・担当者・ステータス・内容を持つ)。"""
+    now = _now()
     item = {
         "clientCode": client_code,
-        "history": history,
-        "updatedAt": _now(),
+        "historyId": str(uuid.uuid4()),
+        "date": date,
+        "category": category,
+        "assignee": assignee,
+        "status": status,
+        "content": content,
+        "createdAt": now,
+        "updatedAt": now,
     }
     history_table.put_item(Item=item)
     return item
+
+
+def update_history_entry(
+    client_code: str,
+    history_id: str,
+    date: Optional[str] = None,
+    category: Optional[str] = None,
+    assignee: Optional[str] = None,
+    status: Optional[str] = None,
+    content: Optional[str] = None,
+) -> dict:
+    """既存の履歴エントリを更新する(指定した項目のみ変更)。"""
+    key = {"clientCode": client_code, "historyId": history_id}
+    resp = history_table.get_item(Key=key)
+    if not resp.get("Item"):
+        raise HistoryEntryNotFoundError(
+            f"履歴エントリ(clientCode={client_code}, historyId={history_id}) が見つかりません"
+        )
+
+    update_expr = ["#u = :now"]
+    expr_names = {"#u": "updatedAt"}
+    expr_values = {":now": _now()}
+
+    if date is not None:
+        update_expr.append("#d = :date")
+        expr_names["#d"] = "date"
+        expr_values[":date"] = date
+    if category is not None:
+        update_expr.append("category = :category")
+        expr_values[":category"] = category
+    if assignee is not None:
+        update_expr.append("assignee = :assignee")
+        expr_values[":assignee"] = assignee
+    if status is not None:
+        update_expr.append("#s = :status")
+        expr_names["#s"] = "status"
+        expr_values[":status"] = status
+    if content is not None:
+        update_expr.append("content = :content")
+        expr_values[":content"] = content
+
+    resp = history_table.update_item(
+        Key=key,
+        UpdateExpression="SET " + ", ".join(update_expr),
+        ExpressionAttributeNames=expr_names,
+        ExpressionAttributeValues=expr_values,
+        ReturnValues="ALL_NEW",
+    )
+    return resp["Attributes"]
+
+
+def delete_history_entry(client_code: str, history_id: str) -> None:
+    """履歴エントリを削除する。"""
+    history_table.delete_item(Key={"clientCode": client_code, "historyId": history_id})

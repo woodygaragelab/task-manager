@@ -1,24 +1,38 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
+import { StatusSelect } from "./StatusSelect";
+
+const emptyDraft = () => ({
+  date: new Date().toISOString().slice(0, 10),
+  category: "",
+  assignee: "",
+  status: "未着手",
+  content: "",
+});
 
 export function HistoryPanel({ clientCode }) {
-  const [history, setHistory] = useState("");
+  const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [dirty, setDirty] = useState(false);
   const [error, setError] = useState(null);
+  const [draft, setDraft] = useState(emptyDraft);
+  const [submitting, setSubmitting] = useState(false);
+
+  const load = async () => {
+    setError(null);
+    try {
+      const items = await api.listHistory(clientCode);
+      setEntries(items);
+    } catch (e) {
+      setError(e.message);
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
-    setError(null);
     api
-      .getHistory(clientCode)
-      .then((item) => {
-        if (cancelled) return;
-        setHistory(item.history ?? "");
-        setDirty(false);
-      })
+      .listHistory(clientCode)
+      .then((items) => !cancelled && setEntries(items))
       .catch((e) => !cancelled && setError(e.message))
       .finally(() => !cancelled && setLoading(false));
     return () => {
@@ -26,16 +40,41 @@ export function HistoryPanel({ clientCode }) {
     };
   }, [clientCode]);
 
-  const handleSave = async () => {
-    setSaving(true);
+  const handleAdd = async (e) => {
+    e.preventDefault();
+    if (!draft.date) return;
+    setSubmitting(true);
     setError(null);
     try {
-      await api.updateHistory(clientCode, history);
-      setDirty(false);
-    } catch (e) {
-      setError(e.message);
+      await api.createHistoryEntry(clientCode, draft);
+      setDraft(emptyDraft());
+      await load();
+    } catch (err) {
+      setError(err.message);
     } finally {
-      setSaving(false);
+      setSubmitting(false);
+    }
+  };
+
+  const handleFieldCommit = async (historyId, patch) => {
+    setEntries((prev) =>
+      prev.map((it) => (it.historyId === historyId ? { ...it, ...patch } : it))
+    );
+    try {
+      await api.updateHistoryEntry(clientCode, historyId, patch);
+    } catch (err) {
+      setError(err.message);
+      await load();
+    }
+  };
+
+  const handleDelete = async (historyId) => {
+    setEntries((prev) => prev.filter((it) => it.historyId !== historyId));
+    try {
+      await api.deleteHistoryEntry(clientCode, historyId);
+    } catch (err) {
+      setError(err.message);
+      await load();
     }
   };
 
@@ -44,26 +83,140 @@ export function HistoryPanel({ clientCode }) {
   return (
     <div className="history">
       {error && <div className="error-banner">{error}</div>}
-      <textarea
-        className="history__textarea"
-        value={history}
-        onChange={(e) => {
-          setHistory(e.target.value);
-          setDirty(true);
-        }}
-        placeholder="このクライアントに関する履歴・引き継ぎ事項などを記録してください"
-      />
-      <div className="history__actions">
-        {dirty && <span className="status-line">未保存の変更があります</span>}
-        <button
-          type="button"
-          className="btn btn--primary"
-          onClick={handleSave}
-          disabled={!dirty || saving}
-        >
-          {saving ? "保存中…" : "保存"}
+
+      {entries.length === 0 ? (
+        <div className="empty">
+          <div className="empty__title">履歴はまだありません</div>
+          下のフォームから最初の履歴を追加してください。
+        </div>
+      ) : (
+        <table className="history__table">
+          <thead>
+            <tr>
+              <th style={{ width: 130 }}>日付</th>
+              <th style={{ width: 120 }}>分類</th>
+              <th style={{ width: 100 }}>担当者</th>
+              <th style={{ width: 110 }}>ステータス</th>
+              <th>内容</th>
+              <th style={{ width: 60 }}></th>
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map((entry) => (
+              <tr key={entry.historyId}>
+                <td data-label="日付">
+                  <input
+                    type="date"
+                    className="history__input"
+                    defaultValue={entry.date ?? ""}
+                    key={`date-${entry.historyId}`}
+                    onBlur={(e) => {
+                      if (e.target.value !== (entry.date ?? "")) {
+                        handleFieldCommit(entry.historyId, { date: e.target.value });
+                      }
+                    }}
+                  />
+                </td>
+                <td data-label="分類">
+                  <input
+                    className="history__input"
+                    defaultValue={entry.category ?? ""}
+                    key={`category-${entry.historyId}`}
+                    onBlur={(e) => {
+                      if (e.target.value !== (entry.category ?? "")) {
+                        handleFieldCommit(entry.historyId, { category: e.target.value });
+                      }
+                    }}
+                  />
+                </td>
+                <td data-label="担当者">
+                  <input
+                    className="history__input"
+                    defaultValue={entry.assignee ?? ""}
+                    key={`assignee-${entry.historyId}`}
+                    onBlur={(e) => {
+                      if (e.target.value !== (entry.assignee ?? "")) {
+                        handleFieldCommit(entry.historyId, { assignee: e.target.value });
+                      }
+                    }}
+                  />
+                </td>
+                <td data-label="ステータス">
+                  <StatusSelect
+                    status={entry.status}
+                    onChange={(status) => handleFieldCommit(entry.historyId, { status })}
+                  />
+                </td>
+                <td data-label="内容">
+                  <input
+                    className="history__input"
+                    defaultValue={entry.content ?? ""}
+                    key={`content-${entry.historyId}`}
+                    onBlur={(e) => {
+                      if (e.target.value !== (entry.content ?? "")) {
+                        handleFieldCommit(entry.historyId, { content: e.target.value });
+                      }
+                    }}
+                  />
+                </td>
+                <td data-label="">
+                  <button
+                    type="button"
+                    className="btn btn--ghost history__delete"
+                    onClick={() => handleDelete(entry.historyId)}
+                  >
+                    削除
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      <form className="history__new" onSubmit={handleAdd}>
+        <div className="field">
+          <label>日付</label>
+          <input
+            type="date"
+            value={draft.date}
+            onChange={(e) => setDraft({ ...draft, date: e.target.value })}
+            required
+          />
+        </div>
+        <div className="field">
+          <label>分類</label>
+          <input
+            value={draft.category}
+            onChange={(e) => setDraft({ ...draft, category: e.target.value })}
+          />
+        </div>
+        <div className="field">
+          <label>担当者</label>
+          <input
+            value={draft.assignee}
+            onChange={(e) => setDraft({ ...draft, assignee: e.target.value })}
+          />
+        </div>
+        <div className="field">
+          <label>ステータス</label>
+          <StatusSelect
+            status={draft.status}
+            onChange={(status) => setDraft({ ...draft, status })}
+          />
+        </div>
+        <div className="field field--grow">
+          <label>内容</label>
+          <input
+            value={draft.content}
+            onChange={(e) => setDraft({ ...draft, content: e.target.value })}
+            placeholder="履歴・引き継ぎ事項などを記録してください"
+          />
+        </div>
+        <button className="btn btn--primary" type="submit" disabled={submitting}>
+          {submitting ? "追加中…" : "履歴を追加"}
         </button>
-      </div>
+      </form>
     </div>
   );
 }

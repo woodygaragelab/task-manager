@@ -693,28 +693,69 @@
 .history {
   display: flex;
   flex-direction: column;
-  gap: 12px;
+  gap: 20px;
 }
 
-.history__textarea {
+.history__table {
   width: 100%;
-  min-height: 60vh;
-  resize: vertical;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.history__table th {
+  text-align: left;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  border-bottom: 1px solid var(--ink);
+  padding: 0 10px 8px;
+}
+
+.history__table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--paper-line);
+  vertical-align: middle;
+}
+
+.history__table tr:last-child td {
+  border-bottom: none;
+}
+
+.history__input {
+  width: 100%;
   font-family: var(--font-body);
   font-size: 14px;
-  line-height: 1.6;
-  padding: 16px;
-  border: 1px solid var(--paper-line);
+  padding: 6px 8px;
+  border: 1px solid transparent;
   border-radius: 4px;
-  background: var(--paper);
+  background: transparent;
   color: var(--ink);
 }
 
-.history__actions {
+.history__input:hover,
+.history__input:focus {
+  border-color: var(--paper-line);
+  background: var(--paper);
+}
+
+.history__delete {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.history__new {
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 12px;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px dashed var(--paper-line);
+}
+
+.history__new .field--grow {
+  flex: 1 1 220px;
 }
 
 /* ---------- New task form ---------- */
@@ -802,5 +843,32 @@
     font-size: 10px;
     color: var(--ink-soft);
     flex-shrink: 0;
+  }
+  .history__table thead {
+    display: none;
+  }
+  .history__table tr {
+    display: block;
+    padding: 10px 0;
+    border-bottom: 1px solid var(--paper-line);
+  }
+  .history__table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    border-bottom: none;
+    padding: 4px 0;
+  }
+  .history__table td::before {
+    content: attr(data-label);
+    font-family: var(--font-mono);
+    font-size: 10px;
+    color: var(--ink-soft);
+    flex-shrink: 0;
+  }
+  .history__new {
+    flex-direction: column;
+    align-items: stretch;
   }
 }

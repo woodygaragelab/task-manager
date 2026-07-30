@@ -8,7 +8,9 @@
       "Bash(npm root *)",
       "Bash(npm init *)",
       "Bash(npm install *)",
-      "Bash(netstat -ano)"
+      "Bash(netstat -ano)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('layer/python/task_repository.py', encoding='utf-8'\\).read\\(\\)\\)\")",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('api_src/app.py', encoding='utf-8'\\).read\\(\\)\\)\")"
     ]
   }
 }
