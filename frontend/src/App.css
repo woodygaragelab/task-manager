@@ -21,12 +21,25 @@
   gap: 14px;
 }
 
+.header__title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .header__title {
   font-family: var(--font-display);
   font-weight: 700;
   font-size: 28px;
   letter-spacing: 0.08em;
   margin: 0;
+}
+
+.header__subtitle {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+  letter-spacing: 0.08em;
 }
 
 .hamburger {

@@ -154,7 +154,10 @@ export default function App() {
           >
             ☰
           </button>
-          <h1 className="header__title">税理士業務タスク管理</h1>
+          <div className="header__title-group">
+            <h1 className="header__title">Amorphous Console</h1>
+            <div className="header__subtitle">税理士タスク管理</div>
+          </div>
           <NavMenu
             open={menuOpen}
             currentView={currentView}
