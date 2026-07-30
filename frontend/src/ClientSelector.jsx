@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 
-export function ClientSelector({ selectedClientCode, onSelect }) {
+export function ClientSelector({ selectedClientCode, onSelect, variant = "header" }) {
   const [clients, setClients] = useState([]);
   const [error, setError] = useState(null);
   const [open, setOpen] = useState(false);
@@ -28,13 +28,15 @@ export function ClientSelector({ selectedClientCode, onSelect }) {
   };
 
   return (
-    <div className="client-selector" ref={ref}>
+    <div className={`client-selector client-selector--${variant}`} ref={ref}>
       <button
         type="button"
         className="client-selector__trigger"
         onClick={() => setOpen((o) => !o)}
       >
-        <span className="client-selector__eyebrow">クライアント</span>
+        {variant === "header" && (
+          <span className="client-selector__eyebrow">クライアント</span>
+        )}
         <span className="client-selector__name">
           {selectedClient
             ? `${selectedClient.clientName}(${selectedClient.clientCode})`

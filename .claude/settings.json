@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm ls *)",
+      "Bash(npx --no-install playwright --version)",
+      "Bash(mkdir -p screenshots)",
+      "Bash(NODE_PATH=\"c:\\\\Users\\\\woody\\\\0woodyprojects\\\\taskmanager\\\\frontend\\\\node_modules\" node preview.mjs)",
+      "Bash(npm root *)",
+      "Bash(npm init *)",
+      "Bash(npm install *)",
+      "Bash(netstat -ano)"
+    ]
+  }
+}

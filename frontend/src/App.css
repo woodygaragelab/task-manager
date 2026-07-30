@@ -120,6 +120,27 @@
   border-color: var(--ink);
 }
 
+/* ---------- Client selector (panel title variant) ---------- */
+.client-selector--panel .client-selector__trigger {
+  flex-direction: row;
+  align-items: baseline;
+  gap: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+.client-selector--panel .client-selector__trigger:hover .client-selector__name {
+  color: var(--seal-green);
+}
+
+.client-selector--panel .client-selector__name {
+  font-size: 20px;
+}
+
 .client-selector__eyebrow {
   font-family: var(--font-mono);
   font-size: 10px;

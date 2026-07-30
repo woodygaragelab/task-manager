@@ -166,10 +166,6 @@ export default function App() {
           />
         </div>
 
-        {currentView === "進捗" && (
-          <ClientSelector selectedClientCode={client?.clientCode} onSelect={setClient} />
-        )}
-
         <div className="header__meta">
           {user?.signInDetails?.loginId ?? user?.username}
           <br />
@@ -192,57 +188,45 @@ export default function App() {
       {currentView === "進捗" && (
         <div className="layout">
           <main className="main">
-            {client ? (
-              <section className="panel">
-                <div className="panel__header">
-                  <h2 className="panel__title">
-                    <span className="panel__title-eyebrow">クライアント</span>
-                    {client.clientName}({client.clientCode})
-                  </h2>
-                  {lastSynced && (
-                    <span className="status-line">
-                      最終同期 {lastSynced.toLocaleTimeString("ja-JP")}
-                    </span>
-                  )}
-                </div>
+            <section className="panel">
+              <div className="panel__header">
+                <h2 className="panel__title">
+                  <span className="panel__title-eyebrow">クライアント</span>
+                  <ClientSelector
+                    variant="panel"
+                    selectedClientCode={client?.clientCode}
+                    onSelect={setClient}
+                  />
+                </h2>
+                {client && lastSynced && (
+                  <span className="status-line">
+                    最終同期 {lastSynced.toLocaleTimeString("ja-JP")}
+                  </span>
+                )}
+              </div>
 
-                <div className="tabs">
-                  {TABS.map((tab) => (
-                    <button
-                      key={tab}
-                      type="button"
-                      className={
-                        "tabs__tab" + (activeTab === tab ? " tabs__tab--active" : "")
-                      }
-                      onClick={() => setActiveTab(tab)}
-                    >
-                      {tab}
-                    </button>
-                  ))}
-                </div>
+              {client ? (
+                <>
+                  <div className="tabs">
+                    {TABS.map((tab) => (
+                      <button
+                        key={tab}
+                        type="button"
+                        className={
+                          "tabs__tab" + (activeTab === tab ? " tabs__tab--active" : "")
+                        }
+                        onClick={() => setActiveTab(tab)}
+                      >
+                        {tab}
+                      </button>
+                    ))}
+                  </div>
 
-                {activeTab === "進捗" &&
-                  (loading ? (
-                    <div className="status-line">読み込み中…</div>
-                  ) : (
-                    <ProgressTable
-                      tasks={tasks}
-                      seriesNameByCode={seriesNameByCode}
-                      frameNameByCode={frameNameByCode}
-                      seriesGroupByCode={seriesGroupByCode}
-                      selectedTaskKey={selectedTaskCombinedKey}
-                      onSelect={selectTask}
-                    />
-                  ))}
-
-                {activeTab === "履歴" && <HistoryPanel clientCode={client.clientCode} />}
-
-                {activeTab === "タスク" && (
-                  <>
-                    {loading ? (
+                  {activeTab === "進捗" &&
+                    (loading ? (
                       <div className="status-line">読み込み中…</div>
                     ) : (
-                      <TaskTable
+                      <ProgressTable
                         tasks={tasks}
                         seriesNameByCode={seriesNameByCode}
                         frameNameByCode={frameNameByCode}
@@ -250,18 +234,36 @@ export default function App() {
                         selectedTaskKey={selectedTaskCombinedKey}
                         onSelect={selectTask}
                       />
-                    )}
+                    ))}
 
-                    <NewTaskForm seriesList={seriesList} onCreate={handleCreate} />
-                  </>
-                )}
-              </section>
-            ) : (
-              <div className="empty">
-                <div className="empty__title">クライアントを選択してください</div>
-                左のリストからクライアントを選んでください。
-              </div>
-            )}
+                  {activeTab === "履歴" && <HistoryPanel clientCode={client.clientCode} />}
+
+                  {activeTab === "タスク" && (
+                    <>
+                      {loading ? (
+                        <div className="status-line">読み込み中…</div>
+                      ) : (
+                        <TaskTable
+                          tasks={tasks}
+                          seriesNameByCode={seriesNameByCode}
+                          frameNameByCode={frameNameByCode}
+                          seriesGroupByCode={seriesGroupByCode}
+                          selectedTaskKey={selectedTaskCombinedKey}
+                          onSelect={selectTask}
+                        />
+                      )}
+
+                      <NewTaskForm seriesList={seriesList} onCreate={handleCreate} />
+                    </>
+                  )}
+                </>
+              ) : (
+                <div className="empty">
+                  <div className="empty__title">クライアントを選択してください</div>
+                  上のクライアント名をクリックして選択してください。
+                </div>
+              )}
+            </section>
           </main>
 
           {selectedTask && (
