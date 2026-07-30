@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { signOut } from "aws-amplify/auth";
 import { useAuthenticator } from "@aws-amplify/ui-react";
-import { ClientSidebar } from "./ClientSidebar";
+import { ClientSelector } from "./ClientSelector";
 import { TaskTable } from "./TaskTable";
 import { ProgressTable } from "./ProgressTable";
 import { TaskDetailPanel } from "./TaskDetailPanel";
@@ -164,6 +164,11 @@ export default function App() {
             onClose={() => setMenuOpen(false)}
           />
         </div>
+
+        {currentView === "進捗" && (
+          <ClientSelector selectedClientCode={client?.clientCode} onSelect={setClient} />
+        )}
+
         <div className="header__meta">
           {user?.signInDetails?.loginId ?? user?.username}
           <br />
@@ -185,8 +190,6 @@ export default function App() {
 
       {currentView === "進捗" && (
         <div className="layout">
-          <ClientSidebar selectedClientCode={client?.clientCode} onSelect={setClient} />
-
           <main className="main">
             {client ? (
               <section className="panel">
