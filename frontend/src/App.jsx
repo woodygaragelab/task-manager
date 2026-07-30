@@ -16,10 +16,11 @@ import "./App.css";
 
 const POLL_INTERVAL_MS = 4000;
 const TABS = ["進捗", "履歴", "タスク", "エージェント"];
+const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
 
 export default function App() {
   const { user } = useAuthenticator((ctx) => [ctx.user]);
-  const [client, setClient] = useState(null); // {clientCode, clientName} | null
+  const [client, setClient] = useState(DEFAULT_CLIENT); // {clientCode, clientName} | null
   const [tasks, setTasks] = useState([]);
   const [seriesList, setSeriesList] = useState([]);
   const [frameList, setFrameList] = useState([]);
