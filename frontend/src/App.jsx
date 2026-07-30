@@ -5,6 +5,7 @@ import { ClientSelector } from "./ClientSelector";
 import { TaskTable } from "./TaskTable";
 import { ProgressTable } from "./ProgressTable";
 import { TaskDetailPanel } from "./TaskDetailPanel";
+import { HistoryPanel } from "./HistoryPanel";
 import { NewTaskForm } from "./NewTaskForm";
 import { NavMenu } from "./NavMenu";
 import { ClientListPage } from "./ClientListPage";
@@ -14,7 +15,7 @@ import { api } from "./api";
 import "./App.css";
 
 const POLL_INTERVAL_MS = 4000;
-const TABS = ["進捗", "タスク", "エージェント"];
+const TABS = ["進捗", "履歴", "タスク", "エージェント"];
 
 export default function App() {
   const { user } = useAuthenticator((ctx) => [ctx.user]);
@@ -233,6 +234,8 @@ export default function App() {
                       onSelect={selectTask}
                     />
                   ))}
+
+                {activeTab === "履歴" && <HistoryPanel clientCode={client.clientCode} />}
 
                 {activeTab === "タスク" && (
                   <>

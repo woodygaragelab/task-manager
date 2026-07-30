@@ -24,7 +24,7 @@ def _response(status_code: int, body: Any) -> dict:
             # 社内利用のみだが、フロントエンドのオリジンを後で限定する想定でCORSヘッダを用意
             "Access-Control-Allow-Origin": "*",
             "Access-Control-Allow-Headers": "Authorization,Content-Type",
-            "Access-Control-Allow-Methods": "GET,POST,PATCH,DELETE,OPTIONS",
+            "Access-Control-Allow-Methods": "GET,POST,PUT,PATCH,DELETE,OPTIONS",
         },
         "body": json.dumps(body, ensure_ascii=False, default=str),
     }
@@ -145,6 +145,18 @@ def handler(event, context):
                 status=body.get("status"),
                 assignee=body.get("assignee"),
                 complete_date=body.get("completeDate"),
+            )
+            return _response(200, item)
+
+        # ---- GET /clients/{clientCode}/history ----
+        if route_key == "GET /clients/{clientCode}/history":
+            return _response(200, repo.get_history(client_code=path_params["clientCode"]))
+
+        # ---- PUT /clients/{clientCode}/history ----
+        if route_key == "PUT /clients/{clientCode}/history":
+            item = repo.update_history(
+                client_code=path_params["clientCode"],
+                history=body.get("history", ""),
             )
             return _response(200, item)
 

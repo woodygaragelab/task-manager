@@ -2,7 +2,7 @@ AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
   Task management system - FastMCP Lambda (Streamable HTTP) + Web API (Cognito-authenticated).
-  DynamoDB tables (Tasks/TaskClients/TaskSeries/TaskFrames) are deployed separately via
+  DynamoDB tables (Tasks/TaskClients/TaskSeries/TaskFrames/TaskHistory) are deployed separately via
   tables.yaml and referenced here by their fixed table names.
 
 Parameters:
@@ -54,6 +54,7 @@ Resources:
           CLIENTS_TABLE: TaskClients
           SERIES_TABLE: TaskSeries
           FRAMES_TABLE: TaskFrames
+          HISTORY_TABLE: TaskHistory
           MCP_AUTH_TOKEN: !Ref McpAuthToken
       Policies:
         - DynamoDBCrudPolicy:
@@ -64,6 +65,8 @@ Resources:
             TableName: TaskSeries
         - DynamoDBCrudPolicy:
             TableName: TaskFrames
+        - DynamoDBCrudPolicy:
+            TableName: TaskHistory
       FunctionUrlConfig:
         AuthType: NONE
         InvokeMode: BUFFERED
@@ -122,6 +125,7 @@ Resources:
         AllowMethods:
           - GET
           - POST
+          - PUT
           - PATCH
           - DELETE
           - OPTIONS
@@ -143,6 +147,7 @@ Resources:
           CLIENTS_TABLE: TaskClients
           SERIES_TABLE: TaskSeries
           FRAMES_TABLE: TaskFrames
+          HISTORY_TABLE: TaskHistory
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Tasks
@@ -152,6 +157,8 @@ Resources:
             TableName: TaskSeries
         - DynamoDBCrudPolicy:
             TableName: TaskFrames
+        - DynamoDBCrudPolicy:
+            TableName: TaskHistory
       Events:
         ListClients:
           Type: HttpApi
@@ -231,6 +238,18 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /tasks/{clientCode}/{seriesCode}/{frameCode}
             Method: patch
+        GetHistory:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /clients/{clientCode}/history
+            Method: get
+        UpdateHistory:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /clients/{clientCode}/history
+            Method: put
 
 Outputs:
   TaskMcpFunctionUrl:

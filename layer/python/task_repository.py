@@ -1,7 +1,7 @@
 """
 task_repository
 ================
-DynamoDB(Tasks / TaskClients / TaskSeries / TaskFrames)に対するCRUDロジックの共通モジュール。
+DynamoDB(Tasks / TaskClients / TaskSeries / TaskFrames / TaskHistory)に対するCRUDロジックの共通モジュール。
 
 task-mcp-server(FastMCP)と task-api(Web API用Lambda)の両方から
 Lambda Layer として import される。ロジックの二重実装を避けるため、
@@ -26,6 +26,7 @@ tasks_table = dynamodb.Table(os.environ["TASKS_TABLE"])
 clients_table = dynamodb.Table(os.environ["CLIENTS_TABLE"])
 series_table = dynamodb.Table(os.environ["SERIES_TABLE"])
 frames_table = dynamodb.Table(os.environ["FRAMES_TABLE"])
+history_table = dynamodb.Table(os.environ["HISTORY_TABLE"])
 
 CLIENT_BUCKET = "CLIENT"
 SERIES_BUCKET = "SERIES"
@@ -295,3 +296,23 @@ def list_tasks_by_client(client_code: str) -> list[dict]:
     """指定したクライアントコード(完全一致)のタスクを、シリーズ内でフレーム順に一覧取得する。"""
     resp = tasks_table.query(KeyConditionExpression=Key("clientCode").eq(client_code))
     return resp.get("Items", [])
+
+
+def get_history(client_code: str) -> dict:
+    """指定クライアントの履歴メモを取得する(未登録の場合は空文字を返す)。"""
+    resp = history_table.get_item(Key={"clientCode": client_code})
+    item = resp.get("Item")
+    if not item:
+        return {"clientCode": client_code, "history": ""}
+    return item
+
+
+def update_history(client_code: str, history: str) -> dict:
+    """指定クライアントの履歴メモを作成・更新する(全文を丸ごと置き換える)。"""
+    item = {
+        "clientCode": client_code,
+        "history": history,
+        "updatedAt": _now(),
+    }
+    history_table.put_item(Item=item)
+    return item

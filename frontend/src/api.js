@@ -77,4 +77,13 @@ export const api = {
       `/tasks/${encodeURIComponent(clientCode)}/${encodeURIComponent(seriesCode)}/${encodeURIComponent(frameCode)}`,
       { method: "PATCH", body: patch }
     ),
+
+  getHistory: (clientCode) =>
+    request(`/clients/${encodeURIComponent(clientCode)}/history`),
+
+  updateHistory: (clientCode, history) =>
+    request(`/clients/${encodeURIComponent(clientCode)}/history`, {
+      method: "PUT",
+      body: { history },
+    }),
 };

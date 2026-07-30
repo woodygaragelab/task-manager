@@ -655,6 +655,34 @@
   margin-bottom: 18px;
 }
 
+/* ---------- History panel ---------- */
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.history__textarea {
+  width: 100%;
+  min-height: 60vh;
+  resize: vertical;
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  padding: 16px;
+  border: 1px solid var(--paper-line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.history__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+}
+
 /* ---------- New task form ---------- */
 .new-task {
   margin-top: 24px;
