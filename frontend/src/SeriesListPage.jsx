@@ -41,21 +41,21 @@ export function SeriesListPage({ seriesList, onRefresh }) {
     <section className="panel">
       <h2 className="panel__title">
         <span className="panel__title-eyebrow">一覧</span>
-        タスクシリーズ
+        タスク
       </h2>
 
       {error && <div className="error-banner">{error}</div>}
 
       {seriesList.length === 0 ? (
         <div className="empty">
-          <div className="empty__title">タスクシリーズがありません</div>
+          <div className="empty__title">タスクがありません</div>
         </div>
       ) : (
         <table className="simple-table">
           <thead>
             <tr>
               <th>分類</th>
-              <th>シリーズ名</th>
+              <th>タスク名</th>
               <th>コード</th>
               <th style={{ width: 80 }}></th>
             </tr>
@@ -83,7 +83,7 @@ export function SeriesListPage({ seriesList, onRefresh }) {
 
       <form className="list-form" onSubmit={create}>
         <div className="field">
-          <label htmlFor="new-series-code">シリーズコード</label>
+          <label htmlFor="new-series-code">コード</label>
           <input
             id="new-series-code"
             value={newCode}
@@ -92,7 +92,7 @@ export function SeriesListPage({ seriesList, onRefresh }) {
           />
         </div>
         <div className="field">
-          <label htmlFor="new-series-name">シリーズ名</label>
+          <label htmlFor="new-series-name">タスク名</label>
           <input
             id="new-series-name"
             value={newName}

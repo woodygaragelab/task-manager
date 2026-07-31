@@ -304,10 +304,10 @@ def list_tasks_by_client(client_code: str) -> list[dict]:
 
 
 def list_history(client_code: str) -> list[dict]:
-    """指定クライアントの履歴エントリを一覧取得する(日付降順)。"""
+    """指定クライアントの履歴エントリを一覧取得する(分類昇順、同一分類内は日付昇順)。"""
     resp = history_table.query(KeyConditionExpression=Key("clientCode").eq(client_code))
     items = resp.get("Items", [])
-    items.sort(key=lambda i: (i.get("date") or "", i.get("createdAt") or ""), reverse=True)
+    items.sort(key=lambda i: (i.get("category") or "", i.get("date") or "", i.get("createdAt") or ""))
     return items
 
 

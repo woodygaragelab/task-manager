@@ -27,7 +27,7 @@ export function FrameListPage({ frameList, onRefresh }) {
   };
 
   const remove = async (frameCode) => {
-    if (!window.confirm(`フレーム「${frameCode}」を削除しますか？`)) return;
+    if (!window.confirm(`月「${frameCode}」を削除しますか？`)) return;
     setError(null);
     try {
       await api.deleteFrame(frameCode);
@@ -41,21 +41,21 @@ export function FrameListPage({ frameList, onRefresh }) {
     <section className="panel">
       <h2 className="panel__title">
         <span className="panel__title-eyebrow">一覧</span>
-        フレーム
+        月
       </h2>
 
       {error && <div className="error-banner">{error}</div>}
 
       {sorted.length === 0 ? (
         <div className="empty">
-          <div className="empty__title">フレームがありません</div>
+          <div className="empty__title">月がありません</div>
         </div>
       ) : (
         <table className="simple-table">
           <thead>
             <tr>
               <th>コード</th>
-              <th>フレーム名</th>
+              <th>月</th>
               <th style={{ width: 80 }}></th>
             </tr>
           </thead>
@@ -81,7 +81,7 @@ export function FrameListPage({ frameList, onRefresh }) {
 
       <form className="list-form" onSubmit={create}>
         <div className="field">
-          <label htmlFor="new-frame-code">フレームコード</label>
+          <label htmlFor="new-frame-code">月コード</label>
           <input
             id="new-frame-code"
             value={newCode}
@@ -91,7 +91,7 @@ export function FrameListPage({ frameList, onRefresh }) {
           />
         </div>
         <div className="field">
-          <label htmlFor="new-frame-name">フレーム名</label>
+          <label htmlFor="new-frame-name">月</label>
           <input
             id="new-frame-name"
             value={newName}
@@ -101,7 +101,7 @@ export function FrameListPage({ frameList, onRefresh }) {
           />
         </div>
         <button className="btn btn--primary" type="submit" disabled={submitting}>
-          {submitting ? "登録中…" : "+ 新規フレーム"}
+          {submitting ? "登録中…" : "+ 新規月"}
         </button>
       </form>
     </section>

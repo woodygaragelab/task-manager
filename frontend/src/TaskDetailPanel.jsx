@@ -41,7 +41,7 @@ export function TaskDetailPanel({ task, seriesNameByCode, frameNameByCode, onUpd
         </div>
 
         <div className="detail__field">
-          <dt>フレーム</dt>
+          <dt>月</dt>
           <dd>
             {frameNameByCode[task.frameCode] ?? task.frameCode}
             <span className="detail__code">{task.frameCode}</span>

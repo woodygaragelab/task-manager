@@ -1,4 +1,9 @@
-const ITEMS = ["進捗", "クライアント", "タスクシリーズ", "フレーム"];
+const ITEMS = [
+  { value: "進捗", label: "ホーム" },
+  { value: "クライアント", label: "クライアント" },
+  { value: "タスクシリーズ", label: "タスク" },
+  { value: "フレーム", label: "月" },
+];
 
 export function NavMenu({ open, currentView, onSelect, onClose }) {
   if (!open) return null;
@@ -9,14 +14,14 @@ export function NavMenu({ open, currentView, onSelect, onClose }) {
       <nav className="nav-menu">
         {ITEMS.map((item) => (
           <button
-            key={item}
+            key={item.value}
             type="button"
             className={
-              "nav-menu__item" + (item === currentView ? " nav-menu__item--active" : "")
+              "nav-menu__item" + (item.value === currentView ? " nav-menu__item--active" : "")
             }
-            onClick={() => onSelect(item)}
+            onClick={() => onSelect(item.value)}
           >
-            {item}
+            {item.label}
           </button>
         ))}
       </nav>
