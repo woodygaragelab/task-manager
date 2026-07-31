@@ -35,6 +35,9 @@ TOOL_FUNCTIONS = [
     repo.get_task,
     repo.create_task,
     repo.update_task,
+    repo.list_history,
+    repo.create_history_entry,
+    repo.update_history_entry,
 ]
 
 
