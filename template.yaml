@@ -49,8 +49,8 @@ Resources:
   TaskMcpFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: task-mcp-server
-      CodeUri: src/
+      FunctionName: taskmanager-mcp
+      CodeUri: mcp_src/
       Handler: app.handler
       Layers:
         - !Ref TaskRepositoryLayer
@@ -86,7 +86,7 @@ Resources:
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-      UserPoolName: task-manager-users
+      UserPoolName: taskmanager-users
       AutoVerifiedAttributes:
         - email
       AdminCreateUserConfig:
@@ -103,7 +103,7 @@ Resources:
     Type: AWS::Cognito::UserPoolClient
     Properties:
       UserPoolId: !Ref UserPool
-      ClientName: task-manager-webapp
+      ClientName: taskmanager-webapp
       GenerateSecret: false
       ExplicitAuthFlows:
         - ALLOW_USER_PASSWORD_AUTH
@@ -145,7 +145,7 @@ Resources:
   TaskApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: task-api
+      FunctionName: taskmanager-api
       CodeUri: api_src/
       Handler: app.handler
       Layers:
@@ -304,7 +304,7 @@ Resources:
   TaskAgentJobProcessorFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: task-agent-job-processor
+      FunctionName: taskmanager-agent-job-processor
       CodeUri: agent_job_src/
       Handler: app.handler
       Timeout: 900

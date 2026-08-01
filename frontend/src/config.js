@@ -5,11 +5,11 @@
 export const amplifyConfig = {
   Auth: {
     Cognito: {
-      userPoolId: "ap-northeast-1_WgwchFez1",
-      userPoolClientId: "5n5nj17i1qensg6fe154kn8k6n",
+      userPoolId: "ap-northeast-1_HbqJsbWyS",
+      userPoolClientId: "3d7teaagegsidv8ke6ih7bf7od",
     },
   },
 };
 
 export const API_BASE_URL =
-  "https://izomsyzy21.execute-api.ap-northeast-1.amazonaws.com";
+  "https://kvwrqkhd29.execute-api.ap-northeast-1.amazonaws.com";

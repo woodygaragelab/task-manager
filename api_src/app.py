@@ -5,7 +5,7 @@ task-api
 背後で動く Lambda 本体。
 
 CRUDロジック本体は共通モジュール task_repository(Lambda Layer)を呼ぶだけで、
-task-mcp-server と同じDynamoDBテーブルを直接参照・更新する。
+taskmanager-mcp(MCPサーバー)と同じDynamoDBテーブルを直接参照・更新する。
 認証(JWT検証)自体はAPI Gateway側のCognitoオーソライザーが行うため、
 ここでは認可後のリクエストのみを扱う。
 """
