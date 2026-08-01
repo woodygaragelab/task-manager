@@ -60,9 +60,18 @@ const formatNow = () => {
 const driveUrl = (folderId) =>
   folderId ? `https://drive.google.com/drive/folders/${folderId}?usp=drive_link` : null;
 
+// receipt-ocr-filelistスキルは関与先コードを自スキル側のDynamoDBテーブルで解決しようとし、
+// 未登録の場合はDrive上のreceiptフォルダURLをユーザーに尋ねてくる(SKILL.md参照)。
+// taskmanager側のTaskClientsに登録済みのフォルダIDを持っている場合は、都度尋ね返される
+// 手戻りを避けるため指示文にURLを直接含めてしまう。
+const buildArchivistPrompt = (client) => {
+  const base = `${client.clientCode}の領収書を整理して`;
+  if (!client.receiptFolderId) return base;
+  return `${base}。receiptフォルダのURLは https://drive.google.com/drive/folders/${client.receiptFolderId} です。`;
+};
+
 function AgentTicket({ agent, client, ticket, live, onStart, expanded, onToggle }) {
-  const instruction =
-    live && client ? `${client.clientCode}の領収書を整理して` : agent.instruction;
+  const instruction = live && client ? buildArchivistPrompt(client) : agent.instruction;
   const inputFolderUrl = live ? driveUrl(client?.receiptFolderId) : null;
   const outputFolderUrl = live ? driveUrl(client?.renamedFolderId) : null;
 
@@ -191,7 +200,7 @@ export function AgentsPanel({ client }) {
     if (!client) return;
     patchTicket(agent.id, { status: "running", startTime: formatNow(), endTime: null, result: null });
     try {
-      const prompt = `${client.clientCode}の領収書を整理して`;
+      const prompt = buildArchivistPrompt(client);
       const job = await api.submitAgentJob(client.clientCode, agent.id, prompt);
       pollJob(agent.id, client.clientCode, job.jobId);
     } catch (err) {

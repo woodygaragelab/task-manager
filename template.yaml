@@ -335,7 +335,11 @@ Resources:
         - Statement:
             - Effect: Allow
               Action: bedrock-agentcore:InvokeAgentRuntime
-              Resource: !Ref AgentRuntimeArn
+              # InvokeAgentRuntimeの実際の認可チェックはruntime-endpoint配下のARNに対して
+              # 行われるため、ベースのruntime ARNだけでは不足する(AccessDeniedExceptionになる)。
+              Resource:
+                - !Ref AgentRuntimeArn
+                - !Sub "${AgentRuntimeArn}/runtime-endpoint/*"
 
 Outputs:
   TaskMcpFunctionUrl:
