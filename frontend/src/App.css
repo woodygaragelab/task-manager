@@ -767,6 +767,109 @@
   display: none;
 }
 
+/* ---------- Agents panel ---------- */
+.agents__toolbar {
+  margin-bottom: 16px;
+}
+
+.agents__list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.agent-ticket {
+  border: 1px solid var(--paper-line);
+  border-radius: 6px;
+  padding: 14px 16px;
+  cursor: pointer;
+  background: var(--paper);
+}
+
+.agent-ticket:hover {
+  border-color: var(--ink-soft);
+}
+
+.agent-ticket__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.agent-ticket__main {
+  min-width: 0;
+}
+
+.agent-ticket__title {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.agent-ticket__name {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 17px;
+}
+
+.agent-ticket__role {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.agent-ticket__description {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.agent-ticket__detail {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px dashed var(--paper-line);
+  cursor: default;
+}
+
+.agent-ticket__start {
+  margin-bottom: 14px;
+}
+
+.agent-ticket__fields {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.agent-ticket__field {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.agent-ticket__field dt {
+  flex-shrink: 0;
+  width: 84px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-soft);
+}
+
+.agent-ticket__field dd {
+  margin: 0;
+  font-size: 13px;
+}
+
+.agent-ticket__code {
+  font-family: var(--font-mono);
+  color: var(--ink-soft);
+}
+
 /* ---------- New task form ---------- */
 .new-task {
   margin-top: 24px;

@@ -7,6 +7,7 @@ import { ProgressTable } from "./ProgressTable";
 import { TaskDetailPanel } from "./TaskDetailPanel";
 import { HistoryPanel } from "./HistoryPanel";
 import { NewTaskForm } from "./NewTaskForm";
+import { AgentsPanel } from "./AgentsPanel";
 import { NavMenu } from "./NavMenu";
 import { ClientListPage } from "./ClientListPage";
 import { SeriesListPage } from "./SeriesListPage";
@@ -260,6 +261,8 @@ export default function App() {
                       <NewTaskForm seriesList={seriesList} onCreate={handleCreate} />
                     </>
                   )}
+
+                  {activeTab === "エージェント" && <AgentsPanel />}
                 </>
               ) : (
                 <div className="empty">
