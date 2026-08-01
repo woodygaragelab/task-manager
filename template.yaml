@@ -12,6 +12,12 @@ Parameters:
     Description: >
       Shared secret token for the MCP server. Claude Desktop/Code must send this as
       "Authorization: Bearer <token>" on every request.
+  AgentRuntimeArn:
+    Type: String
+    Default: "arn:aws:bedrock-agentcore:ap-northeast-1:155830630328:runtime/agent_agentcore-OTeMr39nYA"
+    Description: >
+      Bedrock AgentCore runtime ARN for the receipt-classification ("分類") agent,
+      invoked asynchronously by TaskAgentJobProcessorFunction.
 
 Globals:
   Function:
@@ -55,6 +61,7 @@ Resources:
           SERIES_TABLE: TaskSeries
           FRAMES_TABLE: TaskFrames
           HISTORY_TABLE: TaskHistory
+          AGENT_JOBS_TABLE: TaskAgentJobs
           MCP_AUTH_TOKEN: !Ref McpAuthToken
       Policies:
         - DynamoDBCrudPolicy:
@@ -67,6 +74,8 @@ Resources:
             TableName: TaskFrames
         - DynamoDBCrudPolicy:
             TableName: TaskHistory
+        - DynamoDBCrudPolicy:
+            TableName: TaskAgentJobs
       FunctionUrlConfig:
         AuthType: NONE
         InvokeMode: BUFFERED
@@ -148,6 +157,8 @@ Resources:
           SERIES_TABLE: TaskSeries
           FRAMES_TABLE: TaskFrames
           HISTORY_TABLE: TaskHistory
+          AGENT_JOBS_TABLE: TaskAgentJobs
+          AGENT_JOB_PROCESSOR_FUNCTION_NAME: !Ref TaskAgentJobProcessorFunction
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Tasks
@@ -159,6 +170,10 @@ Resources:
             TableName: TaskFrames
         - DynamoDBCrudPolicy:
             TableName: TaskHistory
+        - DynamoDBCrudPolicy:
+            TableName: TaskAgentJobs
+        - LambdaInvokePolicy:
+            FunctionName: !Ref TaskAgentJobProcessorFunction
       Events:
         ListClients:
           Type: HttpApi
@@ -172,12 +187,30 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /clients
             Method: post
+        UpdateClient:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /clients/{clientCode}
+            Method: patch
         DeleteClient:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
             Path: /clients/{clientCode}
             Method: delete
+        SubmitAgentJob:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /clients/{clientCode}/agent-jobs
+            Method: post
+        GetAgentJob:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /clients/{clientCode}/agent-jobs/{jobId}
+            Method: get
         ListSeries:
           Type: HttpApi
           Properties:
@@ -262,6 +295,47 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /clients/{clientCode}/history/{historyId}
             Method: delete
+
+  # ------------------------------------------------------------------
+  # Agent job processor (async; invoked directly by TaskApiFunction via
+  # Lambda's Event invocation type, not sitting behind API Gateway, so it
+  # can run far longer than API Gateway's 30s limit).
+  # ------------------------------------------------------------------
+  TaskAgentJobProcessorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: task-agent-job-processor
+      CodeUri: agent_job_src/
+      Handler: app.handler
+      Timeout: 900
+      Layers:
+        - !Ref TaskRepositoryLayer
+      Environment:
+        Variables:
+          TASKS_TABLE: Tasks
+          CLIENTS_TABLE: TaskClients
+          SERIES_TABLE: TaskSeries
+          FRAMES_TABLE: TaskFrames
+          HISTORY_TABLE: TaskHistory
+          AGENT_JOBS_TABLE: TaskAgentJobs
+          AGENT_RUNTIME_ARN: !Ref AgentRuntimeArn
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: Tasks
+        - DynamoDBCrudPolicy:
+            TableName: TaskClients
+        - DynamoDBCrudPolicy:
+            TableName: TaskSeries
+        - DynamoDBCrudPolicy:
+            TableName: TaskFrames
+        - DynamoDBCrudPolicy:
+            TableName: TaskHistory
+        - DynamoDBCrudPolicy:
+            TableName: TaskAgentJobs
+        - Statement:
+            - Effect: Allow
+              Action: bedrock-agentcore:InvokeAgentRuntime
+              Resource: !Ref AgentRuntimeArn
 
 Outputs:
   TaskMcpFunctionUrl:

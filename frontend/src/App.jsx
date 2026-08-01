@@ -262,7 +262,7 @@ export default function App() {
                     </>
                   )}
 
-                  {activeTab === "エージェント" && <AgentsPanel />}
+                  {activeTab === "エージェント" && <AgentsPanel client={client} />}
                 </>
               ) : (
                 <div className="empty">

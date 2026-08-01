@@ -28,6 +28,7 @@ clients_table = dynamodb.Table(os.environ["CLIENTS_TABLE"])
 series_table = dynamodb.Table(os.environ["SERIES_TABLE"])
 frames_table = dynamodb.Table(os.environ["FRAMES_TABLE"])
 history_table = dynamodb.Table(os.environ["HISTORY_TABLE"])
+agent_jobs_table = dynamodb.Table(os.environ["AGENT_JOBS_TABLE"])
 
 CLIENT_BUCKET = "CLIENT"
 SERIES_BUCKET = "SERIES"
@@ -42,6 +43,10 @@ class ClientAlreadyExistsError(Exception):
     """create_clientで既に登録済みのclientCodeを指定した場合に送出する。"""
 
 
+class ClientNotFoundError(Exception):
+    """update_clientで指定されたclientCodeが存在しない場合に送出する。"""
+
+
 class SeriesAlreadyExistsError(Exception):
     """create_seriesで既に登録済みのseriesCodeを指定した場合に送出する。"""
 
@@ -52,6 +57,10 @@ class FrameAlreadyExistsError(Exception):
 
 class HistoryEntryNotFoundError(Exception):
     """指定された履歴エントリ(clientCode+historyId)が存在しない場合に送出する。"""
+
+
+class AgentJobNotFoundError(Exception):
+    """指定されたエージェントジョブ(clientCode+jobId)が存在しない場合に送出する。"""
 
 
 # ----------------------------------------------------------------------
@@ -109,18 +118,30 @@ def list_clients() -> list[dict]:
     return resp.get("Items", [])
 
 
-def create_client(client_code: str, client_name: str) -> dict:
+def create_client(
+    client_code: str,
+    client_name: str,
+    receipt_folder_id: Optional[str] = None,
+    renamed_folder_id: Optional[str] = None,
+) -> dict:
     """クライアントを新規登録する(ドロップダウンの「新規作成」操作専用)。
 
     Series/Frameと異なりタスク作成に先立って単独で登録される操作のため、
     既に存在するclientCodeが指定された場合はConditionalCheckFailedExceptionを
     握りつぶさずClientAlreadyExistsErrorとして呼び出し元に伝える。
+
+    receipt_folder_id/renamed_folder_idは「エージェント」タブの領収書整理エージェント
+    (分類)が参照するGoogle DriveフォルダID。省略時は属性ごと書き込まない。
     """
     item = {
         "lookupBucket": CLIENT_BUCKET,
         "clientCode": client_code,
         "clientName": client_name,
     }
+    if receipt_folder_id:
+        item["receiptFolderId"] = receipt_folder_id
+    if renamed_folder_id:
+        item["renamedFolderId"] = renamed_folder_id
     try:
         clients_table.put_item(
             Item=item,
@@ -129,6 +150,43 @@ def create_client(client_code: str, client_name: str) -> dict:
     except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
         raise ClientAlreadyExistsError(f"clientCode {client_code} は既に登録されています")
     return item
+
+
+def update_client(
+    client_code: str,
+    client_name: Optional[str] = None,
+    receipt_folder_id: Optional[str] = None,
+    renamed_folder_id: Optional[str] = None,
+) -> dict:
+    """既存クライアントのクライアント名・Driveフォルダ設定を更新する(指定した項目のみ変更)。"""
+    key = {"lookupBucket": CLIENT_BUCKET, "clientCode": client_code}
+    resp = clients_table.get_item(Key=key)
+    if not resp.get("Item"):
+        raise ClientNotFoundError(f"clientCode {client_code} が見つかりません")
+
+    update_expr = []
+    expr_values = {}
+
+    if client_name is not None:
+        update_expr.append("clientName = :n")
+        expr_values[":n"] = client_name
+    if receipt_folder_id is not None:
+        update_expr.append("receiptFolderId = :rf")
+        expr_values[":rf"] = receipt_folder_id
+    if renamed_folder_id is not None:
+        update_expr.append("renamedFolderId = :nf")
+        expr_values[":nf"] = renamed_folder_id
+
+    if not update_expr:
+        return resp["Item"]
+
+    resp = clients_table.update_item(
+        Key=key,
+        UpdateExpression="SET " + ", ".join(update_expr),
+        ExpressionAttributeValues=expr_values,
+        ReturnValues="ALL_NEW",
+    )
+    return resp["Attributes"]
 
 
 def delete_client(client_code: str) -> None:
@@ -388,3 +446,82 @@ def update_history_entry(
 def delete_history_entry(client_code: str, history_id: str) -> None:
     """履歴エントリを削除する。"""
     history_table.delete_item(Key={"clientCode": client_code, "historyId": history_id})
+
+
+# ----------------------------------------------------------------------
+# エージェントジョブ(「エージェント」タブの非同期ディスパッチ処理)
+# ----------------------------------------------------------------------
+AGENT_JOB_TTL_SECONDS = 60 * 60 * 24  # 1日後に自動削除
+
+
+def create_agent_job(client_code: str, agent_id: str, prompt: str) -> dict:
+    """エージェントへの指示を1件登録する(status="processing"で作成、実行はLambda側が非同期に行う)。"""
+    now = _now()
+    item = {
+        "clientCode": client_code,
+        "jobId": str(uuid.uuid4()),
+        "agentId": agent_id,
+        "status": "processing",
+        "prompt": prompt,
+        "createdAt": now,
+        "updatedAt": now,
+        "ttl": int(datetime.now(timezone.utc).timestamp()) + AGENT_JOB_TTL_SECONDS,
+    }
+    agent_jobs_table.put_item(Item=item)
+    return item
+
+
+def get_agent_job(client_code: str, job_id: str) -> dict:
+    """エージェントジョブを1件取得する(ポーリング用)。"""
+    resp = agent_jobs_table.get_item(Key={"clientCode": client_code, "jobId": job_id})
+    item = resp.get("Item")
+    if not item:
+        raise AgentJobNotFoundError(
+            f"エージェントジョブ(clientCode={client_code}, jobId={job_id}) が見つかりません"
+        )
+    return item
+
+
+def claim_agent_job(client_code: str, job_id: str) -> bool:
+    """ジョブを処理対象としてclaimする(Lambdaの非同期呼び出し再試行による二重実行防止)。
+
+    既にclaim済みなら何もせずFalseを返す(呼び出し元はそこで処理を打ち切る)。
+    """
+    try:
+        agent_jobs_table.update_item(
+            Key={"clientCode": client_code, "jobId": job_id},
+            UpdateExpression="SET claimedAt = :now",
+            ConditionExpression="attribute_not_exists(claimedAt)",
+            ExpressionAttributeValues={":now": _now()},
+        )
+        return True
+    except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+        return False
+
+
+def complete_agent_job(client_code: str, job_id: str, result: str) -> None:
+    """ジョブの実行結果を記録し、完了状態にする。"""
+    agent_jobs_table.update_item(
+        Key={"clientCode": client_code, "jobId": job_id},
+        UpdateExpression="SET #s = :status, #r = :result, updatedAt = :now",
+        ExpressionAttributeNames={"#s": "status", "#r": "result"},
+        ExpressionAttributeValues={
+            ":status": "completed",
+            ":result": result,
+            ":now": _now(),
+        },
+    )
+
+
+def fail_agent_job(client_code: str, job_id: str, error: str) -> None:
+    """ジョブの失敗を記録する。"""
+    agent_jobs_table.update_item(
+        Key={"clientCode": client_code, "jobId": job_id},
+        UpdateExpression="SET #s = :status, #e = :error, updatedAt = :now",
+        ExpressionAttributeNames={"#s": "status", "#e": "error"},
+        ExpressionAttributeValues={
+            ":status": "error",
+            ":error": error,
+            ":now": _now(),
+        },
+    )

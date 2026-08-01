@@ -6,6 +6,8 @@ export function ClientListPage() {
   const [error, setError] = useState(null);
   const [newCode, setNewCode] = useState("");
   const [newName, setNewName] = useState("");
+  const [newReceiptFolderId, setNewReceiptFolderId] = useState("");
+  const [newRenamedFolderId, setNewRenamedFolderId] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -18,14 +20,32 @@ export function ClientListPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const created = await api.createClient(newCode.trim(), newName.trim());
+      const created = await api.createClient(newCode.trim(), newName.trim(), {
+        receiptFolderId: newReceiptFolderId.trim() || undefined,
+        renamedFolderId: newRenamedFolderId.trim() || undefined,
+      });
       setClients((prev) => [...prev, created]);
       setNewCode("");
       setNewName("");
+      setNewReceiptFolderId("");
+      setNewRenamedFolderId("");
     } catch (err) {
       setError(err.message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleFolderIdCommit = async (clientCode, patch) => {
+    setClients((prev) =>
+      prev.map((c) => (c.clientCode === clientCode ? { ...c, ...patch } : c))
+    );
+    try {
+      await api.updateClient(clientCode, patch);
+    } catch (err) {
+      setError(err.message);
+      const items = await api.listClients();
+      setClients(items);
     }
   };
 
@@ -59,6 +79,8 @@ export function ClientListPage() {
             <tr>
               <th>コード</th>
               <th>クライアント名</th>
+              <th>領収書フォルダID</th>
+              <th>分類後フォルダID</th>
               <th style={{ width: 80 }}></th>
             </tr>
           </thead>
@@ -67,6 +89,32 @@ export function ClientListPage() {
               <tr key={c.clientCode}>
                 <td className="simple-table__code">{c.clientCode}</td>
                 <td>{c.clientName}</td>
+                <td>
+                  <input
+                    className="history__input"
+                    defaultValue={c.receiptFolderId ?? ""}
+                    key={`receipt-${c.clientCode}`}
+                    placeholder="未設定"
+                    onBlur={(e) => {
+                      if (e.target.value !== (c.receiptFolderId ?? "")) {
+                        handleFolderIdCommit(c.clientCode, { receiptFolderId: e.target.value });
+                      }
+                    }}
+                  />
+                </td>
+                <td>
+                  <input
+                    className="history__input"
+                    defaultValue={c.renamedFolderId ?? ""}
+                    key={`renamed-${c.clientCode}`}
+                    placeholder="未設定"
+                    onBlur={(e) => {
+                      if (e.target.value !== (c.renamedFolderId ?? "")) {
+                        handleFolderIdCommit(c.clientCode, { renamedFolderId: e.target.value });
+                      }
+                    }}
+                  />
+                </td>
                 <td>
                   <button
                     type="button"
@@ -99,6 +147,22 @@ export function ClientListPage() {
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             required
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="new-client-receipt-folder">領収書フォルダID(任意)</label>
+          <input
+            id="new-client-receipt-folder"
+            value={newReceiptFolderId}
+            onChange={(e) => setNewReceiptFolderId(e.target.value)}
+          />
+        </div>
+        <div className="field">
+          <label htmlFor="new-client-renamed-folder">分類後フォルダID(任意)</label>
+          <input
+            id="new-client-renamed-folder"
+            value={newRenamedFolderId}
+            onChange={(e) => setNewRenamedFolderId(e.target.value)}
           />
         </div>
         <button className="btn btn--primary" type="submit" disabled={submitting}>

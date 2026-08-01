@@ -797,6 +797,35 @@
   gap: 16px;
 }
 
+.agent-ticket__status {
+  flex-shrink: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.agent-ticket__status--queued {
+  color: var(--slate);
+  background: var(--slate-soft);
+}
+
+.agent-ticket__status--running {
+  color: var(--yellow);
+  background: var(--yellow-soft);
+}
+
+.agent-ticket__status--done {
+  color: var(--seal-green);
+  background: var(--seal-green-soft);
+}
+
+.agent-ticket__status--error {
+  color: var(--danger);
+  background: var(--stamp-red-soft);
+}
+
 .agent-ticket__main {
   min-width: 0;
 }
@@ -868,6 +897,11 @@
 .agent-ticket__code {
   font-family: var(--font-mono);
   color: var(--ink-soft);
+}
+
+.agent-ticket__result {
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 
 /* ---------- New task form ---------- */

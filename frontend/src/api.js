@@ -36,10 +36,16 @@ async function request(path, { method = "GET", body } = {}) {
 export const api = {
   listClients: () => request(`/clients`),
 
-  createClient: (clientCode, clientName) =>
+  createClient: (clientCode, clientName, extra = {}) =>
     request(`/clients`, {
       method: "POST",
-      body: { clientCode, clientName },
+      body: { clientCode, clientName, ...extra },
+    }),
+
+  updateClient: (clientCode, patch) =>
+    request(`/clients/${encodeURIComponent(clientCode)}`, {
+      method: "PATCH",
+      body: patch,
     }),
 
   deleteClient: (clientCode) =>
@@ -97,5 +103,16 @@ export const api = {
     request(
       `/clients/${encodeURIComponent(clientCode)}/history/${encodeURIComponent(historyId)}`,
       { method: "DELETE" }
+    ),
+
+  submitAgentJob: (clientCode, agentId, prompt) =>
+    request(`/clients/${encodeURIComponent(clientCode)}/agent-jobs`, {
+      method: "POST",
+      body: { agentId, prompt },
+    }),
+
+  getAgentJob: (clientCode, jobId) =>
+    request(
+      `/clients/${encodeURIComponent(clientCode)}/agent-jobs/${encodeURIComponent(jobId)}`
     ),
 };

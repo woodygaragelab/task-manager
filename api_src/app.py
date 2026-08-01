@@ -11,9 +11,15 @@ task-mcp-server と同じDynamoDBテーブルを直接参照・更新する。
 """
 
 import json
+import os
 from typing import Any
 
+import boto3
+
 import task_repository as repo
+
+lambda_client = boto3.client("lambda")
+AGENT_JOB_PROCESSOR_FUNCTION_NAME = os.environ["AGENT_JOB_PROCESSOR_FUNCTION_NAME"]
 
 
 def _response(status_code: int, body: Any) -> dict:
@@ -57,8 +63,20 @@ def handler(event, context):
             item = repo.create_client(
                 client_code=body["clientCode"],
                 client_name=body["clientName"],
+                receipt_folder_id=body.get("receiptFolderId"),
+                renamed_folder_id=body.get("renamedFolderId"),
             )
             return _response(201, item)
+
+        # ---- PATCH /clients/{clientCode} ----
+        if route_key == "PATCH /clients/{clientCode}":
+            item = repo.update_client(
+                client_code=path_params["clientCode"],
+                client_name=body.get("clientName"),
+                receipt_folder_id=body.get("receiptFolderId"),
+                renamed_folder_id=body.get("renamedFolderId"),
+            )
+            return _response(200, item)
 
         # ---- DELETE /clients/{clientCode} ----
         if route_key == "DELETE /clients/{clientCode}":
@@ -187,10 +205,45 @@ def handler(event, context):
             )
             return _response(200, {"historyId": path_params["historyId"]})
 
+        # ---- POST /clients/{clientCode}/agent-jobs ----
+        if route_key == "POST /clients/{clientCode}/agent-jobs":
+            if "agentId" not in body or "prompt" not in body:
+                return _error(400, "agentId と prompt は必須です")
+            client_code = path_params["clientCode"]
+            item = repo.create_agent_job(
+                client_code=client_code,
+                agent_id=body["agentId"],
+                prompt=body["prompt"],
+            )
+            # AgentCore呼び出しは数十秒〜数分かかりAPI Gatewayの30秒制限を超えうるため、
+            # ジョブ登録のみここで完了させ、実処理は非同期(Event)呼び出しの別Lambdaに委ねる。
+            lambda_client.invoke(
+                FunctionName=AGENT_JOB_PROCESSOR_FUNCTION_NAME,
+                InvocationType="Event",
+                Payload=json.dumps(
+                    {
+                        "clientCode": client_code,
+                        "jobId": item["jobId"],
+                        "prompt": item["prompt"],
+                    }
+                ).encode(),
+            )
+            return _response(202, item)
+
+        # ---- GET /clients/{clientCode}/agent-jobs/{jobId} ----
+        if route_key == "GET /clients/{clientCode}/agent-jobs/{jobId}":
+            item = repo.get_agent_job(
+                client_code=path_params["clientCode"],
+                job_id=path_params["jobId"],
+            )
+            return _response(200, item)
+
         return _error(404, f"未対応のルートです: {method} {event.get('rawPath', '')}")
 
     except repo.ClientAlreadyExistsError as e:
         return _error(409, str(e))
+    except repo.ClientNotFoundError as e:
+        return _error(404, str(e))
     except repo.SeriesAlreadyExistsError as e:
         return _error(409, str(e))
     except repo.FrameAlreadyExistsError as e:
@@ -198,6 +251,8 @@ def handler(event, context):
     except repo.TaskNotFoundError as e:
         return _error(404, str(e))
     except repo.HistoryEntryNotFoundError as e:
+        return _error(404, str(e))
+    except repo.AgentJobNotFoundError as e:
         return _error(404, str(e))
     except (KeyError, ValueError) as e:
         return _error(400, f"リクエストの形式が不正です: {e}")
