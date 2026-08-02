@@ -276,7 +276,7 @@ async def list_history(args: dict) -> dict:
 @tool(
     "update_history_entry",
     "Update one history entry's date/category/assignee/status. status must "
-    "be exactly one of: 未着手, 依頼中, 確認中, 進行中, 完了, NA.",
+    "be exactly one of: 未着手, 依頼中, 確認中, 進行中, 完了, -.",
     {
         "client_code": str,
         "history_id": str,

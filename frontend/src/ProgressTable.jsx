@@ -1,3 +1,11 @@
+const STATUS_ABBR = {
+  未着手: "未",
+  依頼中: "依",
+  確認中: "確",
+  進行中: "進",
+  完了: "完",
+};
+
 export function ProgressTable({
   tasks,
   seriesNameByCode,
@@ -53,7 +61,9 @@ export function ProgressTable({
                   onClick={task ? () => onSelect(task) : undefined}
                 >
                   {task ? (
-                    <span className={`stamp stamp--${task.status}`}>{task.status}</span>
+                    <span className={`stamp stamp--${task.status}`} title={task.status}>
+                      {STATUS_ABBR[task.status] ?? task.status}
+                    </span>
                   ) : (
                     <span className="progress__none">—</span>
                   )}

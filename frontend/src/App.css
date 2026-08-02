@@ -652,7 +652,7 @@
   transform: rotate(0deg);
 }
 
-.stamp--NA {
+.stamp--- {
   color: var(--slate);
   background: var(--slate-soft);
 }

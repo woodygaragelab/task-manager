@@ -259,7 +259,7 @@ frontend/
 │   ├── TaskTable.jsx            タスク一覧のフラット表示テーブル
 │   ├── TaskDetailPanel.jsx      タスク選択時に開く右側詳細パネル
 │   ├── NewTaskForm.jsx          既存シリーズの全登録フレーム分タスクを一括作成するフォーム
-│   ├── StatusSelect.jsx        ステータス(未着手/依頼中/確認中/進行中/完了/NA、6段階)のドロップダウン
+│   ├── StatusSelect.jsx        ステータス(未着手/依頼中/確認中/進行中/完了/-、6段階)のドロップダウン
 │   ├── HistoryPanel.jsx         履歴タブ(インライン編集+新規追加+CSVアップロード)
 │   └── AgentsPanel.jsx          エージェントタブ(ジョブ発行・ポーリング・結果表示)
 ├── amplify.yml                  (リポジトリルートに配置。モノレポ形式でappRoot: frontendを指定)
