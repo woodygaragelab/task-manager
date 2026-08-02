@@ -14,10 +14,11 @@ Parameters:
       "Authorization: Bearer <token>" on every request.
   AgentRuntimeArn:
     Type: String
-    Default: "arn:aws:bedrock-agentcore:ap-northeast-1:155830630328:runtime/agent_agentcore-OTeMr39nYA"
+    Default: "arn:aws:bedrock-agentcore:ap-northeast-1:155830630328:runtime/task_agent-lAAoax7UkB"
     Description: >
-      Bedrock AgentCore runtime ARN for the receipt-classification ("分類") agent,
-      invoked asynchronously by TaskAgentJobProcessorFunction.
+      Bedrock AgentCore runtime ARN for the receipt-classification ("分類") agent
+      (task-agent/, formerly agentmanager/receipt-agent), invoked asynchronously
+      by TaskAgentJobProcessorFunction.
 
 Globals:
   Function:

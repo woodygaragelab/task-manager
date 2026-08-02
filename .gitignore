@@ -16,6 +16,9 @@ frontend/.vite/
 # Never hand-edit; the canonical copy lives under layer/python/.
 task-agent/task_repository.py
 
+# Secrets
+tmp-token.json
+
 # OS / editor
 .DS_Store
 Thumbs.db

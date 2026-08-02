@@ -1,0 +1,62 @@
+default_agent: task_agent
+agents:
+  task_agent:
+    name: task_agent
+    language: python
+    node_version: '20'
+    entrypoint: C:/Users/woody/0woodyprojects/taskmanager/task-agent/task_agent.py
+    deployment_type: container
+    runtime_type: null
+    platform: linux/arm64
+    container_runtime: docker
+    source_path: C:\Users\woody\0woodyprojects\taskmanager\task-agent
+    aws:
+      execution_role: arn:aws:iam::155830630328:role/AmazonBedrockAgentCoreSDKRuntime-ap-northeast-1-b93c04ec99
+      execution_role_auto_create: false
+      account: '155830630328'
+      region: ap-northeast-1
+      ecr_repository: 155830630328.dkr.ecr.ap-northeast-1.amazonaws.com/bedrock-agentcore-task_agent
+      ecr_auto_create: false
+      s3_path: null
+      s3_auto_create: false
+      network_configuration:
+        network_mode: PUBLIC
+        network_mode_config: null
+      protocol_configuration:
+        server_protocol: HTTP
+      observability:
+        enabled: true
+      lifecycle_configuration:
+        idle_runtime_session_timeout: null
+        max_lifetime: null
+    bedrock_agentcore:
+      agent_id: task_agent-lAAoax7UkB
+      agent_arn: arn:aws:bedrock-agentcore:ap-northeast-1:155830630328:runtime/task_agent-lAAoax7UkB
+      agent_session_id: 74b77e9c-7048-43c1-a457-6f51c92d605e
+    codebuild:
+      project_name: bedrock-agentcore-task_agent-builder
+      execution_role: arn:aws:iam::155830630328:role/AmazonBedrockAgentCoreSDKCodeBuild-ap-northeast-1-b93c04ec99
+      source_bucket: bedrock-agentcore-codebuild-sources-155830630328-ap-northeast-1
+    memory:
+      mode: STM_AND_LTM
+      memory_id: agent_agentcore_mem-KNsEbEGBS0
+      memory_arn: null
+      memory_name: task_agent_memory
+      event_expiry_days: 30
+      first_invoke_memory_check_done: false
+      was_created_by_toolkit: false
+    identity:
+      credential_providers: []
+      workload: null
+    aws_jwt:
+      enabled: false
+      audiences: []
+      signing_algorithm: ES384
+      issuer_url: null
+      duration_seconds: 300
+    authorizer_configuration: null
+    request_header_configuration: null
+    oauth_configuration: null
+    api_key_env_var_name: null
+    api_key_credential_provider_name: null
+    is_generated_by_agentcore_create: false
