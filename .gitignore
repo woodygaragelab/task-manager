@@ -23,3 +23,6 @@ tmp-token.json
 .DS_Store
 Thumbs.db
 .vscode/
+
+# MS Office lock files (created while a file is open)
+~$*
