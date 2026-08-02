@@ -81,6 +81,17 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
     () => Object.fromEntries(seriesList.map((s) => [s.seriesCode, s.seriesName])),
     [seriesList]
   );
+  const taskGroups = useMemo(
+    () => [...new Set(seriesList.map((s) => s.taskGroup).filter(Boolean))],
+    [seriesList]
+  );
+  const seriesOptionsForCategory = useMemo(
+    () =>
+      draft.category
+        ? seriesList.filter((s) => s.taskGroup === draft.category)
+        : seriesList,
+    [seriesList, draft.category]
+  );
   const frameNameByCode = useMemo(
     () => Object.fromEntries(frameList.map((f) => [f.frameCode, f.frameName])),
     [frameList]
@@ -219,10 +230,27 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
         </div>
         <div className="field">
           <label>分類</label>
-          <input
+          <select
             value={draft.category}
-            onChange={(e) => setDraft({ ...draft, category: e.target.value })}
-          />
+            onChange={(e) => {
+              const category = e.target.value;
+              const seriesStillValid = seriesList.some(
+                (s) => s.seriesCode === draft.seriesCode && s.taskGroup === category
+              );
+              setDraft({
+                ...draft,
+                category,
+                seriesCode: seriesStillValid ? draft.seriesCode : "",
+              });
+            }}
+          >
+            <option value="">未選択</option>
+            {taskGroups.map((group) => (
+              <option key={group} value={group}>
+                {group}
+              </option>
+            ))}
+          </select>
         </div>
         <div className="field">
           <label>タスク名</label>
@@ -231,7 +259,7 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
             onChange={(e) => setDraft({ ...draft, seriesCode: e.target.value })}
           >
             <option value="">未選択</option>
-            {seriesList.map((s) => (
+            {seriesOptionsForCategory.map((s) => (
               <option key={s.seriesCode} value={s.seriesCode}>
                 {s.seriesName}
               </option>
