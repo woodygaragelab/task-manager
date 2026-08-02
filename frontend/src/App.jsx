@@ -217,6 +217,7 @@ export default function App() {
                     selectedClientCode={client?.clientCode}
                     onSelect={setClient}
                   />
+                  {client && <span className="panel__title-arrow">&gt;</span>}
                 </h2>
                 {client && lastSynced && (
                   <span className="status-line">

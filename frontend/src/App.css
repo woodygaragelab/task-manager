@@ -368,6 +368,12 @@
   letter-spacing: 0.1em;
 }
 
+.panel__title-arrow {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  color: var(--ink-soft);
+}
+
 /* ---------- Panel tabs ---------- */
 .tabs {
   display: flex;
@@ -653,8 +659,8 @@
 }
 
 .stamp--- {
-  color: var(--slate);
-  background: var(--slate-soft);
+  color: var(--ink-soft);
+  background: var(--panel);
 }
 
 /* ---------- Empty / loading states ---------- */
