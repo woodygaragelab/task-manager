@@ -184,10 +184,76 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
         </button>
       </div>
 
+      <form className="history__new" onSubmit={handleAdd}>
+        <div className="field">
+          <label>日付</label>
+          <input
+            type="date"
+            value={draft.date}
+            onChange={(e) => setDraft({ ...draft, date: e.target.value })}
+            required
+          />
+        </div>
+        <div className="field">
+          <label>分類</label>
+          <input
+            value={draft.category}
+            onChange={(e) => setDraft({ ...draft, category: e.target.value })}
+          />
+        </div>
+        <div className="field">
+          <label>タスク名</label>
+          <select
+            value={draft.seriesCode}
+            onChange={(e) => setDraft({ ...draft, seriesCode: e.target.value })}
+          >
+            <option value="">未選択</option>
+            {seriesList.map((s) => (
+              <option key={s.seriesCode} value={s.seriesCode}>
+                {s.seriesName}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label>対象月</label>
+          <FrameMultiSelect
+            frameList={frameList}
+            selected={draft.frameCodes}
+            onChange={(frameCodes) => setDraft({ ...draft, frameCodes })}
+          />
+        </div>
+        <div className="field">
+          <label>担当者</label>
+          <input
+            value={draft.assignee}
+            onChange={(e) => setDraft({ ...draft, assignee: e.target.value })}
+          />
+        </div>
+        <div className="field">
+          <label>ステータス</label>
+          <StatusSelect
+            status={draft.status}
+            onChange={(status) => setDraft({ ...draft, status })}
+          />
+        </div>
+        <div className="field field--grow">
+          <label>内容</label>
+          <input
+            value={draft.content}
+            onChange={(e) => setDraft({ ...draft, content: e.target.value })}
+            placeholder="履歴・引き継ぎ事項などを記録してください"
+          />
+        </div>
+        <button className="btn btn--primary" type="submit" disabled={submitting}>
+          {submitting ? "追加中…" : "履歴を追加"}
+        </button>
+      </form>
+
       {entries.length === 0 ? (
         <div className="empty">
           <div className="empty__title">履歴はまだありません</div>
-          下のフォームから最初の履歴を追加してください。
+          上のフォームから最初の履歴を追加してください。
         </div>
       ) : (
         <table className="history__table">
@@ -300,72 +366,6 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
           </tbody>
         </table>
       )}
-
-      <form className="history__new" onSubmit={handleAdd}>
-        <div className="field">
-          <label>日付</label>
-          <input
-            type="date"
-            value={draft.date}
-            onChange={(e) => setDraft({ ...draft, date: e.target.value })}
-            required
-          />
-        </div>
-        <div className="field">
-          <label>分類</label>
-          <input
-            value={draft.category}
-            onChange={(e) => setDraft({ ...draft, category: e.target.value })}
-          />
-        </div>
-        <div className="field">
-          <label>タスク名</label>
-          <select
-            value={draft.seriesCode}
-            onChange={(e) => setDraft({ ...draft, seriesCode: e.target.value })}
-          >
-            <option value="">未選択</option>
-            {seriesList.map((s) => (
-              <option key={s.seriesCode} value={s.seriesCode}>
-                {s.seriesName}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label>対象月</label>
-          <FrameMultiSelect
-            frameList={frameList}
-            selected={draft.frameCodes}
-            onChange={(frameCodes) => setDraft({ ...draft, frameCodes })}
-          />
-        </div>
-        <div className="field">
-          <label>担当者</label>
-          <input
-            value={draft.assignee}
-            onChange={(e) => setDraft({ ...draft, assignee: e.target.value })}
-          />
-        </div>
-        <div className="field">
-          <label>ステータス</label>
-          <StatusSelect
-            status={draft.status}
-            onChange={(status) => setDraft({ ...draft, status })}
-          />
-        </div>
-        <div className="field field--grow">
-          <label>内容</label>
-          <input
-            value={draft.content}
-            onChange={(e) => setDraft({ ...draft, content: e.target.value })}
-            placeholder="履歴・引き継ぎ事項などを記録してください"
-          />
-        </div>
-        <button className="btn btn--primary" type="submit" disabled={submitting}>
-          {submitting ? "追加中…" : "履歴を追加"}
-        </button>
-      </form>
     </div>
   );
 }
