@@ -65,6 +65,21 @@ export default function App() {
     }
   }, []);
 
+  // DEFAULT_CLIENTはclientCode/clientNameのみを持つため、
+  // フォルダIDなどの詳細情報を一覧APIから補完する(エージェントタブのフォルダリンク表示に必要)
+  useEffect(() => {
+    api
+      .listClients()
+      .then((items) => {
+        setClient((prev) => {
+          if (!prev || prev.clientCode !== DEFAULT_CLIENT.clientCode) return prev;
+          const full = items.find((c) => c.clientCode === prev.clientCode);
+          return full || prev;
+        });
+      })
+      .catch(() => {});
+  }, []);
+
   // クライアントを切り替えたら即座にロードし、詳細パネルは閉じる
   useEffect(() => {
     setSelectedTaskKey(null);
