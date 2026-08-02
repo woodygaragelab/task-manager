@@ -729,21 +729,16 @@
   border-bottom: none;
 }
 
-.history__input {
-  width: 100%;
-  font-family: var(--font-body);
-  font-size: 14px;
-  padding: 6px 8px;
-  border: 1px solid transparent;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--ink);
+.history__row {
+  cursor: pointer;
 }
 
-.history__input:hover,
-.history__input:focus {
-  border-color: var(--paper-line);
+.history__row:hover {
   background: var(--paper);
+}
+
+.history__row--selected {
+  background: var(--pale-yellow-soft);
 }
 
 .history__delete {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
 import { StatusSelect } from "./StatusSelect";
 import { FrameMultiSelect } from "./FrameMultiSelect";
@@ -11,6 +11,16 @@ const emptyDraft = () => ({
   assignee: "",
   status: "未着手",
   content: "",
+});
+
+const draftFromEntry = (entry) => ({
+  date: entry.date ?? "",
+  category: entry.category ?? "",
+  seriesCode: entry.seriesCode ?? "",
+  frameCodes: entry.frameCodes ?? [],
+  assignee: entry.assignee ?? "",
+  status: entry.status ?? "未着手",
+  content: entry.content ?? "",
 });
 
 // クォート囲み・エスケープ("")・改行を含むフィールドに対応した最小限のCSVパーサー。
@@ -62,9 +72,19 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [draft, setDraft] = useState(emptyDraft);
+  const [editingId, setEditingId] = useState(null); // null: 新規追加モード, historyId: 編集モード
   const [submitting, setSubmitting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
+
+  const seriesNameByCode = useMemo(
+    () => Object.fromEntries(seriesList.map((s) => [s.seriesCode, s.seriesName])),
+    [seriesList]
+  );
+  const frameNameByCode = useMemo(
+    () => Object.fromEntries(frameList.map((f) => [f.frameCode, f.frameName])),
+    [frameList]
+  );
 
   const load = async () => {
     setError(null);
@@ -89,31 +109,33 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
     };
   }, [clientCode]);
 
-  const handleAdd = async (e) => {
+  const cancelEdit = () => {
+    setEditingId(null);
+    setDraft(emptyDraft());
+  };
+
+  const startEdit = (entry) => {
+    setEditingId(entry.historyId);
+    setDraft(draftFromEntry(entry));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!draft.date) return;
     setSubmitting(true);
     setError(null);
     try {
-      await api.createHistoryEntry(clientCode, draft);
-      setDraft(emptyDraft());
+      if (editingId) {
+        await api.updateHistoryEntry(clientCode, editingId, draft);
+      } else {
+        await api.createHistoryEntry(clientCode, draft);
+      }
+      cancelEdit();
       await load();
     } catch (err) {
       setError(err.message);
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  const handleFieldCommit = async (historyId, patch) => {
-    setEntries((prev) =>
-      prev.map((it) => (it.historyId === historyId ? { ...it, ...patch } : it))
-    );
-    try {
-      await api.updateHistoryEntry(clientCode, historyId, patch);
-    } catch (err) {
-      setError(err.message);
-      await load();
     }
   };
 
@@ -151,6 +173,7 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
 
   const handleDelete = async (historyId) => {
     setEntries((prev) => prev.filter((it) => it.historyId !== historyId));
+    if (editingId === historyId) cancelEdit();
     try {
       await api.deleteHistoryEntry(clientCode, historyId);
     } catch (err) {
@@ -184,7 +207,7 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
         </button>
       </div>
 
-      <form className="history__new" onSubmit={handleAdd}>
+      <form className="history__new" onSubmit={handleSubmit}>
         <div className="field">
           <label>日付</label>
           <input
@@ -246,8 +269,18 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
           />
         </div>
         <button className="btn btn--primary" type="submit" disabled={submitting}>
-          {submitting ? "追加中…" : "履歴を追加"}
+          {submitting ? "保存中…" : editingId ? "更新する" : "履歴を追加"}
         </button>
+        {editingId && (
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={cancelEdit}
+            disabled={submitting}
+          >
+            キャンセル
+          </button>
+        )}
       </form>
 
       {entries.length === 0 ? (
@@ -271,92 +304,37 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
           </thead>
           <tbody>
             {entries.map((entry) => (
-              <tr key={entry.historyId}>
-                <td data-label="日付">
-                  <input
-                    type="date"
-                    className="history__input"
-                    defaultValue={entry.date ?? ""}
-                    key={`date-${entry.historyId}`}
-                    onBlur={(e) => {
-                      if (e.target.value !== (entry.date ?? "")) {
-                        handleFieldCommit(entry.historyId, { date: e.target.value });
-                      }
-                    }}
-                  />
-                </td>
-                <td data-label="分類">
-                  <input
-                    className="history__input"
-                    defaultValue={entry.category ?? ""}
-                    key={`category-${entry.historyId}`}
-                    onBlur={(e) => {
-                      if (e.target.value !== (entry.category ?? "")) {
-                        handleFieldCommit(entry.historyId, { category: e.target.value });
-                      }
-                    }}
-                  />
-                </td>
+              <tr
+                key={entry.historyId}
+                className={
+                  "history__row" +
+                  (entry.historyId === editingId ? " history__row--selected" : "")
+                }
+                onClick={() => startEdit(entry)}
+              >
+                <td data-label="日付">{entry.date ?? ""}</td>
+                <td data-label="分類">{entry.category ?? ""}</td>
                 <td data-label="タスク名">
-                  <select
-                    className="history__input"
-                    value={entry.seriesCode ?? ""}
-                    onChange={(e) =>
-                      handleFieldCommit(entry.historyId, { seriesCode: e.target.value })
-                    }
-                  >
-                    <option value="">未選択</option>
-                    {seriesList.map((s) => (
-                      <option key={s.seriesCode} value={s.seriesCode}>
-                        {s.seriesName}
-                      </option>
-                    ))}
-                  </select>
+                  {seriesNameByCode[entry.seriesCode] ?? ""}
                 </td>
                 <td data-label="対象月">
-                  <FrameMultiSelect
-                    frameList={frameList}
-                    selected={entry.frameCodes ?? []}
-                    onChange={(frameCodes) =>
-                      handleFieldCommit(entry.historyId, { frameCodes })
-                    }
-                  />
+                  {(entry.frameCodes ?? [])
+                    .map((code) => frameNameByCode[code] ?? code)
+                    .join("、")}
                 </td>
-                <td data-label="担当者">
-                  <input
-                    className="history__input"
-                    defaultValue={entry.assignee ?? ""}
-                    key={`assignee-${entry.historyId}`}
-                    onBlur={(e) => {
-                      if (e.target.value !== (entry.assignee ?? "")) {
-                        handleFieldCommit(entry.historyId, { assignee: e.target.value });
-                      }
-                    }}
-                  />
-                </td>
+                <td data-label="担当者">{entry.assignee ?? ""}</td>
                 <td data-label="ステータス">
-                  <StatusSelect
-                    status={entry.status}
-                    onChange={(status) => handleFieldCommit(entry.historyId, { status })}
-                  />
+                  <span className={`stamp stamp--${entry.status}`}>{entry.status}</span>
                 </td>
-                <td data-label="内容">
-                  <input
-                    className="history__input"
-                    defaultValue={entry.content ?? ""}
-                    key={`content-${entry.historyId}`}
-                    onBlur={(e) => {
-                      if (e.target.value !== (entry.content ?? "")) {
-                        handleFieldCommit(entry.historyId, { content: e.target.value });
-                      }
-                    }}
-                  />
-                </td>
+                <td data-label="内容">{entry.content ?? ""}</td>
                 <td data-label="">
                   <button
                     type="button"
                     className="btn btn--ghost history__delete"
-                    onClick={() => handleDelete(entry.historyId)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDelete(entry.historyId);
+                    }}
                   >
                     削除
                   </button>
