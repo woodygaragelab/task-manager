@@ -1,10 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import { StatusSelect } from "./StatusSelect";
+import { FrameMultiSelect } from "./FrameMultiSelect";
 
 const emptyDraft = () => ({
   date: new Date().toISOString().slice(0, 10),
   category: "",
+  seriesCode: "",
+  frameCodes: [],
   assignee: "",
   status: "未着手",
   content: "",
@@ -54,7 +57,7 @@ function parseCsv(text) {
   return rows.filter((r) => r.some((cell) => cell.trim() !== ""));
 }
 
-export function HistoryPanel({ clientCode }) {
+export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -130,6 +133,8 @@ export function HistoryPanel({ clientCode }) {
         await api.createHistoryEntry(clientCode, {
           date: "",
           category: "",
+          seriesCode: "",
+          frameCodes: [],
           assignee: "",
           status: "",
           content: row.map((cell) => cell.trim()).join(" "),
@@ -190,6 +195,8 @@ export function HistoryPanel({ clientCode }) {
             <tr>
               <th style={{ width: 130 }}>日付</th>
               <th style={{ width: 120 }}>分類</th>
+              <th style={{ width: 160 }}>タスク名</th>
+              <th style={{ width: 180 }}>対象月</th>
               <th style={{ width: 100 }}>担当者</th>
               <th style={{ width: 110 }}>ステータス</th>
               <th>内容</th>
@@ -222,6 +229,31 @@ export function HistoryPanel({ clientCode }) {
                         handleFieldCommit(entry.historyId, { category: e.target.value });
                       }
                     }}
+                  />
+                </td>
+                <td data-label="タスク名">
+                  <select
+                    className="history__input"
+                    value={entry.seriesCode ?? ""}
+                    onChange={(e) =>
+                      handleFieldCommit(entry.historyId, { seriesCode: e.target.value })
+                    }
+                  >
+                    <option value="">未選択</option>
+                    {seriesList.map((s) => (
+                      <option key={s.seriesCode} value={s.seriesCode}>
+                        {s.seriesName}
+                      </option>
+                    ))}
+                  </select>
+                </td>
+                <td data-label="対象月">
+                  <FrameMultiSelect
+                    frameList={frameList}
+                    selected={entry.frameCodes ?? []}
+                    onChange={(frameCodes) =>
+                      handleFieldCommit(entry.historyId, { frameCodes })
+                    }
                   />
                 </td>
                 <td data-label="担当者">
@@ -284,6 +316,28 @@ export function HistoryPanel({ clientCode }) {
           <input
             value={draft.category}
             onChange={(e) => setDraft({ ...draft, category: e.target.value })}
+          />
+        </div>
+        <div className="field">
+          <label>タスク名</label>
+          <select
+            value={draft.seriesCode}
+            onChange={(e) => setDraft({ ...draft, seriesCode: e.target.value })}
+          >
+            <option value="">未選択</option>
+            {seriesList.map((s) => (
+              <option key={s.seriesCode} value={s.seriesCode}>
+                {s.seriesName}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="field">
+          <label>対象月</label>
+          <FrameMultiSelect
+            frameList={frameList}
+            selected={draft.frameCodes}
+            onChange={(frameCodes) => setDraft({ ...draft, frameCodes })}
           />
         </div>
         <div className="field">

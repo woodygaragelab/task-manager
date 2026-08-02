@@ -773,6 +773,69 @@
   display: none;
 }
 
+/* ---------- Frame multi-select(対象月) ---------- */
+.frame-multiselect {
+  position: relative;
+}
+
+.frame-multiselect__trigger {
+  width: 100%;
+  text-align: left;
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.frame-multiselect__trigger:hover,
+.frame-multiselect__trigger:focus {
+  border-color: var(--paper-line);
+  background: var(--paper);
+}
+
+.frame-multiselect__panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 180px;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 6px;
+  background: var(--paper);
+  border: 1px solid var(--paper-line);
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.frame-multiselect__option {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  font-size: 13px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.frame-multiselect__option:hover {
+  background: var(--paper-line);
+  border-radius: 4px;
+}
+
+.frame-multiselect__empty {
+  padding: 4px 6px;
+  font-size: 13px;
+  color: var(--ink-soft);
+}
+
 /* ---------- Agents panel ---------- */
 .agents__toolbar {
   margin-bottom: 16px;

@@ -373,17 +373,21 @@ def create_history_entry(
     client_code: str,
     date: str,
     category: str = "",
+    series_code: str = "",
+    frame_codes: Optional[list[str]] = None,
     assignee: str = "",
     status: str = "",
     content: str = "",
 ) -> dict:
-    """クライアントの履歴エントリを1件追加する(日付・分類・担当者・ステータス・内容を持つ)。"""
+    """クライアントの履歴エントリを1件追加する(日付・分類・タスク名(Series)・対象月(Frameのリスト)・担当者・ステータス・内容を持つ)。"""
     now = _now()
     item = {
         "clientCode": client_code,
         "historyId": str(uuid.uuid4()),
         "date": date,
         "category": category,
+        "seriesCode": series_code,
+        "frameCodes": frame_codes or [],
         "assignee": assignee,
         "status": status,
         "content": content,
@@ -399,6 +403,8 @@ def update_history_entry(
     history_id: str,
     date: Optional[str] = None,
     category: Optional[str] = None,
+    series_code: Optional[str] = None,
+    frame_codes: Optional[list[str]] = None,
     assignee: Optional[str] = None,
     status: Optional[str] = None,
     content: Optional[str] = None,
@@ -422,6 +428,12 @@ def update_history_entry(
     if category is not None:
         update_expr.append("category = :category")
         expr_values[":category"] = category
+    if series_code is not None:
+        update_expr.append("seriesCode = :seriesCode")
+        expr_values[":seriesCode"] = series_code
+    if frame_codes is not None:
+        update_expr.append("frameCodes = :frameCodes")
+        expr_values[":frameCodes"] = frame_codes
     if assignee is not None:
         update_expr.append("assignee = :assignee")
         expr_values[":assignee"] = assignee

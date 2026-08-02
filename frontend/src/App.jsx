@@ -257,7 +257,13 @@ export default function App() {
                       />
                     ))}
 
-                  {activeTab === "履歴" && <HistoryPanel clientCode={client.clientCode} />}
+                  {activeTab === "履歴" && (
+                    <HistoryPanel
+                      clientCode={client.clientCode}
+                      seriesList={seriesList}
+                      frameList={frameList}
+                    />
+                  )}
 
                   {activeTab === "タスク" && (
                     <>
