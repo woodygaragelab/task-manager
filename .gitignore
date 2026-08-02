@@ -11,6 +11,11 @@ frontend/node_modules/
 frontend/dist/
 frontend/.vite/
 
+# task-agent: build artifact copied from layer/python/task_repository.py
+# before `docker build`/`agentcore launch` (see task-agent/Dockerfile).
+# Never hand-edit; the canonical copy lives under layer/python/.
+task-agent/task_repository.py
+
 # OS / editor
 .DS_Store
 Thumbs.db

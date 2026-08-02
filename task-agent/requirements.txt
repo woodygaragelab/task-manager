@@ -1,0 +1,8 @@
+bedrock-agentcore
+claude-agent-sdk
+boto3
+google-api-python-client
+google-auth
+openpyxl
+Pillow
+opentelemetry-instrumentation
