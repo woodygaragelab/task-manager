@@ -5,6 +5,11 @@
       "Effect": "Allow",
       "Action": "dynamodb:Query",
       "Resource": "arn:aws:dynamodb:ap-northeast-1:155830630328:table/TaskClients"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["dynamodb:Query", "dynamodb:UpdateItem"],
+      "Resource": "arn:aws:dynamodb:ap-northeast-1:155830630328:table/TaskHistory"
     }
   ]
 }

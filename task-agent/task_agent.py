@@ -262,10 +262,46 @@ async def list_clients(args: dict) -> dict:
     return {"content": [{"type": "text", "text": json.dumps(clients, ensure_ascii=False)}]}
 
 
+@tool(
+    "list_history",
+    "List history entries for a taskmanager client (historyId, date, "
+    "category, assignee, status, content), sorted by category then date.",
+    {"client_code": str},
+)
+async def list_history(args: dict) -> dict:
+    entries = repo.list_history(args["client_code"])
+    return {"content": [{"type": "text", "text": json.dumps(entries, ensure_ascii=False)}]}
+
+
+@tool(
+    "update_history_entry",
+    "Update one history entry's date/category/assignee/status. status must "
+    "be exactly one of: 未着手, 依頼中, 確認中, 進行中, 完了, NA.",
+    {
+        "client_code": str,
+        "history_id": str,
+        "date": str,
+        "category": str,
+        "assignee": str,
+        "status": str,
+    },
+)
+async def update_history_entry(args: dict) -> dict:
+    updated = repo.update_history_entry(
+        client_code=args["client_code"],
+        history_id=args["history_id"],
+        date=args["date"],
+        category=args["category"],
+        assignee=args["assignee"],
+        status=args["status"],
+    )
+    return {"content": [{"type": "text", "text": json.dumps(updated, ensure_ascii=False)}]}
+
+
 task_manager_server = create_sdk_mcp_server(
     name="task-manager",
     version="1.0.0",
-    tools=[list_clients],
+    tools=[list_clients, list_history, update_history_entry],
 )
 
 
@@ -284,6 +320,8 @@ def build_agent_options() -> ClaudeAgentOptions:
             "mcp__google-drive__create_file",
             "mcp__google-drive__trash_file",
             "mcp__task-manager__list_clients",
+            "mcp__task-manager__list_history",
+            "mcp__task-manager__update_history_entry",
         ],
         mcp_servers={
             "google-drive": google_drive_server,

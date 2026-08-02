@@ -326,6 +326,6 @@ npm run dev
 - 本番運用前にAPI GatewayのCORS設定(`AllowOrigins`)をAmplify Hostingのドメインのみに限定する
 - ロールベースのアクセス制御(RBAC)の導入検討 — 現状は認証済みユーザー全員が同じ権限。エージェント機能も含め区別なし
 - CSVアップロードの列⇔項目マッピング精緻化 — 現状は各行を丸ごと`content`に詰めるだけの暫定実装
-- エージェントカタログ中4/5(`scout`/`courier`/`auditor`/`pinger`)が未実装のプレースホルダ
+- エージェントカタログ中3/5(`scout`/`courier`/`auditor`)が未実装のプレースホルダ
 
 詳しい設計判断の経緯・データモデルの詳細・既知の課題一覧は [docs/設計書.md](docs/設計書.md) を参照。

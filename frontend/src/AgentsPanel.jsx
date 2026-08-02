@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { api } from "./api";
 
-// 現時点でAgentCoreに実接続しているのは「分類」(archivist)のみ。
-// 他4エージェントは今後の実装予定のダミー表示。
-const LIVE_AGENT_IDS = ["archivist"];
+// 現時点でAgentCoreに実接続しているのは「分類」(archivist)と「進捗更新」(progress)のみ。
+// 他のエージェントは今後の実装予定のダミー表示。
+const LIVE_AGENT_IDS = ["archivist", "progress"];
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 100;
 
@@ -22,6 +22,12 @@ const AGENTS = [
     description: "receiptフォルダの新しい領収書画像を勘定科目ごとにリネーム・分類する",
   },
   {
+    id: "progress",
+    name: "進捗更新",
+    role: "進捗管理・更新",
+    description: "履歴レコードを順に読み取り、内容を解釈して日付・分類・担当者・ステータスを更新する",
+  },
+  {
     id: "courier",
     name: "会計",
     role: "外部連携・送信",
@@ -34,13 +40,6 @@ const AGENTS = [
     role: "検証・照合",
     description: "仕訳データの科目コードをマスタと照合する",
     instruction: "仕訳データの科目コードをマスタと照合する",
-  },
-  {
-    id: "pinger",
-    name: "疎通確認",
-    role: "接続確認・監視",
-    description: "会計システムAPIへの接続状態を確認し、応答時間を記録する",
-    instruction: "会計システムAPIへの接続状態を確認し、応答時間を記録する",
   },
 ];
 
@@ -70,8 +69,22 @@ const buildArchivistPrompt = (client) => {
   return `${base}。receiptフォルダのURLは https://drive.google.com/drive/folders/${client.receiptFolderId} です。`;
 };
 
+// progress-updateスキルの呼び出しトリガー文言(SKILL.md参照)に関与先コードを添えて渡す。
+const buildProgressPrompt = (client) => `${client.clientCode}の進捗を更新して`;
+
+const PROMPT_BUILDERS = {
+  archivist: buildArchivistPrompt,
+  progress: buildProgressPrompt,
+};
+
+const buildPrompt = (agentId, client) => {
+  const builder = PROMPT_BUILDERS[agentId];
+  return builder ? builder(client) : "";
+};
+
 function AgentTicket({ agent, client, ticket, live, onStart, expanded, onToggle }) {
-  const instruction = live && client ? buildArchivistPrompt(client) : agent.instruction;
+  const instruction = live && client ? buildPrompt(agent.id, client) : agent.instruction;
+  const showFolders = agent.id === "archivist";
   const inputFolderUrl = live ? driveUrl(client?.receiptFolderId) : null;
   const outputFolderUrl = live ? driveUrl(client?.renamedFolderId) : null;
 
@@ -128,30 +141,34 @@ function AgentTicket({ agent, client, ticket, live, onStart, expanded, onToggle 
                 <dd className="agent-ticket__result">{ticket.result}</dd>
               </div>
             )}
-            <div className="agent-ticket__field">
-              <dt>入力フォルダ</dt>
-              <dd>
-                {inputFolderUrl ? (
-                  <a href={inputFolderUrl} target="_blank" rel="noreferrer" className="agent-ticket__code">
-                    /receipt
-                  </a>
-                ) : (
-                  <span className="agent-ticket__code">未設定</span>
-                )}
-              </dd>
-            </div>
-            <div className="agent-ticket__field">
-              <dt>出力フォルダ</dt>
-              <dd>
-                {outputFolderUrl ? (
-                  <a href={outputFolderUrl} target="_blank" rel="noreferrer" className="agent-ticket__code">
-                    /renamed
-                  </a>
-                ) : (
-                  <span className="agent-ticket__code">未設定</span>
-                )}
-              </dd>
-            </div>
+            {showFolders && (
+              <>
+                <div className="agent-ticket__field">
+                  <dt>入力フォルダ</dt>
+                  <dd>
+                    {inputFolderUrl ? (
+                      <a href={inputFolderUrl} target="_blank" rel="noreferrer" className="agent-ticket__code">
+                        /receipt
+                      </a>
+                    ) : (
+                      <span className="agent-ticket__code">未設定</span>
+                    )}
+                  </dd>
+                </div>
+                <div className="agent-ticket__field">
+                  <dt>出力フォルダ</dt>
+                  <dd>
+                    {outputFolderUrl ? (
+                      <a href={outputFolderUrl} target="_blank" rel="noreferrer" className="agent-ticket__code">
+                        /renamed
+                      </a>
+                    ) : (
+                      <span className="agent-ticket__code">未設定</span>
+                    )}
+                  </dd>
+                </div>
+              </>
+            )}
           </dl>
         </div>
       )}
@@ -200,7 +217,7 @@ export function AgentsPanel({ client }) {
     if (!client) return;
     patchTicket(agent.id, { status: "running", startTime: formatNow(), endTime: null, result: null });
     try {
-      const prompt = buildArchivistPrompt(client);
+      const prompt = buildPrompt(agent.id, client);
       const job = await api.submitAgentJob(client.clientCode, agent.id, prompt);
       pollJob(agent.id, client.clientCode, job.jobId);
     } catch (err) {
@@ -212,7 +229,9 @@ export function AgentsPanel({ client }) {
     <div className="agents">
       <div className="agents__toolbar">
         <span className="status-line">
-          稼働中のエージェント {AGENTS.length}(「分類」以外は準備中です)
+          稼働中のエージェント {AGENTS.length}
+          ({AGENTS.filter((a) => !LIVE_AGENT_IDS.includes(a.id)).map((a) => a.name).join("・")}
+          は準備中です)
         </span>
       </div>
       <div className="agents__list">
