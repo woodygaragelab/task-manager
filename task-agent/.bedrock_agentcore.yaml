@@ -32,7 +32,7 @@ agents:
     bedrock_agentcore:
       agent_id: task_agent-lAAoax7UkB
       agent_arn: arn:aws:bedrock-agentcore:ap-northeast-1:155830630328:runtime/task_agent-lAAoax7UkB
-      agent_session_id: 74b77e9c-7048-43c1-a457-6f51c92d605e
+      agent_session_id: ff0b0996-e39b-455c-9cfe-2259d6642f87
     codebuild:
       project_name: bedrock-agentcore-task_agent-builder
       execution_role: arn:aws:iam::155830630328:role/AmazonBedrockAgentCoreSDKCodeBuild-ap-northeast-1-b93c04ec99
