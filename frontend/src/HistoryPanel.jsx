@@ -67,13 +67,14 @@ function parseCsv(text) {
   return rows.filter((r) => r.some((cell) => cell.trim() !== ""));
 }
 
-export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
+export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTasksChanged }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [draft, setDraft] = useState(emptyDraft);
   const [editingId, setEditingId] = useState(null); // null: 新規追加モード, historyId: 編集モード
   const [submitting, setSubmitting] = useState(false);
+  const [reflecting, setReflecting] = useState(false);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -147,6 +148,32 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
       setError(err.message);
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleReflectProgress = async () => {
+    if (!draft.seriesCode || draft.frameCodes.length === 0) {
+      setError("進捗反映にはタスク名と対象月の選択が必要です");
+      return;
+    }
+    setReflecting(true);
+    setError(null);
+    try {
+      const results = await Promise.allSettled(
+        draft.frameCodes.map((frameCode) =>
+          api.updateTask(clientCode, draft.seriesCode, frameCode, { status: draft.status })
+        )
+      );
+      const failed = results.filter((r) => r.status === "rejected");
+      if (failed.length > 0) {
+        setError(
+          `進捗反映に失敗したタスクがあります(${failed.length}/${results.length}件): ` +
+            failed.map((r) => r.reason?.message).join(" / ")
+        );
+      }
+      onTasksChanged?.();
+    } finally {
+      setReflecting(false);
     }
   };
 
@@ -303,8 +330,18 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [] }) {
           <button
             type="button"
             className="btn btn--ghost"
+            onClick={handleReflectProgress}
+            disabled={submitting || reflecting}
+          >
+            {reflecting ? "反映中…" : "進捗反映"}
+          </button>
+        )}
+        {editingId && (
+          <button
+            type="button"
+            className="btn btn--ghost"
             onClick={cancelEdit}
-            disabled={submitting}
+            disabled={submitting || reflecting}
           >
             キャンセル
           </button>

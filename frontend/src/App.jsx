@@ -262,6 +262,7 @@ export default function App() {
                       clientCode={client.clientCode}
                       seriesList={seriesList}
                       frameList={frameList}
+                      onTasksChanged={() => refresh(client.clientCode)}
                     />
                   )}
 
