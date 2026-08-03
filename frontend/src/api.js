@@ -115,4 +115,44 @@ export const api = {
     request(
       `/clients/${encodeURIComponent(clientCode)}/agent-jobs/${encodeURIComponent(jobId)}`
     ),
+
+  listClassificationAxes: () => request(`/classification-axes`),
+
+  createClassificationAxis: (axisId, label) =>
+    request(`/classification-axes`, {
+      method: "POST",
+      body: { axisId, label },
+    }),
+
+  updateClassificationAxis: (axisId, patch) =>
+    request(`/classification-axes/${encodeURIComponent(axisId)}`, {
+      method: "PATCH",
+      body: patch,
+    }),
+
+  deleteClassificationAxis: (axisId) =>
+    request(`/classification-axes/${encodeURIComponent(axisId)}`, { method: "DELETE" }),
+
+  listClassificationRules: (axisId) =>
+    request(`/classification-axes/${encodeURIComponent(axisId)}/rules`),
+
+  createClassificationRule: (axisId, rule) =>
+    request(`/classification-axes/${encodeURIComponent(axisId)}/rules`, {
+      method: "POST",
+      body: rule,
+    }),
+
+  updateClassificationRule: (axisId, ruleId, patch) =>
+    request(
+      `/classification-axes/${encodeURIComponent(axisId)}/rules/${encodeURIComponent(ruleId)}`,
+      { method: "PATCH", body: patch }
+    ),
+
+  deleteClassificationRule: (axisId, ruleId) =>
+    request(
+      `/classification-axes/${encodeURIComponent(axisId)}/rules/${encodeURIComponent(ruleId)}`,
+      { method: "DELETE" }
+    ),
+
+  classify: (text) => request(`/classify`, { method: "POST", body: { text } }),
 };

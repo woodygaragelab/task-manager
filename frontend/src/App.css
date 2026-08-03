@@ -613,6 +613,25 @@
   min-width: 160px;
 }
 
+.field--grow {
+  flex: 1 1 220px;
+}
+
+/* ---------- 分類ルールページ(軸詳細) ---------- */
+.classification-axis-detail {
+  margin-top: 20px;
+  padding-top: 20px;
+  border-top: 1px dashed var(--paper-line);
+}
+
+.classification-axis-detail__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
 /* ---------- Status hanko (signature element) ---------- */
 .stamp {
   display: inline-flex;

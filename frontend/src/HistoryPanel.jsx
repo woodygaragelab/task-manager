@@ -11,6 +11,7 @@ const emptyDraft = () => ({
   assignee: "",
   status: "未着手",
   content: "",
+  classifications: {},
 });
 
 // 内部形式(YYYY-MM-DD)はそのまま保持し、表示のみMM/DDにする。
@@ -64,6 +65,7 @@ const draftFromEntry = (entry) => ({
   assignee: entry.assignee ?? "",
   status: entry.status ?? "未着手",
   content: entry.content ?? "",
+  classifications: entry.classifications ?? {},
 });
 
 // クォート囲み・エスケープ("")・改行を含むフィールドに対応した最小限のCSVパーサー。
@@ -119,6 +121,8 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
   const [submitting, setSubmitting] = useState(false);
   const [reflecting, setReflecting] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [axes, setAxes] = useState([]);
+  const [classifying, setClassifying] = useState(false);
   const fileInputRef = useRef(null);
 
   const seriesNameByCode = useMemo(
@@ -163,6 +167,14 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
       cancelled = true;
     };
   }, [clientCode]);
+
+  // 分類軸(観点)はクライアント横断の共通マスタなので、パネル表示時に1回だけ取得する
+  useEffect(() => {
+    api
+      .listClassificationAxes()
+      .then(setAxes)
+      .catch(() => {});
+  }, []);
 
   const cancelEdit = () => {
     setEditingId(null);
@@ -217,6 +229,26 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
       onTasksChanged?.();
     } finally {
       setReflecting(false);
+    }
+  };
+
+  // 登録済み全軸を「内容」の文面でまとめて判定し、結果をclassifications(軸ID→分類名)へ反映する
+  const handleAutoClassify = async () => {
+    if (!draft.content.trim()) return;
+    setClassifying(true);
+    setError(null);
+    try {
+      const { results } = await api.classify(draft.content);
+      setDraft((prev) => ({
+        ...prev,
+        classifications: Object.fromEntries(
+          results.map((r) => [r.axisId, r.category ?? ""])
+        ),
+      }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setClassifying(false);
     }
   };
 
@@ -295,6 +327,15 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
               placeholder="履歴・引き継ぎ事項などを記録してください"
             />
           </div>
+          <button
+            type="button"
+            className="btn btn--ghost"
+            onClick={handleAutoClassify}
+            disabled={classifying || !draft.content.trim()}
+            title="登録済みの分類ルールで「内容」を自動判定します"
+          >
+            {classifying ? "判定中…" : "自動判定"}
+          </button>
           <input
             ref={fileInputRef}
             type="file"
@@ -411,6 +452,28 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
             </button>
           )}
         </div>
+
+        {axes.length > 0 && (
+          <div className="history__new-row">
+            {axes.map((axis) => (
+              <div className="field" key={axis.axisId}>
+                <label>{axis.label || axis.axisId}</label>
+                <input
+                  value={draft.classifications[axis.axisId] ?? ""}
+                  onChange={(e) =>
+                    setDraft({
+                      ...draft,
+                      classifications: {
+                        ...draft.classifications,
+                        [axis.axisId]: e.target.value,
+                      },
+                    })
+                  }
+                />
+              </div>
+            ))}
+          </div>
+        )}
       </form>
 
       {entries.length === 0 ? (

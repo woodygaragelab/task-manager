@@ -3,6 +3,7 @@ const ITEMS = [
   { value: "クライアント", label: "クライアント" },
   { value: "タスクシリーズ", label: "タスク" },
   { value: "フレーム", label: "月" },
+  { value: "分類ルール", label: "分類ルール" },
 ];
 
 export function NavMenu({ open, currentView, onSelect, onClose }) {

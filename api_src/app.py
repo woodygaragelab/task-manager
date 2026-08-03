@@ -183,6 +183,7 @@ def handler(event, context):
                 assignee=body.get("assignee", ""),
                 status=body.get("status", ""),
                 content=body.get("content", ""),
+                classifications=body.get("classifications"),
             )
             return _response(201, item)
 
@@ -198,6 +199,7 @@ def handler(event, context):
                 assignee=body.get("assignee"),
                 status=body.get("status"),
                 content=body.get("content"),
+                classifications=body.get("classifications"),
             )
             return _response(200, item)
 
@@ -242,6 +244,76 @@ def handler(event, context):
             )
             return _response(200, item)
 
+        # ---- GET /classification-axes ----
+        if route_key == "GET /classification-axes":
+            return _response(200, repo.list_classification_axes())
+
+        # ---- POST /classification-axes ----
+        if route_key == "POST /classification-axes":
+            if "axisId" not in body or "label" not in body:
+                return _error(400, "axisId と label は必須です")
+            item = repo.create_classification_axis(
+                axis_id=body["axisId"],
+                label=body["label"],
+            )
+            return _response(201, item)
+
+        # ---- PATCH /classification-axes/{axisId} ----
+        if route_key == "PATCH /classification-axes/{axisId}":
+            item = repo.update_classification_axis(
+                axis_id=path_params["axisId"],
+                label=body.get("label"),
+            )
+            return _response(200, item)
+
+        # ---- DELETE /classification-axes/{axisId} ----
+        if route_key == "DELETE /classification-axes/{axisId}":
+            repo.delete_classification_axis(axis_id=path_params["axisId"])
+            return _response(200, {"axisId": path_params["axisId"]})
+
+        # ---- GET /classification-axes/{axisId}/rules ----
+        if route_key == "GET /classification-axes/{axisId}/rules":
+            return _response(200, repo.list_classification_rules(axis_id=path_params["axisId"]))
+
+        # ---- POST /classification-axes/{axisId}/rules ----
+        if route_key == "POST /classification-axes/{axisId}/rules":
+            if "category" not in body or "pattern" not in body:
+                return _error(400, "category と pattern は必須です")
+            item = repo.create_classification_rule(
+                axis_id=path_params["axisId"],
+                category=body["category"],
+                pattern=body["pattern"],
+                match_type=body.get("matchType", "keyword"),
+                priority=body.get("priority", 0),
+            )
+            return _response(201, item)
+
+        # ---- PATCH /classification-axes/{axisId}/rules/{ruleId} ----
+        if route_key == "PATCH /classification-axes/{axisId}/rules/{ruleId}":
+            item = repo.update_classification_rule(
+                axis_id=path_params["axisId"],
+                rule_id=path_params["ruleId"],
+                category=body.get("category"),
+                pattern=body.get("pattern"),
+                match_type=body.get("matchType"),
+                priority=body.get("priority"),
+            )
+            return _response(200, item)
+
+        # ---- DELETE /classification-axes/{axisId}/rules/{ruleId} ----
+        if route_key == "DELETE /classification-axes/{axisId}/rules/{ruleId}":
+            repo.delete_classification_rule(
+                axis_id=path_params["axisId"],
+                rule_id=path_params["ruleId"],
+            )
+            return _response(200, {"ruleId": path_params["ruleId"]})
+
+        # ---- POST /classify ----
+        if route_key == "POST /classify":
+            if "text" not in body:
+                return _error(400, "text は必須です")
+            return _response(200, {"results": repo.classify(text=body["text"])})
+
         return _error(404, f"未対応のルートです: {method} {event.get('rawPath', '')}")
 
     except repo.ClientAlreadyExistsError as e:
@@ -257,6 +329,12 @@ def handler(event, context):
     except repo.HistoryEntryNotFoundError as e:
         return _error(404, str(e))
     except repo.AgentJobNotFoundError as e:
+        return _error(404, str(e))
+    except repo.ClassificationAxisAlreadyExistsError as e:
+        return _error(409, str(e))
+    except repo.ClassificationAxisNotFoundError as e:
+        return _error(404, str(e))
+    except repo.ClassificationRuleNotFoundError as e:
         return _error(404, str(e))
     except (KeyError, ValueError) as e:
         return _error(400, f"リクエストの形式が不正です: {e}")

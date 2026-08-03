@@ -63,6 +63,7 @@ Resources:
           FRAMES_TABLE: TaskFrames
           HISTORY_TABLE: TaskHistory
           AGENT_JOBS_TABLE: TaskAgentJobs
+          CLASSIFICATION_RULES_TABLE: TaskClassificationRules
           MCP_AUTH_TOKEN: !Ref McpAuthToken
       Policies:
         - DynamoDBCrudPolicy:
@@ -77,6 +78,8 @@ Resources:
             TableName: TaskHistory
         - DynamoDBCrudPolicy:
             TableName: TaskAgentJobs
+        - DynamoDBCrudPolicy:
+            TableName: TaskClassificationRules
       FunctionUrlConfig:
         AuthType: NONE
         InvokeMode: BUFFERED
@@ -159,6 +162,7 @@ Resources:
           FRAMES_TABLE: TaskFrames
           HISTORY_TABLE: TaskHistory
           AGENT_JOBS_TABLE: TaskAgentJobs
+          CLASSIFICATION_RULES_TABLE: TaskClassificationRules
           AGENT_JOB_PROCESSOR_FUNCTION_NAME: !Ref TaskAgentJobProcessorFunction
       Policies:
         - DynamoDBCrudPolicy:
@@ -173,6 +177,8 @@ Resources:
             TableName: TaskHistory
         - DynamoDBCrudPolicy:
             TableName: TaskAgentJobs
+        - DynamoDBCrudPolicy:
+            TableName: TaskClassificationRules
         - LambdaInvokePolicy:
             FunctionName: !Ref TaskAgentJobProcessorFunction
       Events:
@@ -296,6 +302,60 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /clients/{clientCode}/history/{historyId}
             Method: delete
+        ListClassificationAxes:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /classification-axes
+            Method: get
+        CreateClassificationAxis:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /classification-axes
+            Method: post
+        UpdateClassificationAxis:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /classification-axes/{axisId}
+            Method: patch
+        DeleteClassificationAxis:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /classification-axes/{axisId}
+            Method: delete
+        ListClassificationRules:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /classification-axes/{axisId}/rules
+            Method: get
+        CreateClassificationRule:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /classification-axes/{axisId}/rules
+            Method: post
+        UpdateClassificationRule:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /classification-axes/{axisId}/rules/{ruleId}
+            Method: patch
+        DeleteClassificationRule:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /classification-axes/{axisId}/rules/{ruleId}
+            Method: delete
+        Classify:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /classify
+            Method: post
 
   # ------------------------------------------------------------------
   # Agent job processor (async; invoked directly by TaskApiFunction via
@@ -319,6 +379,7 @@ Resources:
           FRAMES_TABLE: TaskFrames
           HISTORY_TABLE: TaskHistory
           AGENT_JOBS_TABLE: TaskAgentJobs
+          CLASSIFICATION_RULES_TABLE: TaskClassificationRules
           AGENT_RUNTIME_ARN: !Ref AgentRuntimeArn
       Policies:
         - DynamoDBCrudPolicy:
@@ -333,6 +394,8 @@ Resources:
             TableName: TaskHistory
         - DynamoDBCrudPolicy:
             TableName: TaskAgentJobs
+        - DynamoDBCrudPolicy:
+            TableName: TaskClassificationRules
         - Statement:
             - Effect: Allow
               Action: bedrock-agentcore:InvokeAgentRuntime

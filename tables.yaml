@@ -122,6 +122,27 @@ Resources:
         AttributeName: ttl
         Enabled: true
 
+  # ------------------------------------------------------------------
+  # 7. Classification rules table (single-table design: lookupBucket="AXIS"
+  #    holds axis definitions, lookupBucket="RULE#<axisId>" holds the rules
+  #    belonging to that axis; sortKey holds axisId or ruleId respectively)
+  # ------------------------------------------------------------------
+  ClassificationRulesTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: TaskClassificationRules
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: lookupBucket
+          AttributeType: S
+        - AttributeName: sortKey
+          AttributeType: S
+      KeySchema:
+        - AttributeName: lookupBucket
+          KeyType: HASH
+        - AttributeName: sortKey
+          KeyType: RANGE
+
 Outputs:
   TasksTableName:
     Value: !Ref TasksTable
@@ -147,3 +168,7 @@ Outputs:
     Value: !Ref AgentJobsTable
   AgentJobsTableArn:
     Value: !GetAtt AgentJobsTable.Arn
+  ClassificationRulesTableName:
+    Value: !Ref ClassificationRulesTable
+  ClassificationRulesTableArn:
+    Value: !GetAtt ClassificationRulesTable.Arn

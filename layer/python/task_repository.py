@@ -15,6 +15,7 @@ MCPツールのデコレータや Web API のルーティングには一切依�
 """
 
 import os
+import re
 import uuid
 from datetime import datetime, timezone
 from typing import Optional
@@ -29,10 +30,13 @@ series_table = dynamodb.Table(os.environ["SERIES_TABLE"])
 frames_table = dynamodb.Table(os.environ["FRAMES_TABLE"])
 history_table = dynamodb.Table(os.environ["HISTORY_TABLE"])
 agent_jobs_table = dynamodb.Table(os.environ["AGENT_JOBS_TABLE"])
+classification_rules_table = dynamodb.Table(os.environ["CLASSIFICATION_RULES_TABLE"])
 
 CLIENT_BUCKET = "CLIENT"
 SERIES_BUCKET = "SERIES"
 FRAME_BUCKET = "FRAME"
+AXIS_BUCKET = "AXIS"
+RULE_BUCKET_PREFIX = "RULE#"
 
 
 class TaskNotFoundError(Exception):
@@ -63,6 +67,18 @@ class AgentJobNotFoundError(Exception):
     """指定されたエージェントジョブ(clientCode+jobId)が存在しない場合に送出する。"""
 
 
+class ClassificationAxisAlreadyExistsError(Exception):
+    """create_classification_axisで既に登録済みのaxisIdを指定した場合に送出する。"""
+
+
+class ClassificationAxisNotFoundError(Exception):
+    """指定された分類軸(axisId)が存在しない場合に送出する。"""
+
+
+class ClassificationRuleNotFoundError(Exception):
+    """指定された分類ルール(axisId+ruleId)が存在しない場合に送出する。"""
+
+
 # ----------------------------------------------------------------------
 # 内部ヘルパー
 # ----------------------------------------------------------------------
@@ -90,6 +106,10 @@ def _ensure_series_exists(series_code: str, series_name: str, task_group: str = 
         )
     except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
         pass  # 既に登録済み(同時実行時も含めて安全)
+
+
+def _rule_bucket(axis_id: str) -> str:
+    return f"{RULE_BUCKET_PREFIX}{axis_id}"
 
 
 def _ensure_frame_exists(frame_code: str, frame_name: str) -> None:
@@ -378,8 +398,14 @@ def create_history_entry(
     assignee: str = "",
     status: str = "",
     content: str = "",
+    classifications: Optional[dict] = None,
 ) -> dict:
-    """クライアントの履歴エントリを1件追加する(日付・分類・タスク名(Series)・対象月(Frameのリスト)・担当者・ステータス・内容を持つ)。"""
+    """クライアントの履歴エントリを1件追加する(日付・分類・タスク名(Series)・対象月(Frameのリスト)・担当者・ステータス・内容を持つ)。
+
+    classificationsは軸ID→分類名のマップ(分類機能の判定結果、任意)。既存のcategory
+    (taskGroupセレクトの値)とは独立した属性で、`POST /classify`の判定結果をそのまま
+    保存する用途を想定する。
+    """
     now = _now()
     item = {
         "clientCode": client_code,
@@ -391,6 +417,7 @@ def create_history_entry(
         "assignee": assignee,
         "status": status,
         "content": content,
+        "classifications": classifications or {},
         "createdAt": now,
         "updatedAt": now,
     }
@@ -408,6 +435,7 @@ def update_history_entry(
     assignee: Optional[str] = None,
     status: Optional[str] = None,
     content: Optional[str] = None,
+    classifications: Optional[dict] = None,
 ) -> dict:
     """既存の履歴エントリを更新する(指定した項目のみ変更)。"""
     key = {"clientCode": client_code, "historyId": history_id}
@@ -444,6 +472,9 @@ def update_history_entry(
     if content is not None:
         update_expr.append("content = :content")
         expr_values[":content"] = content
+    if classifications is not None:
+        update_expr.append("classifications = :classifications")
+        expr_values[":classifications"] = classifications
 
     resp = history_table.update_item(
         Key=key,
@@ -458,6 +489,204 @@ def update_history_entry(
 def delete_history_entry(client_code: str, history_id: str) -> None:
     """履歴エントリを削除する。"""
     history_table.delete_item(Key={"clientCode": client_code, "historyId": history_id})
+
+
+# ----------------------------------------------------------------------
+# 分類機能(履歴のcontentをキーワード/正規表現ルールで自動分類する)
+#
+# TaskClassificationRulesテーブル1つに、lookupBucketの値で「軸(AXIS)」定義と
+# 「ルール(RULE#<axisId>)」を同居させる単一テーブル設計。Series/Frameマスタと
+# 同じlookupBucketによるバケット分割パターンを踏襲し、軸をいくつ追加しても
+# テーブル追加やデプロイを不要にしている(詳細は設計書4-7節・9-13節)。
+# ----------------------------------------------------------------------
+def list_classification_axes() -> list[dict]:
+    """登録済みの全分類軸を一覧取得する(「分類ルール」ページの軸タブ、classify()の判定対象)。"""
+    resp = classification_rules_table.query(
+        KeyConditionExpression=Key("lookupBucket").eq(AXIS_BUCKET)
+    )
+    return resp.get("Items", [])
+
+
+def create_classification_axis(axis_id: str, label: str) -> dict:
+    """分類軸を新規登録する(「分類ルール」ページの「+ 軸を追加」操作専用)。"""
+    item = {
+        "lookupBucket": AXIS_BUCKET,
+        "sortKey": axis_id,
+        "axisId": axis_id,
+        "label": label,
+    }
+    try:
+        classification_rules_table.put_item(
+            Item=item,
+            ConditionExpression="attribute_not_exists(sortKey)",
+        )
+    except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
+        raise ClassificationAxisAlreadyExistsError(f"axisId {axis_id} は既に登録されています")
+    return item
+
+
+def update_classification_axis(axis_id: str, label: Optional[str] = None) -> dict:
+    """分類軸の表示名(label)を更新する(指定した項目のみ変更)。"""
+    key = {"lookupBucket": AXIS_BUCKET, "sortKey": axis_id}
+    resp = classification_rules_table.get_item(Key=key)
+    if not resp.get("Item"):
+        raise ClassificationAxisNotFoundError(f"axisId {axis_id} が見つかりません")
+
+    if label is None:
+        return resp["Item"]
+
+    resp = classification_rules_table.update_item(
+        Key=key,
+        UpdateExpression="SET label = :l",
+        ExpressionAttributeValues={":l": label},
+        ReturnValues="ALL_NEW",
+    )
+    return resp["Attributes"]
+
+
+def delete_classification_axis(axis_id: str) -> None:
+    """分類軸を削除する(配下のルールも全てカスケード削除する)。"""
+    for rule in list_classification_rules(axis_id):
+        classification_rules_table.delete_item(
+            Key={"lookupBucket": _rule_bucket(axis_id), "sortKey": rule["ruleId"]}
+        )
+    classification_rules_table.delete_item(Key={"lookupBucket": AXIS_BUCKET, "sortKey": axis_id})
+
+
+def list_classification_rules(axis_id: str) -> list[dict]:
+    """指定した軸に属するルールを、priority昇順(値が小さいほど優先評価)で一覧取得する。"""
+    resp = classification_rules_table.query(
+        KeyConditionExpression=Key("lookupBucket").eq(_rule_bucket(axis_id))
+    )
+    items = resp.get("Items", [])
+    items.sort(key=lambda i: (i.get("priority", 0), i.get("ruleId", "")))
+    return items
+
+
+def create_classification_rule(
+    axis_id: str,
+    category: str,
+    pattern: str,
+    match_type: str = "keyword",
+    priority: int = 0,
+) -> dict:
+    """軸配下にルールを1件追加する。matchTypeは"keyword"(部分一致)または"regex"(正規表現)。"""
+    if match_type not in ("keyword", "regex"):
+        raise ValueError('matchType は "keyword" または "regex" である必要があります')
+    axis_resp = classification_rules_table.get_item(
+        Key={"lookupBucket": AXIS_BUCKET, "sortKey": axis_id}
+    )
+    if not axis_resp.get("Item"):
+        raise ClassificationAxisNotFoundError(f"axisId {axis_id} が見つかりません")
+
+    rule_id = str(uuid.uuid4())
+    item = {
+        "lookupBucket": _rule_bucket(axis_id),
+        "sortKey": rule_id,
+        "ruleId": rule_id,
+        "axisId": axis_id,
+        "category": category,
+        "pattern": pattern,
+        "matchType": match_type,
+        "priority": priority,
+    }
+    classification_rules_table.put_item(Item=item)
+    return item
+
+
+def update_classification_rule(
+    axis_id: str,
+    rule_id: str,
+    category: Optional[str] = None,
+    pattern: Optional[str] = None,
+    match_type: Optional[str] = None,
+    priority: Optional[int] = None,
+) -> dict:
+    """既存ルールを更新する(指定した項目のみ変更)。"""
+    if match_type is not None and match_type not in ("keyword", "regex"):
+        raise ValueError('matchType は "keyword" または "regex" である必要があります')
+
+    key = {"lookupBucket": _rule_bucket(axis_id), "sortKey": rule_id}
+    resp = classification_rules_table.get_item(Key=key)
+    if not resp.get("Item"):
+        raise ClassificationRuleNotFoundError(
+            f"ルール(axisId={axis_id}, ruleId={rule_id}) が見つかりません"
+        )
+
+    update_expr = []
+    expr_names = {}
+    expr_values = {}
+    if category is not None:
+        update_expr.append("category = :c")
+        expr_values[":c"] = category
+    if pattern is not None:
+        update_expr.append("#p = :p")
+        expr_names["#p"] = "pattern"
+        expr_values[":p"] = pattern
+    if match_type is not None:
+        update_expr.append("matchType = :mt")
+        expr_values[":mt"] = match_type
+    if priority is not None:
+        update_expr.append("priority = :pr")
+        expr_values[":pr"] = priority
+
+    if not update_expr:
+        return resp["Item"]
+
+    kwargs = {
+        "Key": key,
+        "UpdateExpression": "SET " + ", ".join(update_expr),
+        "ExpressionAttributeValues": expr_values,
+        "ReturnValues": "ALL_NEW",
+    }
+    if expr_names:
+        kwargs["ExpressionAttributeNames"] = expr_names
+    resp = classification_rules_table.update_item(**kwargs)
+    return resp["Attributes"]
+
+
+def delete_classification_rule(axis_id: str, rule_id: str) -> None:
+    """ルールを削除する。"""
+    classification_rules_table.delete_item(
+        Key={"lookupBucket": _rule_bucket(axis_id), "sortKey": rule_id}
+    )
+
+
+def _rule_matches(rule: dict, text: str) -> bool:
+    pattern = rule.get("pattern", "")
+    if rule.get("matchType") == "regex":
+        try:
+            return re.search(pattern, text) is not None
+        except re.error:
+            return False  # 不正な正規表現は「不一致」として扱う(他ルール・他軸の判定を止めない)
+    return pattern in text
+
+
+def classify(text: str) -> list[dict]:
+    """登録済み全軸をまとめて判定する(履歴パネルの「自動判定」ボタン、`POST /classify`用)。
+
+    軸ごとに、登録済みルールをpriority昇順で評価し、最初に一致したルールのcategoryを
+    採用する。軸同士は完全に独立しており、ある軸の判定が他の軸に影響しない。どのルール
+    にも一致しない軸はcategory=None(未判定)として結果に含める(軸自体は常に返すことで、
+    呼び出し側が「軸の数だけ動的に入力欄を表示する」動作を実装できるようにするため)。
+    """
+    results = []
+    for axis in list_classification_axes():
+        matched = None
+        for rule in list_classification_rules(axis["axisId"]):
+            if _rule_matches(rule, text):
+                matched = rule
+                break
+        results.append(
+            {
+                "axisId": axis["axisId"],
+                "label": axis.get("label", ""),
+                "category": matched["category"] if matched else None,
+                "matchedRuleId": matched["ruleId"] if matched else None,
+                "matchedPattern": matched["pattern"] if matched else None,
+            }
+        )
+    return results
 
 
 # ----------------------------------------------------------------------

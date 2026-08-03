@@ -12,6 +12,7 @@ import { NavMenu } from "./NavMenu";
 import { ClientListPage } from "./ClientListPage";
 import { SeriesListPage } from "./SeriesListPage";
 import { FrameListPage } from "./FrameListPage";
+import { ClassificationAxesPage } from "./ClassificationAxesPage";
 import { api } from "./api";
 import "./App.css";
 
@@ -204,6 +205,7 @@ export default function App() {
       {currentView === "フレーム" && (
         <FrameListPage frameList={frameList} onRefresh={refreshMasters} />
       )}
+      {currentView === "分類ルール" && <ClassificationAxesPage />}
 
       {currentView === "進捗" && (
         <div className="layout">
