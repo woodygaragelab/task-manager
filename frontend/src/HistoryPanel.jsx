@@ -13,6 +13,49 @@ const emptyDraft = () => ({
   content: "",
 });
 
+// 内部形式(YYYY-MM-DD)はそのまま保持し、表示のみMM/DDにする。
+function formatDateDisplay(isoDate) {
+  if (!isoDate) return "";
+  const [, month, day] = isoDate.split("-");
+  if (!month || !day) return isoDate;
+  return `${month}/${day}`;
+}
+
+// frameCode(YYYYMM形式)を年月順に並べ、連続する月を「開始-終了月」にまとめて表示する。
+// 例: 2月・3月・4月 → "2-4月" / 1月・3月・5月・6月 → "1,3,5-6月"
+function formatFrameCodesDisplay(frameCodes, frameNameByCode) {
+  if (!frameCodes || frameCodes.length === 0) return "";
+
+  const isYearMonth = (code) => /^\d{6}$/.test(code);
+  if (!frameCodes.every(isYearMonth)) {
+    return frameCodes.map((code) => frameNameByCode[code] ?? code).join("、");
+  }
+
+  const ordinal = (code) =>
+    parseInt(code.slice(0, 4), 10) * 12 + (parseInt(code.slice(4, 6), 10) - 1);
+  const monthLabel = (code) => {
+    const name = frameNameByCode[code];
+    const match = name?.match(/(\d{1,2})\s*月/);
+    return match ? match[1] : String(parseInt(code.slice(4, 6), 10));
+  };
+
+  const sorted = [...frameCodes].sort();
+  const groups = [[sorted[0]]];
+  for (let i = 1; i < sorted.length; i++) {
+    const lastGroup = groups[groups.length - 1];
+    if (ordinal(sorted[i]) === ordinal(lastGroup[lastGroup.length - 1]) + 1) {
+      lastGroup.push(sorted[i]);
+    } else {
+      groups.push([sorted[i]]);
+    }
+  }
+
+  const labels = groups.map((g) =>
+    g.length === 1 ? monthLabel(g[0]) : `${monthLabel(g[0])}-${monthLabel(g[g.length - 1])}`
+  );
+  return labels.join(",") + "月";
+}
+
 const draftFromEntry = (entry) => ({
   date: entry.date ?? "",
   category: entry.category ?? "",
@@ -358,12 +401,12 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
           <thead>
             <tr>
               <th style={{ width: 130 }}>日付</th>
+              <th style={{ width: 100 }}>担当者</th>
+              <th>内容</th>
               <th style={{ width: 120 }}>分類</th>
               <th style={{ width: 160 }}>タスク名</th>
               <th style={{ width: 180 }}>対象月</th>
-              <th style={{ width: 100 }}>担当者</th>
               <th style={{ width: 110 }}>ステータス</th>
-              <th>内容</th>
               <th style={{ width: 60 }}></th>
             </tr>
           </thead>
@@ -377,21 +420,19 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
                 }
                 onClick={() => startEdit(entry)}
               >
-                <td data-label="日付">{entry.date ?? ""}</td>
+                <td data-label="日付">{formatDateDisplay(entry.date)}</td>
+                <td data-label="担当者">{entry.assignee ?? ""}</td>
+                <td data-label="内容">{entry.content ?? ""}</td>
                 <td data-label="分類">{entry.category ?? ""}</td>
                 <td data-label="タスク名">
                   {seriesNameByCode[entry.seriesCode] ?? ""}
                 </td>
                 <td data-label="対象月">
-                  {(entry.frameCodes ?? [])
-                    .map((code) => frameNameByCode[code] ?? code)
-                    .join("、")}
+                  {formatFrameCodesDisplay(entry.frameCodes, frameNameByCode)}
                 </td>
-                <td data-label="担当者">{entry.assignee ?? ""}</td>
                 <td data-label="ステータス">
                   <span className={`stamp stamp--${entry.status}`}>{entry.status}</span>
                 </td>
-                <td data-label="内容">{entry.content ?? ""}</td>
                 <td data-label="">
                   <button
                     type="button"
