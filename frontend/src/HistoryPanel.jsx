@@ -269,126 +269,148 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
     <div className="history">
       {error && <div className="error-banner">{error}</div>}
 
-      <div className="history__toolbar">
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept=".csv,text/csv"
-          className="history__file-input"
-          onChange={handleCsvSelected}
-          disabled={uploading}
-        />
-        <button
-          type="button"
-          className="btn btn--ghost"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={uploading}
-        >
-          {uploading ? "アップロード中…" : "CSVアップロード"}
-        </button>
-      </div>
-
       <form className="history__new" onSubmit={handleSubmit}>
-        <div className="field">
-          <label>日付</label>
+        <div className="history__new-row">
+          <div className="field">
+            <label>日付</label>
+            <input
+              type="date"
+              value={draft.date}
+              onChange={(e) => setDraft({ ...draft, date: e.target.value })}
+              required
+            />
+          </div>
+          <div className="field">
+            <label>担当者</label>
+            <input
+              value={draft.assignee}
+              onChange={(e) => setDraft({ ...draft, assignee: e.target.value })}
+            />
+          </div>
+          <div className="field field--grow">
+            <label>内容</label>
+            <input
+              value={draft.content}
+              onChange={(e) => setDraft({ ...draft, content: e.target.value })}
+              placeholder="履歴・引き継ぎ事項などを記録してください"
+            />
+          </div>
           <input
-            type="date"
-            value={draft.date}
-            onChange={(e) => setDraft({ ...draft, date: e.target.value })}
-            required
+            ref={fileInputRef}
+            type="file"
+            accept=".csv,text/csv"
+            className="history__file-input"
+            onChange={handleCsvSelected}
+            disabled={uploading}
           />
-        </div>
-        <div className="field">
-          <label>分類</label>
-          <select
-            value={draft.category}
-            onChange={(e) => {
-              const category = e.target.value;
-              const seriesStillValid = seriesList.some(
-                (s) => s.seriesCode === draft.seriesCode && s.taskGroup === category
-              );
-              setDraft({
-                ...draft,
-                category,
-                seriesCode: seriesStillValid ? draft.seriesCode : "",
-              });
-            }}
-          >
-            <option value="">未選択</option>
-            {taskGroups.map((group) => (
-              <option key={group} value={group}>
-                {group}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label>タスク名</label>
-          <select
-            value={draft.seriesCode}
-            onChange={(e) => setDraft({ ...draft, seriesCode: e.target.value })}
-          >
-            <option value="">未選択</option>
-            {seriesOptionsForCategory.map((s) => (
-              <option key={s.seriesCode} value={s.seriesCode}>
-                {s.seriesName}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label>対象月</label>
-          <FrameMultiSelect
-            frameList={frameList}
-            selected={draft.frameCodes}
-            onChange={(frameCodes) => setDraft({ ...draft, frameCodes })}
-          />
-        </div>
-        <div className="field">
-          <label>担当者</label>
-          <input
-            value={draft.assignee}
-            onChange={(e) => setDraft({ ...draft, assignee: e.target.value })}
-          />
-        </div>
-        <div className="field">
-          <label>ステータス</label>
-          <StatusSelect
-            status={draft.status}
-            onChange={(status) => setDraft({ ...draft, status })}
-          />
-        </div>
-        <div className="field field--grow">
-          <label>内容</label>
-          <input
-            value={draft.content}
-            onChange={(e) => setDraft({ ...draft, content: e.target.value })}
-            placeholder="履歴・引き継ぎ事項などを記録してください"
-          />
-        </div>
-        <button className="btn btn--primary" type="submit" disabled={submitting}>
-          {submitting ? "保存中…" : editingId ? "更新する" : "履歴を追加"}
-        </button>
-        {editingId && (
           <button
             type="button"
-            className="btn btn--ghost"
-            onClick={handleReflectProgress}
-            disabled={submitting || reflecting}
+            className="btn btn--ghost history__csv-btn"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={uploading}
+            title="CSVアップロード"
+            aria-label="CSVアップロード"
           >
-            {reflecting ? "反映中…" : "進捗反映"}
+            {uploading ? (
+              "アップロード中…"
+            ) : (
+              <svg
+                viewBox="0 0 24 24"
+                width="18"
+                height="18"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden="true"
+              >
+                <path d="M12 3v12" />
+                <path d="M7 10l5 5 5-5" />
+                <path d="M5 21h14" />
+              </svg>
+            )}
           </button>
-        )}
-        {editingId && (
-          <button
-            type="button"
-            className="btn btn--ghost"
-            onClick={cancelEdit}
-            disabled={submitting || reflecting}
-          >
-            キャンセル
+        </div>
+
+        <div className="history__new-row">
+          <div className="field">
+            <label>分類</label>
+            <select
+              value={draft.category}
+              onChange={(e) => {
+                const category = e.target.value;
+                const seriesStillValid = seriesList.some(
+                  (s) => s.seriesCode === draft.seriesCode && s.taskGroup === category
+                );
+                setDraft({
+                  ...draft,
+                  category,
+                  seriesCode: seriesStillValid ? draft.seriesCode : "",
+                });
+              }}
+            >
+              <option value="">未選択</option>
+              {taskGroups.map((group) => (
+                <option key={group} value={group}>
+                  {group}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label>タスク名</label>
+            <select
+              value={draft.seriesCode}
+              onChange={(e) => setDraft({ ...draft, seriesCode: e.target.value })}
+            >
+              <option value="">未選択</option>
+              {seriesOptionsForCategory.map((s) => (
+                <option key={s.seriesCode} value={s.seriesCode}>
+                  {s.seriesName}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="field">
+            <label>対象月</label>
+            <FrameMultiSelect
+              frameList={frameList}
+              selected={draft.frameCodes}
+              onChange={(frameCodes) => setDraft({ ...draft, frameCodes })}
+            />
+          </div>
+          <div className="field">
+            <label>ステータス</label>
+            <StatusSelect
+              status={draft.status}
+              onChange={(status) => setDraft({ ...draft, status })}
+            />
+          </div>
+          <button className="btn btn--primary" type="submit" disabled={submitting}>
+            {submitting ? "保存中…" : editingId ? "更新する" : "履歴を追加"}
           </button>
-        )}
+          {editingId && (
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={handleReflectProgress}
+              disabled={submitting || reflecting}
+            >
+              {reflecting ? "反映中…" : "進捗反映"}
+            </button>
+          )}
+          {editingId && (
+            <button
+              type="button"
+              className="btn btn--ghost"
+              onClick={cancelEdit}
+              disabled={submitting || reflecting}
+            >
+              キャンセル
+            </button>
+          )}
+        </div>
       </form>
 
       {entries.length === 0 ? (

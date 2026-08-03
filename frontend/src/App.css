@@ -748,24 +748,32 @@
 
 .history__new {
   display: flex;
-  flex-wrap: wrap;
-  align-items: end;
+  flex-direction: column;
   gap: 10px;
   padding-bottom: 18px;
   border-bottom: 1px dashed var(--paper-line);
+}
+
+.history__new-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 10px;
 }
 
 .history__new .field--grow {
   flex: 1 1 220px;
 }
 
-.history__toolbar {
-  display: flex;
-  justify-content: flex-end;
-}
-
 .history__file-input {
   display: none;
+}
+
+.history__csv-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 9px;
 }
 
 /* ---------- Frame multi-select(対象月) ---------- */
@@ -1077,7 +1085,7 @@
     color: var(--ink-soft);
     flex-shrink: 0;
   }
-  .history__new {
+  .history__new-row {
     flex-direction: column;
     align-items: stretch;
   }
