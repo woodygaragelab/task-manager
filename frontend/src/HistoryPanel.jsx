@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { api } from "./api";
-import { StatusSelect } from "./StatusSelect";
+import { StatusSelect, STATUS_OPTIONS } from "./StatusSelect";
 import { FrameMultiSelect } from "./FrameMultiSelect";
 
 const emptyDraft = () => ({
@@ -234,6 +234,7 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
 
   // 登録済み全軸を「内容」の文面でまとめて判定し、結果をclassifications(軸ID→分類名)へ反映する。
   // あわせて「内容」中の「1-9月」のような対象月表記をdate(入力済みの年)基準でframeCodesへ抽出反映する。
+  // status軸の判定結果がStatusSelectの選択肢と一致する場合は、ステータスにもそのまま反映する。
   const handleAutoClassify = async () => {
     if (!draft.content.trim()) return;
     setClassifying(true);
@@ -257,12 +258,16 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
           s.taskGroup === findClassification("taskGroup") &&
           s.seriesName === findClassification("taskSeries")
       );
+      const classifiedStatus = findClassification("status");
       setDraft((prev) => ({
         ...prev,
         classifications,
         ...(frameCodes && frameCodes.length > 0 ? { frameCodes } : {}),
         ...(matchedSeries
           ? { category: matchedSeries.taskGroup, seriesCode: matchedSeries.seriesCode }
+          : {}),
+        ...(classifiedStatus && STATUS_OPTIONS.includes(classifiedStatus)
+          ? { status: classifiedStatus }
           : {}),
       }));
     } catch (err) {
