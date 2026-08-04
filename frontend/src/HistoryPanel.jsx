@@ -239,11 +239,20 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
     setError(null);
     try {
       const { results } = await api.classify(draft.content);
+      const classifications = Object.fromEntries(
+        results.map((r) => [r.axisId, r.category ?? ""])
+      );
+      const matchedSeries = seriesList.find(
+        (s) =>
+          s.taskGroup === classifications.taskGroup &&
+          s.seriesName === classifications.taskSeries
+      );
       setDraft((prev) => ({
         ...prev,
-        classifications: Object.fromEntries(
-          results.map((r) => [r.axisId, r.category ?? ""])
-        ),
+        classifications,
+        ...(matchedSeries
+          ? { category: matchedSeries.taskGroup, seriesCode: matchedSeries.seriesCode }
+          : {}),
       }));
     } catch (err) {
       setError(err.message);
