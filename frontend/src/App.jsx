@@ -2,22 +2,21 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { signOut } from "aws-amplify/auth";
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { ClientSelector } from "./ClientSelector";
-import { TaskTable } from "./TaskTable";
 import { ProgressTable } from "./ProgressTable";
 import { TaskDetailPanel } from "./TaskDetailPanel";
 import { HistoryPanel } from "./HistoryPanel";
-import { NewTaskForm } from "./NewTaskForm";
 import { AgentsPanel } from "./AgentsPanel";
 import { NavMenu } from "./NavMenu";
 import { ClientListPage } from "./ClientListPage";
 import { SeriesListPage } from "./SeriesListPage";
 import { FrameListPage } from "./FrameListPage";
 import { ClassificationAxesPage } from "./ClassificationAxesPage";
+import { TaskDataQueryPage } from "./TaskDataQueryPage";
 import { api } from "./api";
 import "./App.css";
 
 const POLL_INTERVAL_MS = 4000;
-const TABS = ["進捗", "履歴", "タスク", "エージェント"];
+const TABS = ["進捗", "履歴", "エージェント"];
 const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
 
 export default function App() {
@@ -114,26 +113,6 @@ export default function App() {
     }
   };
 
-  const handleCreate = async ({ seriesCode, seriesName }) => {
-    // 既存シリーズ1件につき、登録済みの全フレーム分のタスクをまとめて作成する
-    try {
-      await Promise.all(
-        frameList.map((frame) =>
-          api.createTask({
-            clientCode: client.clientCode,
-            seriesCode,
-            seriesName,
-            frameCode: frame.frameCode,
-            frameName: frame.frameName,
-          })
-        )
-      );
-      await refresh(client.clientCode);
-    } catch (e) {
-      setError(e.message);
-    }
-  };
-
   const seriesNameByCode = useMemo(
     () => Object.fromEntries(seriesList.map((s) => [s.seriesCode, s.seriesName])),
     [seriesList]
@@ -206,6 +185,7 @@ export default function App() {
         <FrameListPage frameList={frameList} onRefresh={refreshMasters} />
       )}
       {currentView === "分類ルール" && <ClassificationAxesPage />}
+      {currentView === "タスクデータ照会" && <TaskDataQueryPage />}
 
       {currentView === "進捗" && (
         <div className="layout">
@@ -266,25 +246,6 @@ export default function App() {
                       frameList={frameList}
                       onTasksChanged={() => refresh(client.clientCode)}
                     />
-                  )}
-
-                  {activeTab === "タスク" && (
-                    <>
-                      {loading ? (
-                        <div className="status-line">読み込み中…</div>
-                      ) : (
-                        <TaskTable
-                          tasks={tasks}
-                          seriesNameByCode={seriesNameByCode}
-                          frameNameByCode={frameNameByCode}
-                          seriesGroupByCode={seriesGroupByCode}
-                          selectedTaskKey={selectedTaskCombinedKey}
-                          onSelect={selectTask}
-                        />
-                      )}
-
-                      <NewTaskForm seriesList={seriesList} onCreate={handleCreate} />
-                    </>
                   )}
 
                   {activeTab === "エージェント" && <AgentsPanel client={client} />}

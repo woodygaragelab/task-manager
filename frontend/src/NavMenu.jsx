@@ -1,9 +1,10 @@
 const ITEMS = [
   { value: "進捗", label: "ホーム" },
-  { value: "クライアント", label: "クライアント" },
-  { value: "タスクシリーズ", label: "タスク" },
-  { value: "フレーム", label: "月" },
-  { value: "分類ルール", label: "分類ルール" },
+  { value: "クライアント", label: "クライアント設定" },
+  { value: "タスクシリーズ", label: "タスクシリーズ設定" },
+  { value: "フレーム", label: "月設定" },
+  { value: "分類ルール", label: "分類ルール設定" },
+  { value: "タスクデータ照会", label: "タスクデータ照会" },
 ];
 
 export function NavMenu({ open, currentView, onSelect, onClose }) {

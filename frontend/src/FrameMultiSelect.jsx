@@ -21,10 +21,17 @@ export function FrameMultiSelect({ frameList, selected, onChange, disabled }) {
     onChange(next);
   };
 
-  const label = frameList
-    .filter((f) => selected.includes(f.frameCode))
-    .map((f) => f.frameName)
-    .join("、");
+  const allSelected = frameList.length > 0 && selected.length === frameList.length;
+  const toggleAll = () => {
+    onChange(allSelected ? [] : frameList.map((f) => f.frameCode));
+  };
+
+  const label = allSelected
+    ? "全月"
+    : frameList
+        .filter((f) => selected.includes(f.frameCode))
+        .map((f) => f.frameName)
+        .join("、");
 
   return (
     <div className="frame-multiselect" ref={rootRef}>
@@ -41,16 +48,22 @@ export function FrameMultiSelect({ frameList, selected, onChange, disabled }) {
           {frameList.length === 0 ? (
             <div className="frame-multiselect__empty">フレーム未登録</div>
           ) : (
-            frameList.map((f) => (
-              <label key={f.frameCode} className="frame-multiselect__option">
-                <input
-                  type="checkbox"
-                  checked={selected.includes(f.frameCode)}
-                  onChange={() => toggle(f.frameCode)}
-                />
-                {f.frameName}
+            <>
+              <label className="frame-multiselect__option frame-multiselect__option--all">
+                <input type="checkbox" checked={allSelected} onChange={toggleAll} />
+                全月
               </label>
-            ))
+              {frameList.map((f) => (
+                <label key={f.frameCode} className="frame-multiselect__option">
+                  <input
+                    type="checkbox"
+                    checked={selected.includes(f.frameCode)}
+                    onChange={() => toggle(f.frameCode)}
+                  />
+                  {f.frameName}
+                </label>
+              ))}
+            </>
           )}
         </div>
       )}

@@ -852,6 +852,13 @@
   border-radius: 4px;
 }
 
+.frame-multiselect__option--all {
+  font-weight: 600;
+  border-bottom: 1px solid var(--paper-line);
+  margin-bottom: 4px;
+  padding-bottom: 6px;
+}
+
 .frame-multiselect__empty {
   padding: 4px 6px;
   font-size: 13px;
