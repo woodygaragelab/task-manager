@@ -283,6 +283,30 @@ def delete_frame(frame_code: str) -> None:
     frames_table.delete_item(Key={"lookupBucket": FRAME_BUCKET, "frameCode": frame_code})
 
 
+DEFAULT_FRAME_RANGE_PATTERN = r"(\d{1,2})(?:\s*[-〜~]\s*(\d{1,2}))?\s*月"
+
+
+def extract_frame_codes(text: str, year: str, pattern: str = DEFAULT_FRAME_RANGE_PATTERN) -> list[str]:
+    """自由記述のテキストから「1-9月」「6月」のような対象月表記を読み取り、frameCode(YYYYMM)のリストに変換する。
+
+    デフォルトのpatternは、グループ1=開始月・グループ2=終了月(範囲表記でなければ省略可)を
+    捉える正規表現(「1-9月」「1〜9月」のような範囲、「6月」のような単月の両方にマッチ)。
+    「1月分」等、別の表記ルールに対応したい場合はpatternを差し替えられる(グループ構成は
+    デフォルトと同じ規約に従うこと)。
+    """
+    months: set[int] = set()
+    for m in re.finditer(pattern, text):
+        start = int(m.group(1))
+        end_str = m.group(2) if m.re.groups >= 2 else None
+        end = int(end_str) if end_str else start
+        if end < start:
+            start, end = end, start
+        for month in range(start, end + 1):
+            if 1 <= month <= 12:
+                months.add(month)
+    return [f"{year}{month:02d}" for month in sorted(months)]
+
+
 def create_task(
     client_code: str,
     series_code: str,

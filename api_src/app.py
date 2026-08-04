@@ -321,7 +321,12 @@ def handler(event, context):
         if route_key == "POST /classify":
             if "text" not in body:
                 return _error(400, "text は必須です")
-            return _response(200, {"results": repo.classify(text=body["text"])})
+            text = body["text"]
+            result = {"results": repo.classify(text=text)}
+            year = body.get("year")
+            if year:
+                result["frameCodes"] = repo.extract_frame_codes(text=text, year=year)
+            return _response(200, result)
 
         return _error(404, f"未対応のルートです: {method} {event.get('rawPath', '')}")
 

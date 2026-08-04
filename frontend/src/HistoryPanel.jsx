@@ -232,13 +232,15 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
     }
   };
 
-  // 登録済み全軸を「内容」の文面でまとめて判定し、結果をclassifications(軸ID→分類名)へ反映する
+  // 登録済み全軸を「内容」の文面でまとめて判定し、結果をclassifications(軸ID→分類名)へ反映する。
+  // あわせて「内容」中の「1-9月」のような対象月表記をdate(入力済みの年)基準でframeCodesへ抽出反映する。
   const handleAutoClassify = async () => {
     if (!draft.content.trim()) return;
     setClassifying(true);
     setError(null);
     try {
-      const { results } = await api.classify(draft.content);
+      const year = draft.date?.slice(0, 4);
+      const { results, frameCodes } = await api.classify(draft.content, year);
       const classifications = Object.fromEntries(
         results.map((r) => [r.axisId, r.category ?? ""])
       );
@@ -258,6 +260,7 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
       setDraft((prev) => ({
         ...prev,
         classifications,
+        ...(frameCodes && frameCodes.length > 0 ? { frameCodes } : {}),
         ...(matchedSeries
           ? { category: matchedSeries.taskGroup, seriesCode: matchedSeries.seriesCode }
           : {}),

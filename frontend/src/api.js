@@ -154,5 +154,6 @@ export const api = {
       { method: "DELETE" }
     ),
 
-  classify: (text) => request(`/classify`, { method: "POST", body: { text } }),
+  classify: (text, year) =>
+    request(`/classify`, { method: "POST", body: year ? { text, year } : { text } }),
 };
