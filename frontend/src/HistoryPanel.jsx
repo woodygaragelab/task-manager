@@ -242,10 +242,18 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
       const classifications = Object.fromEntries(
         results.map((r) => [r.axisId, r.category ?? ""])
       );
+      // axisIdは分類ルールページで自由入力されるため、大文字小文字の揺れ
+      // (taskGroup/TaskGroup等)を区別せずtaskGroup/taskSeries軸を探す。
+      const findClassification = (axisName) => {
+        const key = Object.keys(classifications).find(
+          (k) => k.toLowerCase() === axisName.toLowerCase()
+        );
+        return key ? classifications[key] : undefined;
+      };
       const matchedSeries = seriesList.find(
         (s) =>
-          s.taskGroup === classifications.taskGroup &&
-          s.seriesName === classifications.taskSeries
+          s.taskGroup === findClassification("taskGroup") &&
+          s.seriesName === findClassification("taskSeries")
       );
       setDraft((prev) => ({
         ...prev,
