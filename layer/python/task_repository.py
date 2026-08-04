@@ -375,6 +375,13 @@ def update_task(
     return resp["Attributes"]
 
 
+def delete_task(client_code: str, series_code: str, frame_code: str) -> None:
+    """タスクを1件削除する。"""
+    tasks_table.delete_item(
+        Key={"clientCode": client_code, "taskKey": _task_key(series_code, frame_code)}
+    )
+
+
 def list_tasks_by_client(client_code: str) -> list[dict]:
     """指定したクライアントコード(完全一致)のタスクを、シリーズ内でフレーム順に一覧取得する。"""
     resp = tasks_table.query(KeyConditionExpression=Key("clientCode").eq(client_code))

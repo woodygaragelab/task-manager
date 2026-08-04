@@ -29,15 +29,22 @@ MCP_AUTH_TOKEN = os.environ.get("MCP_AUTH_TOKEN", "")
 TOOL_FUNCTIONS = [
     repo.list_clients,
     repo.create_client,
+    repo.delete_client,
     repo.list_series,
+    repo.create_series,
+    repo.delete_series,
     repo.list_frames,
+    repo.create_frame,
+    repo.delete_frame,
     repo.list_tasks_by_client,
     repo.get_task,
     repo.create_task,
     repo.update_task,
+    repo.delete_task,
     repo.list_history,
     repo.create_history_entry,
     repo.update_history_entry,
+    repo.delete_history_entry,
 ]
 
 

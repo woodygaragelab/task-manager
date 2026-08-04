@@ -166,6 +166,15 @@ def handler(event, context):
             )
             return _response(200, item)
 
+        # ---- DELETE /tasks/{clientCode}/{seriesCode}/{frameCode} ----
+        if route_key == "DELETE /tasks/{clientCode}/{seriesCode}/{frameCode}":
+            repo.delete_task(
+                client_code=path_params["clientCode"],
+                series_code=path_params["seriesCode"],
+                frame_code=path_params["frameCode"],
+            )
+            return _response(200, {"frameCode": path_params["frameCode"]})
+
         # ---- GET /clients/{clientCode}/history ----
         if route_key == "GET /clients/{clientCode}/history":
             return _response(200, repo.list_history(client_code=path_params["clientCode"]))
