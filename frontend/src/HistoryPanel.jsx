@@ -507,6 +507,7 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
           上のフォームから最初の履歴を追加してください。
         </div>
       ) : (
+        <div className="history__table-scroll">
         <table className="history__table">
           <thead>
             <tr>
@@ -559,6 +560,7 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
             ))}
           </tbody>
         </table>
+        </div>
       )}
     </div>
   );

@@ -721,6 +721,11 @@
   gap: 20px;
 }
 
+.history__table-scroll {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
 .history__table {
   width: 100%;
   border-collapse: collapse;
@@ -736,6 +741,10 @@
   color: var(--ink-soft);
   border-bottom: 1px solid var(--ink);
   padding: 0 10px 8px;
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  z-index: 1;
 }
 
 .history__table td {
