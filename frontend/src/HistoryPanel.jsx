@@ -186,6 +186,30 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
     setDraft(draftFromEntry(entry));
   };
 
+  // タスク名・対象月が選択されている場合のみ、選択中の対象月のタスクへstatusを反映する。
+  // 未選択の場合は反映対象がないため何もしない(呼び出し元でエラー表示するかは各自判断)。
+  const reflectProgress = async (seriesCode, frameCodes, status) => {
+    if (!seriesCode || frameCodes.length === 0) return;
+    setReflecting(true);
+    try {
+      const results = await Promise.allSettled(
+        frameCodes.map((frameCode) =>
+          api.updateTask(clientCode, seriesCode, frameCode, { status })
+        )
+      );
+      const failed = results.filter((r) => r.status === "rejected");
+      if (failed.length > 0) {
+        setError(
+          `進捗反映に失敗したタスクがあります(${failed.length}/${results.length}件): ` +
+            failed.map((r) => r.reason?.message).join(" / ")
+        );
+      }
+      onTasksChanged?.();
+    } finally {
+      setReflecting(false);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!draft.date) return;
@@ -197,6 +221,7 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
       } else {
         await api.createHistoryEntry(clientCode, draft);
       }
+      await reflectProgress(draft.seriesCode, draft.frameCodes, draft.status);
       cancelEdit();
       await load();
     } catch (err) {
@@ -211,25 +236,8 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
       setError("進捗反映にはタスク名と対象月の選択が必要です");
       return;
     }
-    setReflecting(true);
     setError(null);
-    try {
-      const results = await Promise.allSettled(
-        draft.frameCodes.map((frameCode) =>
-          api.updateTask(clientCode, draft.seriesCode, frameCode, { status: draft.status })
-        )
-      );
-      const failed = results.filter((r) => r.status === "rejected");
-      if (failed.length > 0) {
-        setError(
-          `進捗反映に失敗したタスクがあります(${failed.length}/${results.length}件): ` +
-            failed.map((r) => r.reason?.message).join(" / ")
-        );
-      }
-      onTasksChanged?.();
-    } finally {
-      setReflecting(false);
-    }
+    await reflectProgress(draft.seriesCode, draft.frameCodes, draft.status);
   };
 
   // 登録済み全軸を「内容」の文面でまとめて判定し、結果をclassifications(軸ID→分類名)へ反映する。
@@ -454,7 +462,7 @@ export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTa
             />
           </div>
           <button className="btn btn--primary" type="submit" disabled={submitting}>
-            {submitting ? "保存中…" : editingId ? "更新する" : "履歴を追加"}
+            {submitting ? "保存中…" : editingId ? "更新" : "追加"}
           </button>
           {editingId && (
             <button
