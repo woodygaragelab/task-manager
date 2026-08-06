@@ -28,7 +28,8 @@ Local run:
     export AWS_REGION=ap-northeast-1
     export GOOGLE_SA_SECRET_NAME=receipt-agent/google-drive-sa
     export TASKS_TABLE=Tasks CLIENTS_TABLE=TaskClients SERIES_TABLE=TaskSeries \
-           FRAMES_TABLE=TaskFrames HISTORY_TABLE=TaskHistory AGENT_JOBS_TABLE=TaskAgentJobs
+           FRAMES_TABLE=TaskFrames HISTORY_TABLE=TaskHistory AGENT_JOBS_TABLE=TaskAgentJobs \
+           CLASSIFICATION_RULES_TABLE=TaskClassificationRules
     python task_agent.py
 
 Deploy:

@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { api } from "./api";
 
-// 現時点でAgentCoreに実接続しているのは「分類」(archivist)と「進捗更新」(progress)のみ。
+// 現時点でAgentCoreに実接続しているのは「分類」(archivist)のみ。
 // 他のエージェントは今後の実装予定のダミー表示。
-const LIVE_AGENT_IDS = ["archivist", "progress"];
+const LIVE_AGENT_IDS = ["archivist"];
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 100;
 
@@ -22,12 +22,6 @@ const AGENTS = [
     description: "receiptフォルダの新しい領収書画像を勘定科目ごとにリネーム・分類する",
   },
   {
-    id: "progress",
-    name: "進捗更新",
-    role: "進捗管理・更新",
-    description: "履歴レコードを順に読み取り、内容を解釈して日付・分類・担当者・ステータスを更新する",
-  },
-  {
     id: "courier",
     name: "会計",
     role: "外部連携・送信",
@@ -40,6 +34,12 @@ const AGENTS = [
     role: "検証・照合",
     description: "仕訳データの科目コードをマスタと照合する",
     instruction: "仕訳データの科目コードをマスタと照合する",
+  },
+  {
+    id: "progress",
+    name: "進捗更新",
+    role: "進捗管理・更新",
+    description: "履歴レコードを順に読み取り、内容を解釈して日付・分類・担当者・ステータスを更新する",
   },
 ];
 
