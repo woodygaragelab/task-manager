@@ -495,6 +495,30 @@
 }
 
 /* ---------- Progress table (Series x Frame matrix) ---------- */
+.progress-filter {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.progress-filter label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-soft);
+  letter-spacing: 0.06em;
+}
+
+.progress-filter select {
+  font-family: var(--font-body);
+  font-size: 13px;
+  padding: 6px 10px;
+  border: 1px solid var(--paper-line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
 .progress {
   width: 100%;
   border-collapse: collapse;
