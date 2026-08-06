@@ -27,6 +27,22 @@ Google Drive上のreceiptフォルダに溜まっていく領収書・請求書�
 `create_file` / `trash_file`)と、ローカルの一時作業ディレクトリ(`/tmp`)を組み合わせて動く。
 既存のPythonスクリプト(`scripts/`配下)は無改造で、`/tmp`上のファイルに対して実行する。
 
+## MCPツール名について(実行環境による違い)
+
+本文中の `mcp__task-manager__...` はAgentCore環境でのツール名。Claude Codeの
+claude.aiコネクタ経由など、別の実行環境では同じtaskmanager MCPサーバーが異なる
+プレフィックス(例: `mcp__claude_ai_taskmanager-mcp__...`)で登録されていることがある。
+
+`mcp__task-manager__...` という名前のツールが見つからない場合、それだけで
+「このツールは利用できない」と判断してその処理(履歴登録など)をスキップしては
+いけない。必ず以下の順で確認すること。
+
+1. まず本文記載のツール名でそのまま呼び出せるか試す。
+2. 見つからない場合、ツール検索の仕組み(例: `ToolSearch`)があれば、
+   `"taskmanager list_history create_history_entry update_history_entry list_frames list_clients"`
+   のようなキーワードで検索し、この環境での実際のツール名を特定してから呼び出す。
+3. それでも該当するツールが見つからない場合に限り、ユーザーにその旨を報告する。
+
 ## 対応する関与先(案件)とDriveフォルダID
 
 関与先コードとreceiptフォルダIDの対応表は、このファイルに直書きせず、taskmanagerの

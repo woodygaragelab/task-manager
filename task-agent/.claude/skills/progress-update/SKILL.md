@@ -24,6 +24,17 @@ taskmanagerの履歴(TaskHistory)のうち、日付・分類・担当者・ス�
 (taskmanagerのTaskHistoryテーブルを直接読み書きするMCPツール)のみを使う。
 Google Driveやレシート処理には関与しない。
 
+## MCPツール名について(実行環境による違い)
+
+本文中の `mcp__task-manager__...` はAgentCore環境でのツール名。Claude Codeの
+claude.aiコネクタ経由など、別の実行環境では同じtaskmanager MCPサーバーが異なる
+プレフィックス(例: `mcp__claude_ai_taskmanager-mcp__...`)で登録されていることがある。
+その名前のツールが見つからない場合、それだけで「利用できない」と判断して処理を
+スキップしてはいけない。まずそのままの名前で呼び出しを試し、見つからなければ
+ツール検索の仕組み(例: `ToolSearch`)で `"taskmanager list_history update_history_entry list_clients"`
+のようなキーワード検索を行い、この環境での実際のツール名を特定してから使うこと。
+それでも見つからない場合に限り、ユーザーに報告する。
+
 ## Step 0. 関与先の確認
 
 プロンプトに関与先コードが含まれていなければ、`mcp__task-manager__list_clients` で
