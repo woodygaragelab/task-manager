@@ -276,15 +276,33 @@ async def list_history(args: dict) -> dict:
 
 @tool(
     "update_history_entry",
-    "Update one history entry's date/category/assignee/status. status must "
-    "be exactly one of: 未着手, 依頼中, 確認中, 進行中, 完了, -.",
+    "Update one history entry's date/category/series_code/frame_codes/"
+    "assignee/status/content. status must be exactly one of: 未着手, 依頼中, "
+    "確認中, 進行中, 完了, -. Omit frame_codes to leave the existing target "
+    "months unchanged.",
     {
-        "client_code": str,
-        "history_id": str,
-        "date": str,
-        "category": str,
-        "assignee": str,
-        "status": str,
+        "type": "object",
+        "properties": {
+            "client_code": {"type": "string"},
+            "history_id": {"type": "string"},
+            "date": {"type": "string"},
+            "category": {"type": "string"},
+            "series_code": {"type": "string"},
+            "frame_codes": {"type": "array", "items": {"type": "string"}},
+            "assignee": {"type": "string"},
+            "status": {"type": "string"},
+            "content": {"type": "string"},
+        },
+        "required": [
+            "client_code",
+            "history_id",
+            "date",
+            "category",
+            "series_code",
+            "assignee",
+            "status",
+            "content",
+        ],
     },
 )
 async def update_history_entry(args: dict) -> dict:
@@ -293,16 +311,66 @@ async def update_history_entry(args: dict) -> dict:
         history_id=args["history_id"],
         date=args["date"],
         category=args["category"],
+        series_code=args["series_code"],
+        frame_codes=args.get("frame_codes"),
         assignee=args["assignee"],
         status=args["status"],
+        content=args["content"],
     )
     return {"content": [{"type": "text", "text": json.dumps(updated, ensure_ascii=False)}]}
+
+
+@tool(
+    "create_history_entry",
+    "Create one new history entry for a taskmanager client (date/category/"
+    "series_code/frame_codes/assignee/status/content). status must be "
+    "exactly one of: 未着手, 依頼中, 確認中, 進行中, 完了, -.",
+    {
+        "client_code": str,
+        "date": str,
+        "category": str,
+        "series_code": str,
+        "frame_codes": list[str],
+        "assignee": str,
+        "status": str,
+        "content": str,
+    },
+)
+async def create_history_entry(args: dict) -> dict:
+    created = repo.create_history_entry(
+        client_code=args["client_code"],
+        date=args["date"],
+        category=args["category"],
+        series_code=args["series_code"],
+        frame_codes=args["frame_codes"],
+        assignee=args["assignee"],
+        status=args["status"],
+        content=args["content"],
+    )
+    return {"content": [{"type": "text", "text": json.dumps(created, ensure_ascii=False)}]}
+
+
+@tool(
+    "list_frames",
+    "List all registered taskmanager frames (frameCode in YYYYMM format, "
+    "frameName).",
+    {},
+)
+async def list_frames(args: dict) -> dict:
+    frames = repo.list_frames()
+    return {"content": [{"type": "text", "text": json.dumps(frames, ensure_ascii=False)}]}
 
 
 task_manager_server = create_sdk_mcp_server(
     name="task-manager",
     version="1.0.0",
-    tools=[list_clients, list_history, update_history_entry],
+    tools=[
+        list_clients,
+        list_history,
+        update_history_entry,
+        create_history_entry,
+        list_frames,
+    ],
 )
 
 
@@ -323,6 +391,8 @@ def build_agent_options() -> ClaudeAgentOptions:
             "mcp__task-manager__list_clients",
             "mcp__task-manager__list_history",
             "mcp__task-manager__update_history_entry",
+            "mcp__task-manager__create_history_entry",
+            "mcp__task-manager__list_frames",
         ],
         mcp_servers={
             "google-drive": google_drive_server,
