@@ -49,76 +49,73 @@ export function ProgressTable({
 
   return (
     <>
-      <div className="progress-filter">
-        <label htmlFor="progress-group-filter">分類</label>
-        <select
-          id="progress-group-filter"
-          value={groupFilter}
-          onChange={(e) => setGroupFilter(e.target.value)}
-        >
-          <option value="all">すべて</option>
-          {groups.map((group) => (
-            <option key={group} value={group}>
-              {group}
-            </option>
+      <table className="progress">
+        <thead>
+          <tr>
+            <th className="progress__group-header">
+              <select
+                className="progress-filter__select"
+                value={groupFilter}
+                onChange={(e) => setGroupFilter(e.target.value)}
+              >
+                <option value="all">分類: すべて</option>
+                {groups.map((group) => (
+                  <option key={group} value={group}>
+                    {group}
+                  </option>
+                ))}
+              </select>
+            </th>
+            <th>タスク名</th>
+            {frameCodes.map((frameCode) => (
+              <th key={frameCode}>{frameNameByCode[frameCode] ?? frameCode}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {seriesCodes.map((seriesCode) => (
+            <tr key={seriesCode}>
+              <td className="progress__group">
+                {seriesGroupByCode[seriesCode] || "—"}
+              </td>
+              <td className="progress__series">
+                {seriesNameByCode[seriesCode] ?? seriesCode}
+              </td>
+              {frameCodes.map((frameCode) => {
+                const key = `${seriesCode}#${frameCode}`;
+                const task = taskByKey[key];
+                return (
+                  <td
+                    key={frameCode}
+                    className={
+                      "progress__cell" +
+                      (task ? " progress__cell--clickable" : "") +
+                      (key === selectedTaskKey ? " progress__cell--selected" : "")
+                    }
+                    onClick={task ? () => onSelect(task) : undefined}
+                  >
+                    {task ? (
+                      <span
+                        className={`stamp stamp--${task.status}`}
+                        title={task.status}
+                      >
+                        {STATUS_ABBR[task.status] ?? task.status}
+                      </span>
+                    ) : (
+                      <span className="progress__none">—</span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
           ))}
-        </select>
-      </div>
-      {seriesCodes.length === 0 ? (
+        </tbody>
+      </table>
+      {seriesCodes.length === 0 && (
         <div className="empty">
           <div className="empty__title">該当するタスクがありません</div>
           分類フィルタを変更してください。
         </div>
-      ) : (
-        <table className="progress">
-          <thead>
-            <tr>
-              <th>分類</th>
-              <th>タスク名</th>
-              {frameCodes.map((frameCode) => (
-                <th key={frameCode}>{frameNameByCode[frameCode] ?? frameCode}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {seriesCodes.map((seriesCode) => (
-              <tr key={seriesCode}>
-                <td className="progress__group">
-                  {seriesGroupByCode[seriesCode] || "—"}
-                </td>
-                <td className="progress__series">
-                  {seriesNameByCode[seriesCode] ?? seriesCode}
-                </td>
-                {frameCodes.map((frameCode) => {
-                  const key = `${seriesCode}#${frameCode}`;
-                  const task = taskByKey[key];
-                  return (
-                    <td
-                      key={frameCode}
-                      className={
-                        "progress__cell" +
-                        (task ? " progress__cell--clickable" : "") +
-                        (key === selectedTaskKey ? " progress__cell--selected" : "")
-                      }
-                      onClick={task ? () => onSelect(task) : undefined}
-                    >
-                      {task ? (
-                        <span
-                          className={`stamp stamp--${task.status}`}
-                          title={task.status}
-                        >
-                          {STATUS_ABBR[task.status] ?? task.status}
-                        </span>
-                      ) : (
-                        <span className="progress__none">—</span>
-                      )}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
       )}
     </>
   );

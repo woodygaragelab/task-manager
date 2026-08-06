@@ -495,27 +495,27 @@
 }
 
 /* ---------- Progress table (Series x Frame matrix) ---------- */
-.progress-filter {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 14px;
+.progress__group-header {
+  padding: 0 4px 8px !important;
 }
 
-.progress-filter label {
+.progress-filter__select {
+  width: 100%;
   font-family: var(--font-mono);
-  font-size: 10px;
-  color: var(--ink-soft);
+  font-size: 11px;
+  font-weight: 500;
   letter-spacing: 0.06em;
+  color: var(--ink-soft);
+  background: var(--paper);
+  border: 1px solid transparent;
+  border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
 }
 
-.progress-filter select {
-  font-family: var(--font-body);
-  font-size: 13px;
-  padding: 6px 10px;
-  border: 1px solid var(--paper-line);
-  border-radius: 4px;
-  background: var(--paper);
+.progress-filter__select:hover,
+.progress-filter__select:focus {
+  border-color: var(--paper-line);
   color: var(--ink);
 }
 
