@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { api } from "./api";
 
-// 現時点でAgentCoreに実接続しているのは「分類」(archivist)のみ。
+// 現時点でAgentCoreに実接続しているのは「分類」(archivist)と「進捗更新」(progress)のみ。
 // 他のエージェントは今後の実装予定のダミー表示。
-const LIVE_AGENT_IDS = ["archivist"];
+const LIVE_AGENT_IDS = ["archivist", "progress"];
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 100;
 
