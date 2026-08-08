@@ -99,8 +99,8 @@ export function ClientListPage() {
         <table className="simple-table">
           <thead>
             <tr>
-              <th>コード</th>
-              <th>クライアント名</th>
+              <th>関与先番号</th>
+              <th>関与先名</th>
               <th>領収書フォルダID</th>
               <th>分類後フォルダID</th>
               <th style={{ width: 80 }}></th>

@@ -637,6 +637,11 @@
 }
 
 /* ---------- Client profile page ---------- */
+.profile-back {
+  display: inline-block;
+  margin-bottom: 16px;
+}
+
 .profile-form {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

@@ -47,14 +47,15 @@ export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
 
   return (
     <section className="panel">
+      <button type="button" className="btn btn--ghost profile-back" onClick={onBack}>
+        ← 関与先リストへ戻る
+      </button>
+
       <div className="panel__header">
         <h2 className="panel__title">
           <span className="panel__title-eyebrow">プロフィール</span>
           {current.clientName}
         </h2>
-        <button type="button" className="btn btn--ghost" onClick={onBack}>
-          ← クライアント一覧へ戻る
-        </button>
       </div>
 
       {error && <div className="error-banner">{error}</div>}

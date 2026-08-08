@@ -1,6 +1,6 @@
 const ITEMS = [
   { value: "進捗", label: "ホーム" },
-  { value: "クライアント", label: "クライアント設定" },
+  { value: "クライアント", label: "関与先リスト" },
   { value: "タスクシリーズ", label: "タスクシリーズ設定" },
   { value: "フレーム", label: "月設定" },
   { value: "分類ルール", label: "分類ルール設定" },
