@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
+import { ClientProfilePage } from "./ClientProfilePage";
 
 export function ClientListPage() {
   const [clients, setClients] = useState([]);
@@ -9,6 +10,7 @@ export function ClientListPage() {
   const [newReceiptFolderId, setNewReceiptFolderId] = useState("");
   const [newRenamedFolderId, setNewRenamedFolderId] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [selectedClientCode, setSelectedClientCode] = useState(null);
 
   useEffect(() => {
     api.listClients().then(setClients).catch((e) => setError(e.message));
@@ -60,6 +62,26 @@ export function ClientListPage() {
     }
   };
 
+  const selectedClient = clients.find((c) => c.clientCode === selectedClientCode);
+
+  if (selectedClient) {
+    return (
+      <ClientProfilePage
+        client={selectedClient}
+        onBack={() => setSelectedClientCode(null)}
+        onUpdated={(updated) =>
+          setClients((prev) =>
+            prev.map((c) => (c.clientCode === updated.clientCode ? updated : c))
+          )
+        }
+        onDeleted={(clientCode) => {
+          setClients((prev) => prev.filter((c) => c.clientCode !== clientCode));
+          setSelectedClientCode(null);
+        }}
+      />
+    );
+  }
+
   return (
     <section className="panel">
       <h2 className="panel__title">
@@ -88,7 +110,15 @@ export function ClientListPage() {
             {clients.map((c) => (
               <tr key={c.clientCode}>
                 <td className="simple-table__code">{c.clientCode}</td>
-                <td>{c.clientName}</td>
+                <td>
+                  <button
+                    type="button"
+                    className="simple-table__link"
+                    onClick={() => setSelectedClientCode(c.clientCode)}
+                  >
+                    {c.clientName}
+                  </button>
+                </td>
                 <td>
                   <input
                     className="history__input"

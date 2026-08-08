@@ -622,6 +622,28 @@
   background: var(--stamp-red-soft);
 }
 
+.simple-table__link {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  color: var(--seal-green);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.simple-table__link:hover {
+  color: #324c3b;
+}
+
+/* ---------- Client profile page ---------- */
+.profile-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
 /* ---------- Inline add form (master data list pages) ---------- */
 .list-form {
   margin-top: 24px;

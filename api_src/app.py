@@ -65,6 +65,9 @@ def handler(event, context):
                 client_name=body["clientName"],
                 receipt_folder_id=body.get("receiptFolderId"),
                 renamed_folder_id=body.get("renamedFolderId"),
+                assignee=body.get("assignee"),
+                fiscal_year_end_month=body.get("fiscalYearEndMonth"),
+                interim_month=body.get("interimMonth"),
             )
             return _response(201, item)
 
@@ -75,6 +78,9 @@ def handler(event, context):
                 client_name=body.get("clientName"),
                 receipt_folder_id=body.get("receiptFolderId"),
                 renamed_folder_id=body.get("renamedFolderId"),
+                assignee=body.get("assignee"),
+                fiscal_year_end_month=body.get("fiscalYearEndMonth"),
+                interim_month=body.get("interimMonth"),
             )
             return _response(200, item)
 

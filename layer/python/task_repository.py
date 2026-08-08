@@ -143,6 +143,9 @@ def create_client(
     client_name: str,
     receipt_folder_id: Optional[str] = None,
     renamed_folder_id: Optional[str] = None,
+    assignee: Optional[str] = None,
+    fiscal_year_end_month: Optional[str] = None,
+    interim_month: Optional[str] = None,
 ) -> dict:
     """クライアントを新規登録する(ドロップダウンの「新規作成」操作専用)。
 
@@ -151,7 +154,9 @@ def create_client(
     握りつぶさずClientAlreadyExistsErrorとして呼び出し元に伝える。
 
     receipt_folder_id/renamed_folder_idは「エージェント」タブの領収書整理エージェント
-    (分類)が参照するGoogle DriveフォルダID。省略時は属性ごと書き込まない。
+    (分類)が参照するGoogle DriveフォルダID。assignee(担当者)/fiscal_year_end_month
+    (決算月)/interim_month(中間月)はクライアントプロフィール画面で設定する属性。
+    いずれも省略時は属性ごと書き込まない。
     """
     item = {
         "lookupBucket": CLIENT_BUCKET,
@@ -162,6 +167,12 @@ def create_client(
         item["receiptFolderId"] = receipt_folder_id
     if renamed_folder_id:
         item["renamedFolderId"] = renamed_folder_id
+    if assignee:
+        item["assignee"] = assignee
+    if fiscal_year_end_month:
+        item["fiscalYearEndMonth"] = fiscal_year_end_month
+    if interim_month:
+        item["interimMonth"] = interim_month
     try:
         clients_table.put_item(
             Item=item,
@@ -177,8 +188,11 @@ def update_client(
     client_name: Optional[str] = None,
     receipt_folder_id: Optional[str] = None,
     renamed_folder_id: Optional[str] = None,
+    assignee: Optional[str] = None,
+    fiscal_year_end_month: Optional[str] = None,
+    interim_month: Optional[str] = None,
 ) -> dict:
-    """既存クライアントのクライアント名・Driveフォルダ設定を更新する(指定した項目のみ変更)。"""
+    """既存クライアントのクライアント名・Driveフォルダ設定・担当者・決算月・中間月を更新する(指定した項目のみ変更)。"""
     key = {"lookupBucket": CLIENT_BUCKET, "clientCode": client_code}
     resp = clients_table.get_item(Key=key)
     if not resp.get("Item"):
@@ -196,6 +210,15 @@ def update_client(
     if renamed_folder_id is not None:
         update_expr.append("renamedFolderId = :nf")
         expr_values[":nf"] = renamed_folder_id
+    if assignee is not None:
+        update_expr.append("assignee = :a")
+        expr_values[":a"] = assignee
+    if fiscal_year_end_month is not None:
+        update_expr.append("fiscalYearEndMonth = :fy")
+        expr_values[":fy"] = fiscal_year_end_month
+    if interim_month is not None:
+        update_expr.append("interimMonth = :im")
+        expr_values[":im"] = interim_month
 
     if not update_expr:
         return resp["Item"]

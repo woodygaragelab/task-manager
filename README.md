@@ -141,8 +141,8 @@ aws cognito-idp admin-create-user `
 | Method | Path | 用途 |
 |---|---|---|
 | GET | `/clients` | 登録済み全クライアント一覧(クライアント選択ドロップダウン用) |
-| POST | `/clients` | クライアント新規登録(既存`clientCode`の場合は409。`receiptFolderId`/`renamedFolderId`を任意指定可) |
-| PATCH | `/clients/{clientCode}` | クライアント名・Driveフォルダ設定の更新(未存在なら404) |
+| POST | `/clients` | クライアント新規登録(既存`clientCode`の場合は409。`receiptFolderId`/`renamedFolderId`/`assignee`/`fiscalYearEndMonth`/`interimMonth`を任意指定可) |
+| PATCH | `/clients/{clientCode}` | クライアント名・Driveフォルダ設定・担当者・決算月・中間月の更新(未存在なら404) |
 | DELETE | `/clients/{clientCode}` | クライアント削除 |
 | GET | `/series` | 登録済み全シリーズ一覧(タスク作成時のドロップダウン用) |
 | POST | `/series` | シリーズ新規登録(既存`seriesCode`の場合は409。`taskGroup`を任意指定可) |
@@ -251,7 +251,8 @@ frontend/
 │   ├── main.jsx                 Amplify設定 + ログイン画面(Authenticator、日本語UIラベル)
 │   ├── App.jsx                  ルートコンポーネント(ハンバーガーメニューによる画面切り替え+パネル内タブ切り替え)
 │   ├── NavMenu.jsx              ハンバーガーメニュー(進捗/クライアント/タスクシリーズ/フレーム)
-│   ├── ClientListPage.jsx      クライアントマスタの一覧・編集・新規作成・削除(Driveフォルダ設定含む)
+│   ├── ClientListPage.jsx      クライアントマスタの一覧・新規作成・削除(クライアント名クリックでClientProfilePageへ)
+│   ├── ClientProfilePage.jsx   クライアントのプロフィール編集(クライアント名/Driveフォルダ設定/担当者/決算月/中間月)
 │   ├── SeriesListPage.jsx      シリーズ(表示名「タスク」)マスタの一覧・編集・新規作成・削除
 │   ├── FrameListPage.jsx       フレーム(表示名「月」)マスタの一覧・編集・新規作成・削除
 │   ├── ClientSelector.jsx      パネルヘッダー内のクライアント選択ドロップダウン
