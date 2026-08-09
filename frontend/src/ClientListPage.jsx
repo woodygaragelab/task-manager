@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
-import { ClientProfilePage } from "./ClientProfilePage";
 
-export function ClientListPage() {
+export function ClientListPage({ onSelectClient }) {
   const [clients, setClients] = useState([]);
   const [error, setError] = useState(null);
   const [newCode, setNewCode] = useState("");
@@ -10,7 +9,6 @@ export function ClientListPage() {
   const [newReceiptFolderId, setNewReceiptFolderId] = useState("");
   const [newRenamedFolderId, setNewRenamedFolderId] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [selectedClientCode, setSelectedClientCode] = useState(null);
 
   useEffect(() => {
     api.listClients().then(setClients).catch((e) => setError(e.message));
@@ -37,26 +35,6 @@ export function ClientListPage() {
       setSubmitting(false);
     }
   };
-
-  const selectedClient = clients.find((c) => c.clientCode === selectedClientCode);
-
-  if (selectedClient) {
-    return (
-      <ClientProfilePage
-        client={selectedClient}
-        onBack={() => setSelectedClientCode(null)}
-        onUpdated={(updated) =>
-          setClients((prev) =>
-            prev.map((c) => (c.clientCode === updated.clientCode ? updated : c))
-          )
-        }
-        onDeleted={(clientCode) => {
-          setClients((prev) => prev.filter((c) => c.clientCode !== clientCode));
-          setSelectedClientCode(null);
-        }}
-      />
-    );
-  }
 
   return (
     <section className="panel">
@@ -89,7 +67,7 @@ export function ClientListPage() {
                   <button
                     type="button"
                     className="simple-table__link"
-                    onClick={() => setSelectedClientCode(c.clientCode)}
+                    onClick={() => onSelectClient(c.clientCode)}
                   >
                     {c.clientName}
                   </button>

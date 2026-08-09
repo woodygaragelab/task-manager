@@ -11,8 +11,13 @@ const POLL_INTERVAL_MS = 4000;
 const TABS = ["基本情報", "資料進捗", "履歴", "エージェント"];
 const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
 
-export function ConsolePage({ seriesList, frameList }) {
-  const [client, setClient] = useState(DEFAULT_CLIENT); // {clientCode, clientName} | null
+export function ConsolePage({ seriesList, frameList, initialClientCode }) {
+  const initialCode = initialClientCode || DEFAULT_CLIENT.clientCode;
+  const [client, setClient] = useState(() =>
+    initialClientCode
+      ? { clientCode: initialClientCode, clientName: initialClientCode }
+      : DEFAULT_CLIENT
+  ); // {clientCode, clientName} | null
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -35,19 +40,20 @@ export function ConsolePage({ seriesList, frameList }) {
     }
   }, []);
 
-  // DEFAULT_CLIENTはclientCode/clientNameのみを持つため、
+  // 初期クライアント(DEFAULT_CLIENTまたはinitialClientCode)はclientCode/clientNameのみを持つため、
   // フォルダIDなどの詳細情報を一覧APIから補完する(エージェントタブのフォルダリンク表示に必要)
   useEffect(() => {
     api
       .listClients()
       .then((items) => {
         setClient((prev) => {
-          if (!prev || prev.clientCode !== DEFAULT_CLIENT.clientCode) return prev;
-          const full = items.find((c) => c.clientCode === prev.clientCode);
+          if (!prev || prev.clientCode !== initialCode) return prev;
+          const full = items.find((c) => c.clientCode === initialCode);
           return full || prev;
         });
       })
       .catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // クライアントを切り替えたら即座にロードし、詳細パネルは閉じる

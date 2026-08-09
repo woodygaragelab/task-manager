@@ -2,7 +2,7 @@ const ITEMS = [
   { value: "コンソール", label: "コンソール" },
   { value: "クライアント", label: "関与先リスト" },
   { value: "設定", label: "設定" },
-  { value: "タスクデータ照会", label: "タスクデータ照会" },
+  { value: "データ照会", label: "データ照会" },
 ];
 
 export function NavMenu({ open, currentView, onSelect, onClose }) {

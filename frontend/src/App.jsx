@@ -4,7 +4,7 @@ import { useAuthenticator } from "@aws-amplify/ui-react";
 import { NavMenu } from "./NavMenu";
 import { ClientListPage } from "./ClientListPage";
 import { SettingsPage } from "./SettingsPage";
-import { TaskDataQueryPage } from "./TaskDataQueryPage";
+import { DataQueryPage } from "./DataQueryPage";
 import { ConsolePage } from "./ConsolePage";
 import { api } from "./api";
 import "./App.css";
@@ -15,7 +15,13 @@ export default function App() {
   const [frameList, setFrameList] = useState([]);
   const [error, setError] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [currentView, setCurrentView] = useState("コンソール"); // コンソール | クライアント | 設定 | タスクデータ照会
+  const [currentView, setCurrentView] = useState("コンソール"); // コンソール | クライアント | 設定 | データ照会
+  const [consoleClientCode, setConsoleClientCode] = useState(null);
+
+  const handleSelectClient = (clientCode) => {
+    setConsoleClientCode(clientCode);
+    setCurrentView("コンソール");
+  };
 
   const refreshMasters = useCallback(async () => {
     try {
@@ -72,7 +78,9 @@ export default function App() {
 
       {error && <div className="error-banner">{error}</div>}
 
-      {currentView === "クライアント" && <ClientListPage />}
+      {currentView === "クライアント" && (
+        <ClientListPage onSelectClient={handleSelectClient} />
+      )}
       {currentView === "設定" && (
         <SettingsPage
           seriesList={seriesList}
@@ -80,10 +88,15 @@ export default function App() {
           onRefresh={refreshMasters}
         />
       )}
-      {currentView === "タスクデータ照会" && <TaskDataQueryPage />}
+      {currentView === "データ照会" && <DataQueryPage />}
 
       {currentView === "コンソール" && (
-        <ConsolePage seriesList={seriesList} frameList={frameList} />
+        <ConsolePage
+          key={consoleClientCode ?? "default"}
+          initialClientCode={consoleClientCode}
+          seriesList={seriesList}
+          frameList={frameList}
+        />
       )}
     </div>
   );
