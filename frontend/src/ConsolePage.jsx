@@ -8,7 +8,7 @@ import { AgentsPanel } from "./AgentsPanel";
 import { api } from "./api";
 
 const POLL_INTERVAL_MS = 4000;
-const TABS = ["基本情報", "資料進捗", "履歴", "エージェント"];
+const TABS = ["基本情報", "資料進捗", "履歴", "エージェント", "源泉", "年調"];
 const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
 
 export function ConsolePage({ seriesList, frameList, initialClientCode }) {
@@ -187,6 +187,18 @@ export function ConsolePage({ seriesList, frameList, initialClientCode }) {
               )}
 
               {activeTab === "エージェント" && <AgentsPanel client={client} />}
+
+              {activeTab === "源泉" && (
+                <div className="empty">
+                  <div className="empty__title">工事中</div>
+                </div>
+              )}
+
+              {activeTab === "年調" && (
+                <div className="empty">
+                  <div className="empty__title">工事中</div>
+                </div>
+              )}
             </>
           ) : (
             <div className="empty">
