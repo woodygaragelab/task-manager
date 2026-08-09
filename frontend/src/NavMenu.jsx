@@ -1,5 +1,5 @@
 const ITEMS = [
-  { value: "進捗", label: "ホーム" },
+  { value: "コンソール", label: "コンソール" },
   { value: "クライアント", label: "関与先リスト" },
   { value: "タスクシリーズ", label: "タスクシリーズ設定" },
   { value: "フレーム", label: "月設定" },

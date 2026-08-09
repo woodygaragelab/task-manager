@@ -16,7 +16,7 @@ import { api } from "./api";
 import "./App.css";
 
 const POLL_INTERVAL_MS = 4000;
-const TABS = ["進捗", "履歴", "エージェント"];
+const TABS = ["資料進捗", "履歴", "エージェント"];
 const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
 
 export default function App() {
@@ -29,9 +29,9 @@ export default function App() {
   const [error, setError] = useState(null);
   const [lastSynced, setLastSynced] = useState(null);
   const [selectedTaskKey, setSelectedTaskKey] = useState(null); // {seriesCode, frameCode} | null
-  const [activeTab, setActiveTab] = useState("進捗");
+  const [activeTab, setActiveTab] = useState("資料進捗");
   const [menuOpen, setMenuOpen] = useState(false);
-  const [currentView, setCurrentView] = useState("進捗"); // 進捗 | クライアント | タスクシリーズ | フレーム
+  const [currentView, setCurrentView] = useState("コンソール"); // コンソール | クライアント | タスクシリーズ | フレーム
 
   const refreshMasters = useCallback(async () => {
     try {
@@ -187,7 +187,7 @@ export default function App() {
       {currentView === "分類ルール" && <ClassificationAxesPage />}
       {currentView === "タスクデータ照会" && <TaskDataQueryPage />}
 
-      {currentView === "進捗" && (
+      {currentView === "コンソール" && (
         <div className="layout">
           <main className="main">
             <section className="panel">
@@ -225,7 +225,7 @@ export default function App() {
                     ))}
                   </div>
 
-                  {activeTab === "進捗" &&
+                  {activeTab === "資料進捗" &&
                     (loading ? (
                       <div className="status-line">読み込み中…</div>
                     ) : (

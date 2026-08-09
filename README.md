@@ -250,13 +250,13 @@ frontend/
 │   ├── api.js                  APIクライアント(Cognitoトークン自動添付、UTF-8明示エンコード、19関数)
 │   ├── main.jsx                 Amplify設定 + ログイン画面(Authenticator、日本語UIラベル)
 │   ├── App.jsx                  ルートコンポーネント(ハンバーガーメニューによる画面切り替え+パネル内タブ切り替え)
-│   ├── NavMenu.jsx              ハンバーガーメニュー(進捗/クライアント/タスクシリーズ/フレーム)
+│   ├── NavMenu.jsx              ハンバーガーメニュー(コンソール/クライアント/タスクシリーズ/フレーム)
 │   ├── ClientListPage.jsx      関与先マスタの一覧(関与先番号/関与先名/担当者/決算月)・新規作成(関与先名クリックでClientProfilePageへ)
 │   ├── ClientProfilePage.jsx   関与先のプロフィール編集(項目名:値の縦並び。関与先番号/関与先名/担当者/決算月/3か月後月/中間月/9か月後月/領収書フォルダ/分類後フォルダ、削除ボタンも配置)
 │   ├── SeriesListPage.jsx      シリーズ(表示名「タスク」)マスタの一覧・編集・新規作成・削除
 │   ├── FrameListPage.jsx       フレーム(表示名「月」)マスタの一覧・編集・新規作成・削除
 │   ├── ClientSelector.jsx      パネルヘッダー内のクライアント選択ドロップダウン
-│   ├── ProgressTable.jsx        進捗表(ピボットテーブル、デフォルト表示タブ)
+│   ├── ProgressTable.jsx        進捗表(ピボットテーブル、資料進捗タブのデフォルト表示)
 │   ├── TaskTable.jsx            タスク一覧のフラット表示テーブル
 │   ├── TaskDetailPanel.jsx      タスク選択時に開く右側詳細パネル
 │   ├── NewTaskForm.jsx          既存シリーズの全登録フレーム分タスクを一括作成するフォーム
