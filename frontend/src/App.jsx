@@ -52,6 +52,14 @@ export default function App() {
           >
             ☰
           </button>
+          <button
+            type="button"
+            className="hamburger"
+            onClick={() => setCurrentView("クライアント")}
+            aria-label="ホーム(関与先リスト)"
+          >
+            ⌂
+          </button>
           <div className="header__title-group">
             <h1 className="header__title">Amorphous Console</h1>
             <div className="header__subtitle">税理士タスク管理</div>
