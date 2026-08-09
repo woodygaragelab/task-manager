@@ -1,13 +1,14 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
 
+const TABS = ["法人", "個人"];
+
 export function ClientListPage({ onSelectClient }) {
+  const [activeTab, setActiveTab] = useState(TABS[0]);
   const [clients, setClients] = useState([]);
   const [error, setError] = useState(null);
   const [newCode, setNewCode] = useState("");
   const [newName, setNewName] = useState("");
-  const [newReceiptFolderId, setNewReceiptFolderId] = useState("");
-  const [newRenamedFolderId, setNewRenamedFolderId] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -20,15 +21,10 @@ export function ClientListPage({ onSelectClient }) {
     setSubmitting(true);
     setError(null);
     try {
-      const created = await api.createClient(newCode.trim(), newName.trim(), {
-        receiptFolderId: newReceiptFolderId.trim() || undefined,
-        renamedFolderId: newRenamedFolderId.trim() || undefined,
-      });
+      const created = await api.createClient(newCode.trim(), newName.trim());
       setClients((prev) => [...prev, created]);
       setNewCode("");
       setNewName("");
-      setNewReceiptFolderId("");
-      setNewRenamedFolderId("");
     } catch (err) {
       setError(err.message);
     } finally {
@@ -38,87 +34,89 @@ export function ClientListPage({ onSelectClient }) {
 
   return (
     <section className="panel">
-      <h2 className="panel__title">
-        <span className="panel__title-eyebrow">一覧</span>
-        クライアント
-      </h2>
+      <div className="tabs">
+        {TABS.map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            className={"tabs__tab" + (activeTab === tab ? " tabs__tab--active" : "")}
+            onClick={() => setActiveTab(tab)}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
 
-      {error && <div className="error-banner">{error}</div>}
+      {activeTab === "法人" && (
+        <>
+          {error && <div className="error-banner">{error}</div>}
 
-      {clients.length === 0 ? (
-        <div className="empty">
-          <div className="empty__title">クライアントがありません</div>
-        </div>
-      ) : (
-        <table className="simple-table">
-          <thead>
-            <tr>
-              <th>関与先番号</th>
-              <th>関与先名</th>
-              <th>担当者</th>
-              <th>決算月</th>
-            </tr>
-          </thead>
-          <tbody>
-            {clients.map((c) => (
-              <tr key={c.clientCode}>
-                <td className="simple-table__code">{c.clientCode}</td>
-                <td>
-                  <button
-                    type="button"
-                    className="simple-table__link"
-                    onClick={() => onSelectClient(c.clientCode)}
-                  >
-                    {c.clientName}
-                  </button>
-                </td>
-                <td>{c.assignee || "—"}</td>
-                <td>{c.fiscalYearEndMonth ? `${c.fiscalYearEndMonth}月` : "—"}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+          {clients.length === 0 ? (
+            <div className="empty">
+              <div className="empty__title">クライアントがありません</div>
+            </div>
+          ) : (
+            <table className="simple-table">
+              <thead>
+                <tr>
+                  <th>関与先番号</th>
+                  <th>関与先名</th>
+                  <th>担当者</th>
+                  <th>決算月</th>
+                </tr>
+              </thead>
+              <tbody>
+                {clients.map((c) => (
+                  <tr key={c.clientCode}>
+                    <td className="simple-table__code">{c.clientCode}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="simple-table__link"
+                        onClick={() => onSelectClient(c.clientCode)}
+                      >
+                        {c.clientName}
+                      </button>
+                    </td>
+                    <td>{c.assignee || "—"}</td>
+                    <td>{c.fiscalYearEndMonth ? `${c.fiscalYearEndMonth}月` : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+
+          <form className="list-form" onSubmit={create}>
+            <div className="field">
+              <label htmlFor="new-client-code">クライアントコード</label>
+              <input
+                id="new-client-code"
+                value={newCode}
+                onChange={(e) => setNewCode(e.target.value)}
+                required
+              />
+            </div>
+            <div className="field">
+              <label htmlFor="new-client-name">クライアント名</label>
+              <input
+                id="new-client-name"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                required
+              />
+            </div>
+            <button className="btn btn--primary" type="submit" disabled={submitting}>
+              {submitting ? "登録中…" : "追加"}
+            </button>
+          </form>
+        </>
       )}
 
-      <form className="list-form" onSubmit={create}>
-        <div className="field">
-          <label htmlFor="new-client-code">クライアントコード</label>
-          <input
-            id="new-client-code"
-            value={newCode}
-            onChange={(e) => setNewCode(e.target.value)}
-            required
-          />
+      {activeTab === "個人" && (
+        <div className="empty">
+          <div className="empty__title">工事中</div>
         </div>
-        <div className="field">
-          <label htmlFor="new-client-name">クライアント名</label>
-          <input
-            id="new-client-name"
-            value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            required
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="new-client-receipt-folder">領収書フォルダID(任意)</label>
-          <input
-            id="new-client-receipt-folder"
-            value={newReceiptFolderId}
-            onChange={(e) => setNewReceiptFolderId(e.target.value)}
-          />
-        </div>
-        <div className="field">
-          <label htmlFor="new-client-renamed-folder">分類後フォルダID(任意)</label>
-          <input
-            id="new-client-renamed-folder"
-            value={newRenamedFolderId}
-            onChange={(e) => setNewRenamedFolderId(e.target.value)}
-          />
-        </div>
-        <button className="btn btn--primary" type="submit" disabled={submitting}>
-          {submitting ? "登録中…" : "+ 新規クライアント"}
-        </button>
-      </form>
+      )}
     </section>
   );
 }
