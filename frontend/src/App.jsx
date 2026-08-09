@@ -3,9 +3,7 @@ import { signOut } from "aws-amplify/auth";
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { NavMenu } from "./NavMenu";
 import { ClientListPage } from "./ClientListPage";
-import { SeriesListPage } from "./SeriesListPage";
-import { FrameListPage } from "./FrameListPage";
-import { ClassificationAxesPage } from "./ClassificationAxesPage";
+import { SettingsPage } from "./SettingsPage";
 import { TaskDataQueryPage } from "./TaskDataQueryPage";
 import { ConsolePage } from "./ConsolePage";
 import { api } from "./api";
@@ -17,7 +15,7 @@ export default function App() {
   const [frameList, setFrameList] = useState([]);
   const [error, setError] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [currentView, setCurrentView] = useState("コンソール"); // コンソール | クライアント | タスクシリーズ | フレーム
+  const [currentView, setCurrentView] = useState("コンソール"); // コンソール | クライアント | 設定 | タスクデータ照会
 
   const refreshMasters = useCallback(async () => {
     try {
@@ -75,13 +73,13 @@ export default function App() {
       {error && <div className="error-banner">{error}</div>}
 
       {currentView === "クライアント" && <ClientListPage />}
-      {currentView === "タスクシリーズ" && (
-        <SeriesListPage seriesList={seriesList} onRefresh={refreshMasters} />
+      {currentView === "設定" && (
+        <SettingsPage
+          seriesList={seriesList}
+          frameList={frameList}
+          onRefresh={refreshMasters}
+        />
       )}
-      {currentView === "フレーム" && (
-        <FrameListPage frameList={frameList} onRefresh={refreshMasters} />
-      )}
-      {currentView === "分類ルール" && <ClassificationAxesPage />}
       {currentView === "タスクデータ照会" && <TaskDataQueryPage />}
 
       {currentView === "コンソール" && (

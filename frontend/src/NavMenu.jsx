@@ -1,9 +1,7 @@
 const ITEMS = [
   { value: "コンソール", label: "コンソール" },
   { value: "クライアント", label: "関与先リスト" },
-  { value: "タスクシリーズ", label: "タスクシリーズ設定" },
-  { value: "フレーム", label: "月設定" },
-  { value: "分類ルール", label: "分類ルール設定" },
+  { value: "設定", label: "設定" },
   { value: "タスクデータ照会", label: "タスクデータ照会" },
 ];
 

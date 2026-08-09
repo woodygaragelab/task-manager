@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { ClientSelector } from "./ClientSelector";
+import { ClientProfilePage } from "./ClientProfilePage";
 import { ProgressTable } from "./ProgressTable";
 import { TaskDetailPanel } from "./TaskDetailPanel";
 import { HistoryPanel } from "./HistoryPanel";
@@ -7,7 +8,7 @@ import { AgentsPanel } from "./AgentsPanel";
 import { api } from "./api";
 
 const POLL_INTERVAL_MS = 4000;
-const TABS = ["資料進捗", "履歴", "エージェント"];
+const TABS = ["基本情報", "資料進捗", "履歴", "エージェント"];
 const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
 
 export function ConsolePage({ seriesList, frameList }) {
@@ -147,6 +148,14 @@ export function ConsolePage({ seriesList, frameList }) {
                   </button>
                 ))}
               </div>
+
+              {activeTab === "基本情報" && (
+                <ClientProfilePage
+                  client={client}
+                  onUpdated={setClient}
+                  onDeleted={() => setClient(null)}
+                />
+              )}
 
               {activeTab === "資料進捗" &&
                 (loading ? (
