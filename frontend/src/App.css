@@ -642,11 +642,39 @@
   margin-bottom: 16px;
 }
 
-.profile-form {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+.profile-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   margin-bottom: 24px;
+  max-width: 480px;
+}
+
+.profile-field {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.profile-field label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  color: var(--ink-soft);
+  letter-spacing: 0.06em;
+  width: 110px;
+  flex-shrink: 0;
+}
+
+.profile-field input,
+.profile-field select {
+  flex: 1;
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 8px 10px;
+  border: 1px solid var(--paper-line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
 }
 
 /* ---------- Inline add form (master data list pages) ---------- */

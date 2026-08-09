@@ -38,30 +38,6 @@ export function ClientListPage() {
     }
   };
 
-  const handleFolderIdCommit = async (clientCode, patch) => {
-    setClients((prev) =>
-      prev.map((c) => (c.clientCode === clientCode ? { ...c, ...patch } : c))
-    );
-    try {
-      await api.updateClient(clientCode, patch);
-    } catch (err) {
-      setError(err.message);
-      const items = await api.listClients();
-      setClients(items);
-    }
-  };
-
-  const remove = async (clientCode) => {
-    if (!window.confirm(`クライアント「${clientCode}」を削除しますか？`)) return;
-    setError(null);
-    try {
-      await api.deleteClient(clientCode);
-      setClients((prev) => prev.filter((c) => c.clientCode !== clientCode));
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
   const selectedClient = clients.find((c) => c.clientCode === selectedClientCode);
 
   if (selectedClient) {
@@ -101,9 +77,8 @@ export function ClientListPage() {
             <tr>
               <th>関与先番号</th>
               <th>関与先名</th>
-              <th>領収書フォルダID</th>
-              <th>分類後フォルダID</th>
-              <th style={{ width: 80 }}></th>
+              <th>担当者</th>
+              <th>決算月</th>
             </tr>
           </thead>
           <tbody>
@@ -119,41 +94,8 @@ export function ClientListPage() {
                     {c.clientName}
                   </button>
                 </td>
-                <td>
-                  <input
-                    className="history__input"
-                    defaultValue={c.receiptFolderId ?? ""}
-                    key={`receipt-${c.clientCode}`}
-                    placeholder="未設定"
-                    onBlur={(e) => {
-                      if (e.target.value !== (c.receiptFolderId ?? "")) {
-                        handleFolderIdCommit(c.clientCode, { receiptFolderId: e.target.value });
-                      }
-                    }}
-                  />
-                </td>
-                <td>
-                  <input
-                    className="history__input"
-                    defaultValue={c.renamedFolderId ?? ""}
-                    key={`renamed-${c.clientCode}`}
-                    placeholder="未設定"
-                    onBlur={(e) => {
-                      if (e.target.value !== (c.renamedFolderId ?? "")) {
-                        handleFolderIdCommit(c.clientCode, { renamedFolderId: e.target.value });
-                      }
-                    }}
-                  />
-                </td>
-                <td>
-                  <button
-                    type="button"
-                    className="simple-table__delete"
-                    onClick={() => remove(c.clientCode)}
-                  >
-                    削除
-                  </button>
-                </td>
+                <td>{c.assignee || "—"}</td>
+                <td>{c.fiscalYearEndMonth ? `${c.fiscalYearEndMonth}月` : "—"}</td>
               </tr>
             ))}
           </tbody>

@@ -145,7 +145,9 @@ def create_client(
     renamed_folder_id: Optional[str] = None,
     assignee: Optional[str] = None,
     fiscal_year_end_month: Optional[str] = None,
+    three_months_after_month: Optional[str] = None,
     interim_month: Optional[str] = None,
+    nine_months_after_month: Optional[str] = None,
 ) -> dict:
     """クライアントを新規登録する(ドロップダウンの「新規作成」操作専用)。
 
@@ -155,7 +157,8 @@ def create_client(
 
     receipt_folder_id/renamed_folder_idは「エージェント」タブの領収書整理エージェント
     (分類)が参照するGoogle DriveフォルダID。assignee(担当者)/fiscal_year_end_month
-    (決算月)/interim_month(中間月)はクライアントプロフィール画面で設定する属性。
+    (決算月)/three_months_after_month(3か月後月)/interim_month(中間月)/
+    nine_months_after_month(9か月後月)はクライアントプロフィール画面で設定する属性。
     いずれも省略時は属性ごと書き込まない。
     """
     item = {
@@ -171,8 +174,12 @@ def create_client(
         item["assignee"] = assignee
     if fiscal_year_end_month:
         item["fiscalYearEndMonth"] = fiscal_year_end_month
+    if three_months_after_month:
+        item["threeMonthsAfterMonth"] = three_months_after_month
     if interim_month:
         item["interimMonth"] = interim_month
+    if nine_months_after_month:
+        item["nineMonthsAfterMonth"] = nine_months_after_month
     try:
         clients_table.put_item(
             Item=item,
@@ -190,9 +197,11 @@ def update_client(
     renamed_folder_id: Optional[str] = None,
     assignee: Optional[str] = None,
     fiscal_year_end_month: Optional[str] = None,
+    three_months_after_month: Optional[str] = None,
     interim_month: Optional[str] = None,
+    nine_months_after_month: Optional[str] = None,
 ) -> dict:
-    """既存クライアントのクライアント名・Driveフォルダ設定・担当者・決算月・中間月を更新する(指定した項目のみ変更)。"""
+    """既存クライアントのクライアント名・Driveフォルダ設定・担当者・決算月・3か月後月・中間月・9か月後月を更新する(指定した項目のみ変更)。"""
     key = {"lookupBucket": CLIENT_BUCKET, "clientCode": client_code}
     resp = clients_table.get_item(Key=key)
     if not resp.get("Item"):
@@ -216,9 +225,15 @@ def update_client(
     if fiscal_year_end_month is not None:
         update_expr.append("fiscalYearEndMonth = :fy")
         expr_values[":fy"] = fiscal_year_end_month
+    if three_months_after_month is not None:
+        update_expr.append("threeMonthsAfterMonth = :m3")
+        expr_values[":m3"] = three_months_after_month
     if interim_month is not None:
         update_expr.append("interimMonth = :im")
         expr_values[":im"] = interim_month
+    if nine_months_after_month is not None:
+        update_expr.append("nineMonthsAfterMonth = :m9")
+        expr_values[":m9"] = nine_months_after_month
 
     if not update_expr:
         return resp["Item"]

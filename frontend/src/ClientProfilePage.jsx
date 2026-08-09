@@ -45,6 +45,25 @@ export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
     }
   };
 
+  const MonthField = ({ id, label, field }) => (
+    <div className="profile-field">
+      <label htmlFor={id}>{label}</label>
+      <select
+        id={id}
+        defaultValue={current[field] ?? ""}
+        key={`${field}-${current.clientCode}`}
+        onChange={commitSelect(field)}
+      >
+        <option value="">未設定</option>
+        {MONTH_OPTIONS.map((m) => (
+          <option key={m} value={m}>
+            {m}月
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+
   return (
     <section className="panel">
       <button type="button" className="btn btn--ghost profile-back" onClick={onBack}>
@@ -61,14 +80,14 @@ export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
       {error && <div className="error-banner">{error}</div>}
       {saving && <div className="status-line">保存中…</div>}
 
-      <div className="profile-form">
-        <div className="field">
-          <label htmlFor="profile-client-code">クライアントコード</label>
+      <div className="profile-fields">
+        <div className="profile-field">
+          <label htmlFor="profile-client-code">関与先番号</label>
           <input id="profile-client-code" value={current.clientCode} disabled />
         </div>
 
-        <div className="field">
-          <label htmlFor="profile-client-name">クライアント名</label>
+        <div className="profile-field">
+          <label htmlFor="profile-client-name">関与先名</label>
           <input
             id="profile-client-name"
             defaultValue={current.clientName ?? ""}
@@ -77,29 +96,7 @@ export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
           />
         </div>
 
-        <div className="field">
-          <label htmlFor="profile-receipt-folder">領収書フォルダID</label>
-          <input
-            id="profile-receipt-folder"
-            defaultValue={current.receiptFolderId ?? ""}
-            key={`receipt-${current.clientCode}`}
-            placeholder="未設定"
-            onBlur={commitText("receiptFolderId")}
-          />
-        </div>
-
-        <div className="field">
-          <label htmlFor="profile-renamed-folder">分類後フォルダID</label>
-          <input
-            id="profile-renamed-folder"
-            defaultValue={current.renamedFolderId ?? ""}
-            key={`renamed-${current.clientCode}`}
-            placeholder="未設定"
-            onBlur={commitText("renamedFolderId")}
-          />
-        </div>
-
-        <div className="field">
+        <div className="profile-field">
           <label htmlFor="profile-assignee">担当者</label>
           <input
             id="profile-assignee"
@@ -110,38 +107,31 @@ export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
           />
         </div>
 
-        <div className="field">
-          <label htmlFor="profile-fiscal-year-end-month">決算月</label>
-          <select
-            id="profile-fiscal-year-end-month"
-            defaultValue={current.fiscalYearEndMonth ?? ""}
-            key={`fiscal-${current.clientCode}`}
-            onChange={commitSelect("fiscalYearEndMonth")}
-          >
-            <option value="">未設定</option>
-            {MONTH_OPTIONS.map((m) => (
-              <option key={m} value={m}>
-                {m}月
-              </option>
-            ))}
-          </select>
+        <MonthField id="profile-fiscal-year-end-month" label="決算月" field="fiscalYearEndMonth" />
+        <MonthField id="profile-three-months-after-month" label="3か月後月" field="threeMonthsAfterMonth" />
+        <MonthField id="profile-interim-month" label="中間月" field="interimMonth" />
+        <MonthField id="profile-nine-months-after-month" label="9か月後月" field="nineMonthsAfterMonth" />
+
+        <div className="profile-field">
+          <label htmlFor="profile-receipt-folder">領収書フォルダ</label>
+          <input
+            id="profile-receipt-folder"
+            defaultValue={current.receiptFolderId ?? ""}
+            key={`receipt-${current.clientCode}`}
+            placeholder="未設定"
+            onBlur={commitText("receiptFolderId")}
+          />
         </div>
 
-        <div className="field">
-          <label htmlFor="profile-interim-month">中間月</label>
-          <select
-            id="profile-interim-month"
-            defaultValue={current.interimMonth ?? ""}
-            key={`interim-${current.clientCode}`}
-            onChange={commitSelect("interimMonth")}
-          >
-            <option value="">未設定</option>
-            {MONTH_OPTIONS.map((m) => (
-              <option key={m} value={m}>
-                {m}月
-              </option>
-            ))}
-          </select>
+        <div className="profile-field">
+          <label htmlFor="profile-renamed-folder">分類後フォルダ</label>
+          <input
+            id="profile-renamed-folder"
+            defaultValue={current.renamedFolderId ?? ""}
+            key={`renamed-${current.clientCode}`}
+            placeholder="未設定"
+            onBlur={commitText("renamedFolderId")}
+          />
         </div>
       </div>
 

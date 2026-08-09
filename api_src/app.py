@@ -67,7 +67,9 @@ def handler(event, context):
                 renamed_folder_id=body.get("renamedFolderId"),
                 assignee=body.get("assignee"),
                 fiscal_year_end_month=body.get("fiscalYearEndMonth"),
+                three_months_after_month=body.get("threeMonthsAfterMonth"),
                 interim_month=body.get("interimMonth"),
+                nine_months_after_month=body.get("nineMonthsAfterMonth"),
             )
             return _response(201, item)
 
@@ -80,7 +82,9 @@ def handler(event, context):
                 renamed_folder_id=body.get("renamedFolderId"),
                 assignee=body.get("assignee"),
                 fiscal_year_end_month=body.get("fiscalYearEndMonth"),
+                three_months_after_month=body.get("threeMonthsAfterMonth"),
                 interim_month=body.get("interimMonth"),
+                nine_months_after_month=body.get("nineMonthsAfterMonth"),
             )
             return _response(200, item)
 
