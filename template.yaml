@@ -212,6 +212,12 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /clients/{clientCode}/agent-jobs
             Method: post
+        ListAgentJobs:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /clients/{clientCode}/agent-jobs
+            Method: get
         GetAgentJob:
           Type: HttpApi
           Properties:

@@ -7,6 +7,7 @@ OAuth endpoints; it only prints the resulting token JSON to your terminal.
 
 Usage:
     pip install google-auth-oauthlib
+    export GOOGLE_OAUTH_CLIENT_ID=<client ID from Google Cloud Console>
     export GOOGLE_OAUTH_CLIENT_SECRET=<client secret from Google Cloud Console>
     python get_refresh_token.py
 """
@@ -15,15 +16,14 @@ import os
 
 from google_auth_oauthlib.flow import InstalledAppFlow
 
-# Values from the OAuth client created earlier in Google Cloud Console
-# ("agentcore-receipt-agent"). client_secret is never hardcoded here
-# (this repository is a real git repo, unlike the old receipt-agent
-# checkout) -- it must be supplied via the GOOGLE_OAUTH_CLIENT_SECRET
-# environment variable. Replace client_id below if you rotated the
-# OAuth client itself.
+# OAuth client created in Google Cloud Console ("agentcore-receipt-agent").
+# Neither the client ID nor the client secret are hardcoded here -- both
+# must be supplied via environment variables so this file never carries
+# credentials in git history. Rotate the OAuth client in the console if
+# you need new values.
 CLIENT_CONFIG = {
     "installed": {
-        "client_id": "1011354473098-od5n1po1v94lfv87qesep52i11rht3m3.apps.googleusercontent.com",
+        "client_id": os.environ["GOOGLE_OAUTH_CLIENT_ID"],
         "client_secret": os.environ["GOOGLE_OAUTH_CLIENT_SECRET"],
         "auth_uri": "https://accounts.google.com/o/oauth2/auth",
         "token_uri": "https://oauth2.googleapis.com/token",

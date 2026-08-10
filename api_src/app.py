@@ -255,6 +255,16 @@ def handler(event, context):
             )
             return _response(202, item)
 
+        # ---- GET /clients/{clientCode}/agent-jobs ----
+        if route_key == "GET /clients/{clientCode}/agent-jobs":
+            return _response(
+                200,
+                repo.list_agent_jobs(
+                    client_code=path_params["clientCode"],
+                    agent_id=query_params.get("agentId"),
+                ),
+            )
+
         # ---- GET /clients/{clientCode}/agent-jobs/{jobId} ----
         if route_key == "GET /clients/{clientCode}/agent-jobs/{jobId}":
             item = repo.get_agent_job(

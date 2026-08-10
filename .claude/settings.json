@@ -30,7 +30,11 @@
       "Bash(\"/c/Program Files/Amazon/AWSSAMCLI/bin/sam.cmd\" build TaskMcpFunction)",
       "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --headless=new --disable-gpu --no-sandbox --screenshot=\"/c/Users/woody/AppData/Local/Temp/claude/c--Users-woody-0woodyprojects-taskmanager/d74d2958-7bc9-4e16-8268-16740eff45ae/scratchpad/agents_live.png\" --window-size=1400,1100 --virtual-time-budget=8000 \"http://localhost:5173/preview.html\")",
       "Bash(git mv *)",
-      "Bash(python -m py_compile layer/python/task_repository.py api_src/app.py mcp_src/app.py)"
+      "Bash(python -m py_compile layer/python/task_repository.py api_src/app.py mcp_src/app.py)",
+      "Bash(npx eslint *)",
+      "Bash(npx --yes @babel/cli --version)",
+      "Bash(node -e ' *)",
+      "Bash(python -m py_compile api_src/app.py layer/python/task_repository.py)"
     ],
     "additionalDirectories": [
       "\\tmp"

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "./api";
 
 // 現時点でAgentCoreに実接続しているのは「分類」(archivist)と「進捗更新」(progress)のみ。
@@ -51,9 +51,16 @@ const STATUS_LABEL = {
 };
 
 const pad2 = (n) => String(n).padStart(2, "0");
-const formatNow = () => {
-  const d = new Date();
-  return `${d.getFullYear()}/${pad2(d.getMonth() + 1)}/${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+const formatDate = (d) =>
+  `${d.getFullYear()}/${pad2(d.getMonth() + 1)}/${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+const formatNow = () => formatDate(new Date());
+const formatTimestamp = (iso) => (iso ? formatDate(new Date(iso)) : null);
+
+// ジョブのstatus("processing"/"completed"/error時に"error")をチケット表示用のstatusに変換する。
+const ticketStatusFromJob = (jobStatus) => {
+  if (jobStatus === "completed") return "done";
+  if (jobStatus === "processing") return "running";
+  return "error";
 };
 
 const driveUrl = (folderId) =>
@@ -83,7 +90,10 @@ const buildPrompt = (agentId, client) => {
 };
 
 function AgentTicket({ agent, client, ticket, live, onStart, expanded, onToggle }) {
-  const instruction = live && client ? buildPrompt(agent.id, client) : agent.instruction;
+  // 前回実行したジョブがあれば、その時点で実際に送信された指示文(ticket.prompt)を優先表示する。
+  // 未実行の場合は現在のクライアント情報から組み立てたプレビュー文言を表示する。
+  const instruction =
+    ticket.prompt ?? (live && client ? buildPrompt(agent.id, client) : agent.instruction);
   const showFolders = agent.id === "archivist";
   const inputFolderUrl = live ? driveUrl(client?.receiptFolderId) : null;
   const outputFolderUrl = live ? driveUrl(client?.renamedFolderId) : null;
@@ -178,17 +188,65 @@ function AgentTicket({ agent, client, ticket, live, onStart, expanded, onToggle 
 
 const initialTickets = () =>
   Object.fromEntries(
-    AGENTS.map((a) => [a.id, { status: "queued", startTime: null, endTime: null, result: null }])
+    AGENTS.map((a) => [
+      a.id,
+      { status: "queued", prompt: null, startTime: null, endTime: null, result: null },
+    ])
   );
 
 export function AgentsPanel({ client }) {
   const [expandedId, setExpandedId] = useState(null);
   const [tickets, setTickets] = useState(initialTickets);
 
-  const toggle = (id) => setExpandedId((prev) => (prev === id ? null : id));
-
   const patchTicket = (agentId, patch) =>
     setTickets((prev) => ({ ...prev, [agentId]: { ...prev[agentId], ...patch } }));
+
+  // 前回実行したジョブ(このクライアント×このエージェントで最新のもの)を取得し、
+  // チケットに反映する。展開中でも稼働中(status: "running")のポーリングは上書きしない。
+  const loadLastJob = async (agentId) => {
+    try {
+      const jobs = await api.listAgentJobs(client.clientCode, agentId);
+      const latest = jobs?.[0];
+      if (!latest) return;
+      setTickets((prev) => {
+        if (prev[agentId].status === "running") return prev;
+        return {
+          ...prev,
+          [agentId]: {
+            status: ticketStatusFromJob(latest.status),
+            prompt: latest.prompt ?? null,
+            startTime: formatTimestamp(latest.createdAt),
+            endTime: latest.status === "processing" ? null : formatTimestamp(latest.updatedAt),
+            result: latest.result || latest.error || null,
+          },
+        };
+      });
+      if (latest.status === "processing") {
+        pollJob(agentId, client.clientCode, latest.jobId);
+      }
+    } catch {
+      // 前回ジョブが存在しない/取得失敗時は何もしない(初期のqueued表示のまま)
+    }
+  };
+
+  const toggle = (agentId) => {
+    const opening = expandedId !== agentId;
+    setExpandedId(opening ? agentId : null);
+    if (opening && client && LIVE_AGENT_IDS.includes(agentId)) {
+      loadLastJob(agentId);
+    }
+  };
+
+  // クライアント切り替え時、チケットは別クライアントの実行結果を保持したままなので
+  // いったんリセットする。展開中のライブエージェントがあれば新クライアントの
+  // 前回ジョブを取り直す(展開したままクライアントを切り替えても表示が食い違わないように)。
+  useEffect(() => {
+    setTickets(initialTickets());
+    if (expandedId && LIVE_AGENT_IDS.includes(expandedId)) {
+      loadLastJob(expandedId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [client?.clientCode]);
 
   const pollJob = (agentId, clientCode, jobId, attempt = 0) => {
     if (attempt >= MAX_POLL_ATTEMPTS) {
@@ -215,9 +273,15 @@ export function AgentsPanel({ client }) {
 
   const start = async (agent) => {
     if (!client) return;
-    patchTicket(agent.id, { status: "running", startTime: formatNow(), endTime: null, result: null });
+    const prompt = buildPrompt(agent.id, client);
+    patchTicket(agent.id, {
+      status: "running",
+      prompt,
+      startTime: formatNow(),
+      endTime: null,
+      result: null,
+    });
     try {
-      const prompt = buildPrompt(agent.id, client);
       const job = await api.submitAgentJob(client.clientCode, agent.id, prompt);
       pollJob(agent.id, client.clientCode, job.jobId);
     } catch (err) {

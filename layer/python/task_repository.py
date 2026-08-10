@@ -781,6 +781,20 @@ def create_agent_job(client_code: str, agent_id: str, prompt: str) -> dict:
     return item
 
 
+def list_agent_jobs(client_code: str, agent_id: Optional[str] = None) -> list[dict]:
+    """指定クライアントのエージェントジョブを新しい順に一覧取得する(「エージェント」タブの前回実行結果表示用)。
+
+    agent_idを指定した場合はそのエージェントのジョブのみに絞り込む(jobIdはUUIDでソート
+    キーとして時系列順にならないため、createdAtで都度ソートする)。
+    """
+    resp = agent_jobs_table.query(KeyConditionExpression=Key("clientCode").eq(client_code))
+    items = resp.get("Items", [])
+    if agent_id:
+        items = [i for i in items if i.get("agentId") == agent_id]
+    items.sort(key=lambda i: i.get("createdAt") or "", reverse=True)
+    return items
+
+
 def get_agent_job(client_code: str, job_id: str) -> dict:
     """エージェントジョブを1件取得する(ポーリング用)。"""
     resp = agent_jobs_table.get_item(Key={"clientCode": client_code, "jobId": job_id})

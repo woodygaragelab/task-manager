@@ -116,6 +116,11 @@ export const api = {
       `/clients/${encodeURIComponent(clientCode)}/agent-jobs/${encodeURIComponent(jobId)}`
     ),
 
+  listAgentJobs: (clientCode, agentId) =>
+    request(
+      `/clients/${encodeURIComponent(clientCode)}/agent-jobs?agentId=${encodeURIComponent(agentId)}`
+    ),
+
   listClassificationAxes: () => request(`/classification-axes`),
 
   createClassificationAxis: (axisId, label) =>
