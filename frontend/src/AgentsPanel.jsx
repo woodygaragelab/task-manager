@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
 
-// 現時点でAgentCoreに実接続しているのは「受領」(scout)・「分類」(archivist)・
-// 「進捗更新」(progress)のみ。他のエージェントは今後の実装予定のダミー表示。
+// 現時点でAgentCoreに実接続しているのは「分類」(archivist)と「進捗更新」(progress)のみ。
+// 他のエージェントは今後の実装予定のダミー表示。
 const LIVE_AGENT_IDS = ["scout", "archivist", "progress"];
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 100;
@@ -12,8 +12,7 @@ const AGENTS = [
     id: "scout",
     name: "受領",
     role: "情報収集・調査",
-    description: "新着メールを要約して履歴に記録し、添付ファイルを差出人ドメインから判定した関与先の受領フォルダに格納する",
-    instruction: "新着メールを処理して",
+    description: "新着メールを要約して履歴に記録し、添付ファイルがあれば受領フォルダに格納する",
   },
   {
     id: "archivist",
@@ -79,15 +78,15 @@ const buildArchivistPrompt = (client) => {
 // progress-updateスキルの呼び出しトリガー文言(SKILL.md参照)に関与先コードを添えて渡す。
 const buildProgressPrompt = (client) => `${client.clientCode}の進捗を更新して`;
 
-// email-summaryスキルの呼び出しトリガー文言(SKILL.md参照)。同スキルは新着メール全体を
-// 差出人ドメインから関与先ごとに振り分けて処理するため、archivist/progressと異なり
-// 特定のclientCodeを指示文には含めない。
-const buildScoutPrompt = () => "新着メールを処理して";
+// email-summaryスキルの呼び出しトリガー文言(SKILL.md参照)に関与先コードを添えて渡す。
+// 関与先コード付きで呼ぶと、そのクライアントのsenderDomainsだけにGmail検索クエリを
+// 絞り込む(SKILL.md「対象関与先の指定(任意)」参照)。
+const buildScoutPrompt = (client) => `${client.clientCode}の新着メールを処理して`;
 
 const PROMPT_BUILDERS = {
-  scout: buildScoutPrompt,
   archivist: buildArchivistPrompt,
   progress: buildProgressPrompt,
+  scout: buildScoutPrompt,
 };
 
 const buildPrompt = (agentId, client) => {
@@ -101,8 +100,10 @@ function AgentTicket({ agent, client, ticket, live, onStart, expanded, onToggle 
   const instruction =
     ticket.prompt ?? (live && client ? buildPrompt(agent.id, client) : agent.instruction);
   const showFolders = agent.id === "archivist";
+  const showUketoriFolder = agent.id === "scout";
   const inputFolderUrl = live ? driveUrl(client?.receiptFolderId) : null;
   const outputFolderUrl = live ? driveUrl(client?.renamedFolderId) : null;
+  const uketoriFolderUrl = live ? driveUrl(client?.uketoriFolderId) : null;
 
   return (
     <div className="agent-ticket" onClick={() => onToggle(agent.id)}>
@@ -184,6 +185,20 @@ function AgentTicket({ agent, client, ticket, live, onStart, expanded, onToggle 
                   </dd>
                 </div>
               </>
+            )}
+            {showUketoriFolder && (
+              <div className="agent-ticket__field">
+                <dt>受領フォルダ</dt>
+                <dd>
+                  {uketoriFolderUrl ? (
+                    <a href={uketoriFolderUrl} target="_blank" rel="noreferrer" className="agent-ticket__code">
+                      /受領
+                    </a>
+                  ) : (
+                    <span className="agent-ticket__code">未設定</span>
+                  )}
+                </dd>
+              </div>
             )}
           </dl>
         </div>
