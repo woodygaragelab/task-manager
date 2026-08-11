@@ -34,14 +34,14 @@ export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
     commit({ [field]: value });
   };
 
-  const commitDomains = (e) => {
-    const domains = e.target.value
+  const commitEmails = (e) => {
+    const emails = e.target.value
       .split(/[,\n]/)
       .map((d) => d.trim())
       .filter(Boolean);
-    const current_ = current.senderDomains ?? [];
-    if (domains.length === current_.length && domains.every((d, i) => d === current_[i])) return;
-    commit({ senderDomains: domains });
+    const current_ = current.senderEmails ?? [];
+    if (emails.length === current_.length && emails.every((d, i) => d === current_[i])) return;
+    commit({ senderEmails: emails });
   };
 
   const remove = async () => {
@@ -158,13 +158,13 @@ export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
         </div>
 
         <div className="profile-field">
-          <label htmlFor="profile-sender-domains">差出人ドメイン</label>
+          <label htmlFor="profile-sender-emails">差出人メールアドレス</label>
           <input
-            id="profile-sender-domains"
-            defaultValue={(current.senderDomains ?? []).join(", ")}
-            key={`sender-domains-${current.clientCode}`}
-            placeholder="例: example.com, example.co.jp"
-            onBlur={commitDomains}
+            id="profile-sender-emails"
+            defaultValue={(current.senderEmails ?? []).join(", ")}
+            key={`sender-emails-${current.clientCode}`}
+            placeholder="例: taro@example.com, hanako@example.co.jp"
+            onBlur={commitEmails}
           />
         </div>
       </div>

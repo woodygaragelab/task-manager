@@ -79,7 +79,7 @@ const buildArchivistPrompt = (client) => {
 const buildProgressPrompt = (client) => `${client.clientCode}の進捗を更新して`;
 
 // email-summaryスキルの呼び出しトリガー文言(SKILL.md参照)に関与先コードを添えて渡す。
-// 関与先コード付きで呼ぶと、そのクライアントのsenderDomainsだけにGmail検索クエリを
+// 関与先コード付きで呼ぶと、そのクライアントのsenderEmailsだけにGmail検索クエリを
 // 絞り込む(SKILL.md「対象関与先の指定(任意)」参照)。
 const buildScoutPrompt = (client) => `${client.clientCode}の新着メールを処理して`;
 

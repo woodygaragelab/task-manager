@@ -499,7 +499,7 @@ gmail_server = create_sdk_mcp_server(
 @tool(
     "list_clients",
     "List all registered taskmanager clients (clientCode, clientName, "
-    "receiptFolderId, renamedFolderId, senderDomains, uketoriFolderId).",
+    "receiptFolderId, renamedFolderId, senderEmails, uketoriFolderId).",
     {},
 )
 async def list_clients(args: dict) -> dict:
