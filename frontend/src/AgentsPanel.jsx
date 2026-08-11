@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
 
-// 現時点でAgentCoreに実接続しているのは「分類」(archivist)と「進捗更新」(progress)のみ。
-// 他のエージェントは今後の実装予定のダミー表示。
-const LIVE_AGENT_IDS = ["archivist", "progress"];
+// 現時点でAgentCoreに実接続しているのは「受領」(scout)・「分類」(archivist)・
+// 「進捗更新」(progress)のみ。他のエージェントは今後の実装予定のダミー表示。
+const LIVE_AGENT_IDS = ["scout", "archivist", "progress"];
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 100;
 
@@ -12,8 +12,8 @@ const AGENTS = [
     id: "scout",
     name: "受領",
     role: "情報収集・調査",
-    description: "取引先から届いた見積書・請求書PDFをメールから取得し、案件フォルダに格納する",
-    instruction: "取引先から届いた見積書・請求書PDFをメールから取得し、案件フォルダに格納する",
+    description: "新着メールを要約して履歴に記録し、添付ファイルを差出人ドメインから判定した関与先の受領フォルダに格納する",
+    instruction: "新着メールを処理して",
   },
   {
     id: "archivist",
@@ -79,7 +79,13 @@ const buildArchivistPrompt = (client) => {
 // progress-updateスキルの呼び出しトリガー文言(SKILL.md参照)に関与先コードを添えて渡す。
 const buildProgressPrompt = (client) => `${client.clientCode}の進捗を更新して`;
 
+// email-summaryスキルの呼び出しトリガー文言(SKILL.md参照)。同スキルは新着メール全体を
+// 差出人ドメインから関与先ごとに振り分けて処理するため、archivist/progressと異なり
+// 特定のclientCodeを指示文には含めない。
+const buildScoutPrompt = () => "新着メールを処理して";
+
 const PROMPT_BUILDERS = {
+  scout: buildScoutPrompt,
   archivist: buildArchivistPrompt,
   progress: buildProgressPrompt,
 };

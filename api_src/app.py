@@ -70,6 +70,8 @@ def handler(event, context):
                 three_months_after_month=body.get("threeMonthsAfterMonth"),
                 interim_month=body.get("interimMonth"),
                 nine_months_after_month=body.get("nineMonthsAfterMonth"),
+                sender_domains=body.get("senderDomains"),
+                uketori_folder_id=body.get("uketoriFolderId"),
             )
             return _response(201, item)
 
@@ -85,6 +87,8 @@ def handler(event, context):
                 three_months_after_month=body.get("threeMonthsAfterMonth"),
                 interim_month=body.get("interimMonth"),
                 nine_months_after_month=body.get("nineMonthsAfterMonth"),
+                sender_domains=body.get("senderDomains"),
+                uketori_folder_id=body.get("uketoriFolderId"),
             )
             return _response(200, item)
 

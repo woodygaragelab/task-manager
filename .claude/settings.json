@@ -34,7 +34,8 @@
       "Bash(npx eslint *)",
       "Bash(npx --yes @babel/cli --version)",
       "Bash(node -e ' *)",
-      "Bash(python -m py_compile api_src/app.py layer/python/task_repository.py)"
+      "Bash(python -m py_compile api_src/app.py layer/python/task_repository.py)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('layer/python/task_repository.py', encoding='utf-8'\\).read\\(\\)\\); ast.parse\\(open\\('api_src/app.py', encoding='utf-8'\\).read\\(\\)\\); print\\('ok'\\)\")"
     ],
     "additionalDirectories": [
       "\\tmp"

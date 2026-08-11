@@ -148,6 +148,8 @@ def create_client(
     three_months_after_month: Optional[str] = None,
     interim_month: Optional[str] = None,
     nine_months_after_month: Optional[str] = None,
+    sender_domains: Optional[list] = None,
+    uketori_folder_id: Optional[str] = None,
 ) -> dict:
     """クライアントを新規登録する(ドロップダウンの「新規作成」操作専用)。
 
@@ -159,7 +161,9 @@ def create_client(
     (分類)が参照するGoogle DriveフォルダID。assignee(担当者)/fiscal_year_end_month
     (決算月)/three_months_after_month(3か月後月)/interim_month(中間月)/
     nine_months_after_month(9か月後月)はクライアントプロフィール画面で設定する属性。
-    いずれも省略時は属性ごと書き込まない。
+    sender_domains/uketori_folder_idはメール要約エージェントが差出人ドメインから
+    関与先を判定し、添付ファイルの保存先を決めるための属性。いずれも省略時は属性
+    ごと書き込まない。
     """
     item = {
         "lookupBucket": CLIENT_BUCKET,
@@ -180,6 +184,10 @@ def create_client(
         item["interimMonth"] = interim_month
     if nine_months_after_month:
         item["nineMonthsAfterMonth"] = nine_months_after_month
+    if sender_domains:
+        item["senderDomains"] = sender_domains
+    if uketori_folder_id:
+        item["uketoriFolderId"] = uketori_folder_id
     try:
         clients_table.put_item(
             Item=item,
@@ -200,8 +208,10 @@ def update_client(
     three_months_after_month: Optional[str] = None,
     interim_month: Optional[str] = None,
     nine_months_after_month: Optional[str] = None,
+    sender_domains: Optional[list] = None,
+    uketori_folder_id: Optional[str] = None,
 ) -> dict:
-    """既存クライアントのクライアント名・Driveフォルダ設定・担当者・決算月・3か月後月・中間月・9か月後月を更新する(指定した項目のみ変更)。"""
+    """既存クライアントのクライアント名・Driveフォルダ設定・担当者・決算月・3か月後月・中間月・9か月後月・差出人ドメイン・受領フォルダを更新する(指定した項目のみ変更)。"""
     key = {"lookupBucket": CLIENT_BUCKET, "clientCode": client_code}
     resp = clients_table.get_item(Key=key)
     if not resp.get("Item"):
@@ -234,6 +244,12 @@ def update_client(
     if nine_months_after_month is not None:
         update_expr.append("nineMonthsAfterMonth = :m9")
         expr_values[":m9"] = nine_months_after_month
+    if sender_domains is not None:
+        update_expr.append("senderDomains = :sd")
+        expr_values[":sd"] = sender_domains
+    if uketori_folder_id is not None:
+        update_expr.append("uketoriFolderId = :uf")
+        expr_values[":uf"] = uketori_folder_id
 
     if not update_expr:
         return resp["Item"]

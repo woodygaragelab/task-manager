@@ -34,6 +34,16 @@ export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
     commit({ [field]: value });
   };
 
+  const commitDomains = (e) => {
+    const domains = e.target.value
+      .split(/[,\n]/)
+      .map((d) => d.trim())
+      .filter(Boolean);
+    const current_ = current.senderDomains ?? [];
+    if (domains.length === current_.length && domains.every((d, i) => d === current_[i])) return;
+    commit({ senderDomains: domains });
+  };
+
   const remove = async () => {
     if (!window.confirm(`クライアント「${current.clientCode}」を削除しますか？`)) return;
     setError(null);
@@ -133,6 +143,28 @@ export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
             key={`renamed-${current.clientCode}`}
             placeholder="未設定"
             onBlur={commitText("renamedFolderId")}
+          />
+        </div>
+
+        <div className="profile-field">
+          <label htmlFor="profile-uketori-folder">受領フォルダ</label>
+          <input
+            id="profile-uketori-folder"
+            defaultValue={current.uketoriFolderId ?? ""}
+            key={`uketori-${current.clientCode}`}
+            placeholder="未設定"
+            onBlur={commitText("uketoriFolderId")}
+          />
+        </div>
+
+        <div className="profile-field">
+          <label htmlFor="profile-sender-domains">差出人ドメイン</label>
+          <input
+            id="profile-sender-domains"
+            defaultValue={(current.senderDomains ?? []).join(", ")}
+            key={`sender-domains-${current.clientCode}`}
+            placeholder="例: example.com, example.co.jp"
+            onBlur={commitDomains}
           />
         </div>
       </div>
