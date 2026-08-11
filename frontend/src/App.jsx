@@ -15,7 +15,7 @@ export default function App() {
   const [frameList, setFrameList] = useState([]);
   const [error, setError] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [currentView, setCurrentView] = useState("コンソール"); // コンソール | クライアント | 設定 | データ照会
+  const [currentView, setCurrentView] = useState("クライアント"); // コンソール | クライアント | 設定 | データ照会
   const [consoleClientCode, setConsoleClientCode] = useState(null);
 
   const handleSelectClient = (clientCode) => {
