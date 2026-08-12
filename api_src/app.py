@@ -116,6 +116,15 @@ def handler(event, context):
             )
             return _response(201, item)
 
+        # ---- PATCH /series/{seriesCode} ----
+        if route_key == "PATCH /series/{seriesCode}":
+            item = repo.update_series(
+                series_code=path_params["seriesCode"],
+                series_name=body.get("seriesName"),
+                task_group=body.get("taskGroup"),
+            )
+            return _response(200, item)
+
         # ---- DELETE /series/{seriesCode} ----
         if route_key == "DELETE /series/{seriesCode}":
             repo.delete_series(series_code=path_params["seriesCode"])
@@ -134,6 +143,14 @@ def handler(event, context):
                 frame_name=body["frameName"],
             )
             return _response(201, item)
+
+        # ---- PATCH /frames/{frameCode} ----
+        if route_key == "PATCH /frames/{frameCode}":
+            item = repo.update_frame(
+                frame_code=path_params["frameCode"],
+                frame_name=body.get("frameName"),
+            )
+            return _response(200, item)
 
         # ---- DELETE /frames/{frameCode} ----
         if route_key == "DELETE /frames/{frameCode}":
@@ -364,8 +381,12 @@ def handler(event, context):
         return _error(404, str(e))
     except repo.SeriesAlreadyExistsError as e:
         return _error(409, str(e))
+    except repo.SeriesNotFoundError as e:
+        return _error(404, str(e))
     except repo.FrameAlreadyExistsError as e:
         return _error(409, str(e))
+    except repo.FrameNotFoundError as e:
+        return _error(404, str(e))
     except repo.TaskNotFoundError as e:
         return _error(404, str(e))
     except repo.HistoryEntryNotFoundError as e:

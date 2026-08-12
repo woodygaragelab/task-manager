@@ -55,8 +55,16 @@ class SeriesAlreadyExistsError(Exception):
     """create_seriesで既に登録済みのseriesCodeを指定した場合に送出する。"""
 
 
+class SeriesNotFoundError(Exception):
+    """update_seriesで指定されたseriesCodeが存在しない場合に送出する。"""
+
+
 class FrameAlreadyExistsError(Exception):
     """create_frameで既に登録済みのframeCodeを指定した場合に送出する。"""
+
+
+class FrameNotFoundError(Exception):
+    """update_frameで指定されたframeCodeが存在しない場合に送出する。"""
 
 
 class HistoryEntryNotFoundError(Exception):
@@ -315,6 +323,39 @@ def create_series(series_code: str, series_name: str, task_group: str = "") -> d
     return item
 
 
+def update_series(
+    series_code: str,
+    series_name: Optional[str] = None,
+    task_group: Optional[str] = None,
+) -> dict:
+    """既存シリーズのシリーズ名・分類(taskGroup)を更新する(指定した項目のみ変更)。"""
+    key = {"lookupBucket": SERIES_BUCKET, "seriesCode": series_code}
+    resp = series_table.get_item(Key=key)
+    if not resp.get("Item"):
+        raise SeriesNotFoundError(f"seriesCode {series_code} が見つかりません")
+
+    update_expr = []
+    expr_values = {}
+
+    if series_name is not None:
+        update_expr.append("seriesName = :n")
+        expr_values[":n"] = series_name
+    if task_group is not None:
+        update_expr.append("taskGroup = :tg")
+        expr_values[":tg"] = task_group
+
+    if not update_expr:
+        return resp["Item"]
+
+    resp = series_table.update_item(
+        Key=key,
+        UpdateExpression="SET " + ", ".join(update_expr),
+        ExpressionAttributeValues=expr_values,
+        ReturnValues="ALL_NEW",
+    )
+    return resp["Attributes"]
+
+
 def delete_series(series_code: str) -> None:
     """シリーズマスタから削除する(タスクシリーズ一覧画面の削除操作用)。"""
     series_table.delete_item(Key={"lookupBucket": SERIES_BUCKET, "seriesCode": series_code})
@@ -347,6 +388,32 @@ def create_frame(frame_code: str, frame_name: str) -> dict:
     except dynamodb.meta.client.exceptions.ConditionalCheckFailedException:
         raise FrameAlreadyExistsError(f"frameCode {frame_code} は既に登録されています")
     return item
+
+
+def update_frame(frame_code: str, frame_name: Optional[str] = None) -> dict:
+    """既存フレームのフレーム名を更新する(指定した項目のみ変更)。"""
+    key = {"lookupBucket": FRAME_BUCKET, "frameCode": frame_code}
+    resp = frames_table.get_item(Key=key)
+    if not resp.get("Item"):
+        raise FrameNotFoundError(f"frameCode {frame_code} が見つかりません")
+
+    update_expr = []
+    expr_values = {}
+
+    if frame_name is not None:
+        update_expr.append("frameName = :n")
+        expr_values[":n"] = frame_name
+
+    if not update_expr:
+        return resp["Item"]
+
+    resp = frames_table.update_item(
+        Key=key,
+        UpdateExpression="SET " + ", ".join(update_expr),
+        ExpressionAttributeValues=expr_values,
+        ReturnValues="ALL_NEW",
+    )
+    return resp["Attributes"]
 
 
 def delete_frame(frame_code: str) -> None:

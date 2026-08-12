@@ -59,6 +59,12 @@ export const api = {
       body: { seriesCode, seriesName, taskGroup },
     }),
 
+  updateSeries: (seriesCode, patch) =>
+    request(`/series/${encodeURIComponent(seriesCode)}`, {
+      method: "PATCH",
+      body: patch,
+    }),
+
   deleteSeries: (seriesCode) =>
     request(`/series/${encodeURIComponent(seriesCode)}`, { method: "DELETE" }),
 
@@ -68,6 +74,12 @@ export const api = {
     request(`/frames`, {
       method: "POST",
       body: { frameCode, frameName },
+    }),
+
+  updateFrame: (frameCode, patch) =>
+    request(`/frames/${encodeURIComponent(frameCode)}`, {
+      method: "PATCH",
+      body: patch,
     }),
 
   deleteFrame: (frameCode) =>

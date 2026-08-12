@@ -236,6 +236,12 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /series
             Method: post
+        UpdateSeries:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /series/{seriesCode}
+            Method: patch
         DeleteSeries:
           Type: HttpApi
           Properties:
@@ -254,6 +260,12 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /frames
             Method: post
+        UpdateFrame:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /frames/{frameCode}
+            Method: patch
         DeleteFrame:
           Type: HttpApi
           Properties:
