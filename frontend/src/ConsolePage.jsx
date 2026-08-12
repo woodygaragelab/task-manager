@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ClientSelector } from "./ClientSelector";
 import { ClientProfilePage } from "./ClientProfilePage";
 import { ProgressTable } from "./ProgressTable";
 import { TaskDetailPanel } from "./TaskDetailPanel";
@@ -11,7 +10,7 @@ const POLL_INTERVAL_MS = 4000;
 const TABS = ["基本情報", "資料進捗", "履歴", "エージェント", "源泉", "年調"];
 const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
 
-export function ConsolePage({ seriesList, frameList, initialClientCode }) {
+export function ConsolePage({ seriesList, frameList, initialClientCode, onBackToList }) {
   const initialCode = initialClientCode || DEFAULT_CLIENT.clientCode;
   const [client, setClient] = useState(() =>
     initialClientCode
@@ -121,13 +120,17 @@ export function ConsolePage({ seriesList, frameList, initialClientCode }) {
         <section className="panel">
           <div className="panel__header">
             <h2 className="panel__title">
-              <span className="panel__title-eyebrow">クライアント</span>
-              <ClientSelector
-                variant="panel"
-                selectedClientCode={client?.clientCode}
-                onSelect={setClient}
-              />
-              {client && <span className="panel__title-arrow">&gt;</span>}
+              <button
+                type="button"
+                className="panel__title-back"
+                onClick={onBackToList}
+              >
+                <span className="panel__title-arrow">&lt;</span>
+                <span className="panel__title-eyebrow">関与先</span>
+                <span className="panel__title-name">
+                  {client ? `${client.clientName}(${client.clientCode})` : "選択してください"}
+                </span>
+              </button>
             </h2>
             {client && lastSynced && (
               <span className="status-line">
@@ -203,7 +206,7 @@ export function ConsolePage({ seriesList, frameList, initialClientCode }) {
           ) : (
             <div className="empty">
               <div className="empty__title">クライアントを選択してください</div>
-              上のクライアント名をクリックして選択してください。
+              上の「関与先」をクリックして関与先一覧から選択してください。
             </div>
           )}
         </section>

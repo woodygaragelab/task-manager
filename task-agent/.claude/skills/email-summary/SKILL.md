@@ -8,8 +8,8 @@ description: |
   処理して」「メール履歴を更新して」「(関与先名)の新着メールを処理して」のように
   言われたら、または定期実行(スケジュール)で呼ばれたら必ずこのスキルを使うこと。
   何度でも再実行できるよう、処理済みメールには
-  Gmailラベルを付けて自動でスキップする。領収書のOCR・リネームは行わない(それは
-  receipt-ocr-filelistスキルの役割)。
+  Gmailラベル「エージェント処理済」を付けて自動でスキップする。領収書のOCR・リネームは
+  行わない(それはreceipt-ocr-filelistスキルの役割)。
 ---
 
 # メール要約 → 履歴保存 → 添付ファイルDrive保存(AgentCore版)
@@ -17,7 +17,7 @@ description: |
 Gmail上の新着受信メールを要約し、関与先(JKL/MAX/AMR/IKK/JLR等)を判定した上で、
 taskmanagerの履歴に1件ずつ記録する。添付ファイルがあれば、判定した関与先の
 Google Drive「受領フォルダ」へ保存する。定期ポーリング(スケジュール実行)を
-前提とし、処理済みメールにはGmailラベルを付けて重複処理を防ぐ。
+前提とし、処理済みメールにはGmailラベル「エージェント処理済」を付けて重複処理を防ぐ。
 
 このスキルは `mcp__gmail__*`(list_labels / create_label / search_threads /
 get_message / get_attachment / label_message)、`mcp__google-drive__create_file`、
@@ -61,13 +61,13 @@ AgentCore環境でのツール名。別の実行環境では異なるプレフ�
 受信トレイ全体を対象にする。
 
 - 関与先が指定された場合:Step 0で取得した対応表からその関与先の`senderEmails`を
-  引き、Step 1の検索クエリを `label:inbox -label:処理済み (from:email1 OR
+  引き、Step 1の検索クエリを `label:inbox -label:エージェント処理済 (from:email1 OR
   to:email1 OR from:email2 OR ...)` のように絞り込む(`senderEmails`が
   複数ある場合はOR条件で並べる)。ただし転送・返信元の差出人がこのアドレスである
   ケース(Step 2の判定2)は件名・本文を読まないと分からないため、直近差出人・宛先が
   他アドレスでも一致する可能性のあるメールを取りこぼすことがある点に注意
   (定期実行(全件スキャン)の方が判定精度は高い)
-- 指定が無い場合:Step 1は `label:inbox -label:処理済み` のまま(全件対象)
+- 指定が無い場合:Step 1は `label:inbox -label:エージェント処理済` のまま(全件対象)
 
 ## 全体の流れ
 
@@ -75,15 +75,15 @@ AgentCore環境でのツール名。別の実行環境では異なるプレフ�
 
 1. `mcp__task-manager__list_clients` を呼び、`clientCode → {senderEmails, uketoriFolderId}`
    の対応表をメモリ上に作る(このスキル実行中はこの表を使い回し、都度問い合わせない)。
-2. `mcp__gmail__list_labels` で `処理済み` ラベルの有無を確認し、無ければ
+2. `mcp__gmail__list_labels` で `エージェント処理済` ラベルの有無を確認し、無ければ
    `mcp__gmail__create_label` で作成する。
 
 ### Step 1. 新着メールの取得
 
-`mcp__gmail__search_threads` で `処理済み` ラベルが付いていない受信メールを検索する。
+`mcp__gmail__search_threads` で `エージェント処理済` ラベルが付いていない受信メールを検索する。
 
 ```
-query: label:inbox -label:処理済み
+query: label:inbox -label:エージェント処理済
 ```
 
 該当が0件なら「新着メールはありません」と報告して終了する。
@@ -121,10 +121,10 @@ query: label:inbox -label:処理済み
 ```
 client_code: {判定結果}
 date: {メールのDateヘッダーから得た受信日, YYYY-MM-DD}
-category: "メール"
-series_code: "メール対応"
+category: "支払"
+series_code: "資料受領"
 frame_codes: [{受信月, YYYYMM}]
-assignee: ""
+assignee: "資料整理君"
 status: "未着手"
 content: {Step2で作成した要約}
   (判定根拠を付記。添付があれば末尾に「添付: ファイル名」も付記)
@@ -145,7 +145,7 @@ content: {Step2で作成した要約}
 
 ### Step 5. 処理済みマーク
 
-Step 3〜4が成功したメールに `mcp__gmail__label_message` で `処理済み` ラベルを
+Step 3〜4が成功したメールに `mcp__gmail__label_message` で `エージェント処理済` ラベルを
 付与する(失敗したメールには付けず、次回再試行の対象として残す)。
 
 ### Step 6. 報告

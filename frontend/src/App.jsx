@@ -104,6 +104,7 @@ export default function App() {
           initialClientCode={consoleClientCode}
           seriesList={seriesList}
           frameList={frameList}
+          onBackToList={() => setCurrentView("クライアント")}
         />
       )}
     </div>
