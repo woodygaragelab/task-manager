@@ -72,6 +72,8 @@ def handler(event, context):
                 nine_months_after_month=body.get("nineMonthsAfterMonth"),
                 sender_emails=body.get("senderEmails"),
                 uketori_folder_id=body.get("uketoriFolderId"),
+                engagement_type=body.get("engagementType"),
+                payment_method=body.get("paymentMethod"),
             )
             return _response(201, item)
 
@@ -89,6 +91,8 @@ def handler(event, context):
                 nine_months_after_month=body.get("nineMonthsAfterMonth"),
                 sender_emails=body.get("senderEmails"),
                 uketori_folder_id=body.get("uketoriFolderId"),
+                engagement_type=body.get("engagementType"),
+                payment_method=body.get("paymentMethod"),
             )
             return _response(200, item)
 

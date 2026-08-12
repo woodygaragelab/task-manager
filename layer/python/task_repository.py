@@ -150,6 +150,8 @@ def create_client(
     nine_months_after_month: Optional[str] = None,
     sender_emails: Optional[list] = None,
     uketori_folder_id: Optional[str] = None,
+    engagement_type: Optional[str] = None,
+    payment_method: Optional[str] = None,
 ) -> dict:
     """クライアントを新規登録する(ドロップダウンの「新規作成」操作専用)。
 
@@ -160,7 +162,9 @@ def create_client(
     receipt_folder_id/renamed_folder_idは「エージェント」タブの領収書整理エージェント
     (分類)が参照するGoogle DriveフォルダID。assignee(担当者)/fiscal_year_end_month
     (決算月)/three_months_after_month(3か月後月)/interim_month(中間月)/
-    nine_months_after_month(9か月後月)はクライアントプロフィール画面で設定する属性。
+    nine_months_after_month(9か月後月)/engagement_type(関与タイプ: 年一/自計化/
+    反自計化)/payment_method(納付方式: ダイレクト/振替/納付書)はクライアントプロフィール
+    画面で設定する属性。
     sender_emails/uketori_folder_idはメール要約エージェントが差出人メールアドレスから
     関与先を判定し、添付ファイルの保存先を決めるための属性。sender_emailsは1つの
     関与先に複数登録できる想定で、同じアドレスが別の関与先に登録されることは無い
@@ -189,6 +193,10 @@ def create_client(
         item["senderEmails"] = sender_emails
     if uketori_folder_id:
         item["uketoriFolderId"] = uketori_folder_id
+    if engagement_type:
+        item["engagementType"] = engagement_type
+    if payment_method:
+        item["paymentMethod"] = payment_method
     try:
         clients_table.put_item(
             Item=item,
@@ -211,8 +219,10 @@ def update_client(
     nine_months_after_month: Optional[str] = None,
     sender_emails: Optional[list] = None,
     uketori_folder_id: Optional[str] = None,
+    engagement_type: Optional[str] = None,
+    payment_method: Optional[str] = None,
 ) -> dict:
-    """既存クライアントのクライアント名・Driveフォルダ設定・担当者・決算月・3か月後月・中間月・9か月後月・差出人メールアドレス・受領フォルダを更新する(指定した項目のみ変更)。"""
+    """既存クライアントのクライアント名・Driveフォルダ設定・担当者・決算月・3か月後月・中間月・9か月後月・差出人メールアドレス・受領フォルダ・関与タイプ・納付方式を更新する(指定した項目のみ変更)。"""
     key = {"lookupBucket": CLIENT_BUCKET, "clientCode": client_code}
     resp = clients_table.get_item(Key=key)
     if not resp.get("Item"):
@@ -251,6 +261,12 @@ def update_client(
     if uketori_folder_id is not None:
         update_expr.append("uketoriFolderId = :uf")
         expr_values[":uf"] = uketori_folder_id
+    if engagement_type is not None:
+        update_expr.append("engagementType = :et")
+        expr_values[":et"] = engagement_type
+    if payment_method is not None:
+        update_expr.append("paymentMethod = :pm")
+        expr_values[":pm"] = payment_method
 
     if not update_expr:
         return resp["Item"]

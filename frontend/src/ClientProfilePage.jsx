@@ -2,6 +2,8 @@ import { useState } from "react";
 import { api } from "./api";
 
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1);
+const ENGAGEMENT_TYPE_OPTIONS = ["年一", "自計化", "反自計化"];
+const PAYMENT_METHOD_OPTIONS = ["ダイレクト", "振替", "納付書"];
 
 export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
   const [current, setCurrent] = useState(client);
@@ -74,6 +76,25 @@ export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
     </div>
   );
 
+  const ChoiceField = ({ id, label, field, options }) => (
+    <div className="profile-field">
+      <label htmlFor={id}>{label}</label>
+      <select
+        id={id}
+        defaultValue={current[field] ?? ""}
+        key={`${field}-${current.clientCode}`}
+        onChange={commitSelect(field)}
+      >
+        <option value="">未設定</option>
+        {options.map((o) => (
+          <option key={o} value={o}>
+            {o}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+
   return (
     <section className="panel">
       {onBack && (
@@ -118,6 +139,19 @@ export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
             onBlur={commitText("assignee")}
           />
         </div>
+
+        <ChoiceField
+          id="profile-engagement-type"
+          label="関与タイプ"
+          field="engagementType"
+          options={ENGAGEMENT_TYPE_OPTIONS}
+        />
+        <ChoiceField
+          id="profile-payment-method"
+          label="納付方式"
+          field="paymentMethod"
+          options={PAYMENT_METHOD_OPTIONS}
+        />
 
         <MonthField id="profile-fiscal-year-end-month" label="決算月" field="fiscalYearEndMonth" />
         <MonthField id="profile-three-months-after-month" label="3か月後月" field="threeMonthsAfterMonth" />

@@ -63,6 +63,9 @@ export function ClientListPage({ onSelectClient }) {
                   <th>関与先名</th>
                   <th>担当者</th>
                   <th>決算月</th>
+                  <th>関与タイプ</th>
+                  <th>納付方式</th>
+                  <th>差出人メールアドレス</th>
                 </tr>
               </thead>
               <tbody>
@@ -80,6 +83,9 @@ export function ClientListPage({ onSelectClient }) {
                     </td>
                     <td>{c.assignee || "—"}</td>
                     <td>{c.fiscalYearEndMonth ? `${c.fiscalYearEndMonth}月` : "—"}</td>
+                    <td>{c.engagementType || "—"}</td>
+                    <td>{c.paymentMethod || "—"}</td>
+                    <td>{(c.senderEmails ?? []).join(", ") || "—"}</td>
                   </tr>
                 ))}
               </tbody>
