@@ -1114,6 +1114,7 @@
 }
 
 .agent-ticket__result {
+  flex: 1 1 auto;
   word-break: break-word;
   min-width: 0;
 }
@@ -1164,6 +1165,31 @@
 
 .agent-ticket__result a {
   color: inherit;
+}
+
+.agent-ticket__table-wrap {
+  overflow-x: auto;
+  margin: 0 0 8px;
+}
+
+.agent-ticket__result table {
+  border-collapse: collapse;
+  width: max-content;
+  min-width: 100%;
+  font-size: 12px;
+}
+
+.agent-ticket__result th,
+.agent-ticket__result td {
+  border: 1px solid var(--paper-line);
+  padding: 4px 8px;
+  text-align: left;
+  white-space: nowrap;
+}
+
+.agent-ticket__result th {
+  background: rgba(31, 36, 33, 0.06);
+  font-weight: 700;
 }
 
 /* ---------- New task form ---------- */

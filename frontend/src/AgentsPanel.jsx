@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import { api } from "./api";
 
 // 現時点でAgentCoreに実接続しているのは「分類」(archivist)と「進捗更新」(progress)のみ。
@@ -96,6 +97,16 @@ const buildProgressPrompt = (client) =>
 // 受信トレイ全体(=全クライアント分)が対象になる。
 const buildScoutPrompt = (client) => (client ? `${client.clientCode}の新着メールを処理して` : "新着メールを処理して");
 
+// GFMのpipeテーブルは横幅が親要素(チケット詳細)を超えることがあるため、
+// スクロール可能なラッパーで囲んでレイアウト崩れを防ぐ。
+const MARKDOWN_COMPONENTS = {
+  table: ({ node, ...props }) => (
+    <div className="agent-ticket__table-wrap">
+      <table {...props} />
+    </div>
+  ),
+};
+
 const PROMPT_BUILDERS = {
   archivist: buildArchivistPrompt,
   progress: buildProgressPrompt,
@@ -171,7 +182,9 @@ function AgentTicket({ agent, client, ticket, live, global, onStart, expanded, o
               <div className="agent-ticket__field agent-ticket__field--result">
                 <dt>実行結果</dt>
                 <dd className="agent-ticket__result">
-                  <ReactMarkdown>{ticket.result}</ReactMarkdown>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]} components={MARKDOWN_COMPONENTS}>
+                    {ticket.result}
+                  </ReactMarkdown>
                 </dd>
               </div>
             )}
