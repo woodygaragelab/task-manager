@@ -21,8 +21,8 @@ Google Drive「受領フォルダ」へ保存する。定期ポーリング(ス�
 
 このスキルは `mcp__gmail__*`(list_labels / create_label / search_threads /
 get_message / get_attachment / label_message)、`mcp__google-drive__create_file`、
-`mcp__task-manager__list_clients` / `mcp__task-manager__create_history_entry` を
-組み合わせて動く。
+`mcp__task-manager__list_clients` / `mcp__task-manager__list_series` /
+`mcp__task-manager__create_history_entry` を組み合わせて動く。
 
 ## MCPツール名について(実行環境による違い)
 
@@ -71,11 +71,16 @@ AgentCore環境でのツール名。別の実行環境では異なるプレフ�
 
 ## 全体の流れ
 
-### Step 0. 関与先設定と前回処理位置の確認
+### Step 0. 関与先設定・シリーズコード・前回処理位置の確認
 
 1. `mcp__task-manager__list_clients` を呼び、`clientCode → {senderEmails, uketoriFolderId}`
    の対応表をメモリ上に作る(このスキル実行中はこの表を使い回し、都度問い合わせない)。
-2. `mcp__gmail__list_labels` で `エージェント処理済` ラベルの有無を確認し、無ければ
+2. `mcp__task-manager__list_series` を呼び、`taskGroup`(=分類/category)が `"支払"`
+   かつ `seriesName`(=シリーズ名)が `"資料受領"` である項目を探し、その `seriesCode`
+   をStep 3で使う「資料受領」の `series_code` として控える(このスキル実行中は
+   使い回し、都度問い合わせない)。該当するシリーズが見つからない場合は、
+   履歴記録を行わずその旨をStep 6で報告する。
+3. `mcp__gmail__list_labels` で `エージェント処理済` ラベルの有無を確認し、無ければ
    `mcp__gmail__create_label` で作成する。
 
 ### Step 1. 新着メールの取得
@@ -122,7 +127,7 @@ query: label:inbox -label:エージェント処理済
 client_code: {判定結果}
 date: {メールのDateヘッダーから得た受信日, YYYY-MM-DD}
 category: "支払"
-series_code: "資料受領"
+series_code: {Step 0で控えた、category="支払"・series="資料受領"に一致するseriesCode}
 frame_codes: [{受信月, YYYYMM}]
 assignee: "資料整理君"
 status: "未着手"
