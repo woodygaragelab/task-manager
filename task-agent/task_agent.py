@@ -605,6 +605,18 @@ async def list_frames(args: dict) -> dict:
     return {"content": [{"type": "text", "text": json.dumps(frames, ensure_ascii=False)}]}
 
 
+@tool(
+    "list_series",
+    "List all registered taskmanager series (seriesCode, seriesName, "
+    "taskGroup). taskGroup is the series' category (e.g. \"支払\"); "
+    "seriesName is the series' display name (e.g. \"資料受領\").",
+    {},
+)
+async def list_series(args: dict) -> dict:
+    series = repo.list_series()
+    return {"content": [{"type": "text", "text": json.dumps(series, ensure_ascii=False)}]}
+
+
 task_manager_server = create_sdk_mcp_server(
     name="task-manager",
     version="1.0.0",
@@ -614,6 +626,7 @@ task_manager_server = create_sdk_mcp_server(
         update_history_entry,
         create_history_entry,
         list_frames,
+        list_series,
     ],
 )
 
@@ -643,6 +656,7 @@ def build_agent_options() -> ClaudeAgentOptions:
             "mcp__task-manager__update_history_entry",
             "mcp__task-manager__create_history_entry",
             "mcp__task-manager__list_frames",
+            "mcp__task-manager__list_series",
         ],
         mcp_servers={
             "google-drive": google_drive_server,
