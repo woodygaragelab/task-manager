@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import ReactMarkdown from "react-markdown";
 import { api } from "./api";
 
 // 現時点でAgentCoreに実接続しているのは「分類」(archivist)と「進捗更新」(progress)のみ。
@@ -167,9 +168,11 @@ function AgentTicket({ agent, client, ticket, live, global, onStart, expanded, o
               <dd>{ticket.endTime || "—"}</dd>
             </div>
             {ticket.result && (
-              <div className="agent-ticket__field">
+              <div className="agent-ticket__field agent-ticket__field--result">
                 <dt>実行結果</dt>
-                <dd className="agent-ticket__result">{ticket.result}</dd>
+                <dd className="agent-ticket__result">
+                  <ReactMarkdown>{ticket.result}</ReactMarkdown>
+                </dd>
               </div>
             )}
             {showFolders && (

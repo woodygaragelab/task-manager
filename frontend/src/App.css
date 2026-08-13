@@ -1109,9 +1109,61 @@
   color: var(--ink-soft);
 }
 
+.agent-ticket__field--result {
+  align-items: flex-start;
+}
+
 .agent-ticket__result {
-  white-space: pre-wrap;
   word-break: break-word;
+  min-width: 0;
+}
+
+.agent-ticket__result > :first-child {
+  margin-top: 0;
+}
+
+.agent-ticket__result > :last-child {
+  margin-bottom: 0;
+}
+
+.agent-ticket__result p,
+.agent-ticket__result ul,
+.agent-ticket__result ol,
+.agent-ticket__result pre {
+  margin: 0 0 8px;
+}
+
+.agent-ticket__result ul,
+.agent-ticket__result ol {
+  padding-left: 20px;
+}
+
+.agent-ticket__result li + li {
+  margin-top: 2px;
+}
+
+.agent-ticket__result code {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  background: rgba(31, 36, 33, 0.06);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+
+.agent-ticket__result pre {
+  overflow-x: auto;
+  padding: 8px 10px;
+  background: rgba(31, 36, 33, 0.06);
+  border-radius: 4px;
+}
+
+.agent-ticket__result pre code {
+  padding: 0;
+  background: none;
+}
+
+.agent-ticket__result a {
+  color: inherit;
 }
 
 /* ---------- New task form ---------- */
