@@ -130,7 +130,7 @@ category: "支払"
 series_code: {Step 0で控えた、category="支払"・series="資料受領"に一致するseriesCode}
 frame_codes: [{受信月, YYYYMM}]
 assignee: "資料整理君"
-status: "未着手"
+status: "完了"
 content: {Step2で作成した要約}
   (判定根拠を付記。添付があれば末尾に「添付: ファイル名」も付記)
 ```

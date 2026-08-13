@@ -15,6 +15,11 @@
       "Effect": "Allow",
       "Action": "dynamodb:Query",
       "Resource": "arn:aws:dynamodb:ap-northeast-1:155830630328:table/TaskFrames"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "dynamodb:Query",
+      "Resource": "arn:aws:dynamodb:ap-northeast-1:155830630328:table/TaskSeries"
     }
   ]
 }
