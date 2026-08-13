@@ -2,8 +2,9 @@ import { useState } from "react";
 import { SeriesListPage } from "./SeriesListPage";
 import { FrameListPage } from "./FrameListPage";
 import { ClassificationAxesPage } from "./ClassificationAxesPage";
+import { AgentsPanel } from "./AgentsPanel";
 
-const TABS = ["タスク", "フレーム", "分類ルール"];
+const TABS = ["タスク", "フレーム", "分類ルール", "エージェント"];
 
 export function SettingsPage({ seriesList, frameList, onRefresh }) {
   const [activeTab, setActiveTab] = useState(TABS[0]);
@@ -30,6 +31,7 @@ export function SettingsPage({ seriesList, frameList, onRefresh }) {
         <FrameListPage frameList={frameList} onRefresh={onRefresh} />
       )}
       {activeTab === "分類ルール" && <ClassificationAxesPage />}
+      {activeTab === "エージェント" && <AgentsPanel scope="all" />}
     </>
   );
 }

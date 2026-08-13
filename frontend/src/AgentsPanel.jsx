@@ -7,6 +7,11 @@ const LIVE_AGENT_IDS = ["scout", "archivist", "progress"];
 const POLL_INTERVAL_MS = 3000;
 const MAX_POLL_ATTEMPTS = 100;
 
+// 設定ページの「全クライアント」向けエージェントタブは特定の関与先に紐付かないため、
+// ジョブ保存・ポーリングのキーとして専用のダミー関与先コードを使う
+// (agent-jobsはclientCodeをパーティションキーにするだけで、TaskClientsへの実在確認は行われない)。
+const GLOBAL_CLIENT_CODE = "ALL";
+
 const AGENTS = [
   {
     id: "scout",
@@ -69,19 +74,26 @@ const driveUrl = (folderId) =>
 // 未登録の場合はDrive上のreceiptフォルダURLをユーザーに尋ねてくる(SKILL.md参照)。
 // taskmanager側のTaskClientsに登録済みのフォルダIDを持っている場合は、都度尋ね返される
 // 手戻りを避けるため指示文にURLを直接含めてしまう。
+// clientが無い場合(設定ページの「全クライアント」タブ)は、関与先コードを付けずに
+// 呼び出す。各スキルのSKILL.mdは関与先コード省略時、全関与先を順に処理する仕様になっている
+// (receipt-ocr-filelist/progress-updateは「全クライアントの〜」と明示することで
+// 都度の関与先確認をスキップし、list_clientsで取得した全件をまとめて処理する)。
 const buildArchivistPrompt = (client) => {
+  if (!client) return "全クライアントの領収書を整理して";
   const base = `${client.clientCode}の領収書を整理して`;
   if (!client.receiptFolderId) return base;
   return `${base}。receiptフォルダのURLは https://drive.google.com/drive/folders/${client.receiptFolderId} です。`;
 };
 
 // progress-updateスキルの呼び出しトリガー文言(SKILL.md参照)に関与先コードを添えて渡す。
-const buildProgressPrompt = (client) => `${client.clientCode}の進捗を更新して`;
+const buildProgressPrompt = (client) =>
+  client ? `${client.clientCode}の進捗を更新して` : "全クライアントの進捗を更新して";
 
 // email-summaryスキルの呼び出しトリガー文言(SKILL.md参照)に関与先コードを添えて渡す。
 // 関与先コード付きで呼ぶと、そのクライアントのsenderEmailsだけにGmail検索クエリを
-// 絞り込む(SKILL.md「対象関与先の指定(任意)」参照)。
-const buildScoutPrompt = (client) => `${client.clientCode}の新着メールを処理して`;
+// 絞り込む(SKILL.md「対象関与先の指定(任意)」参照)。関与先コードを省略すると
+// 受信トレイ全体(=全クライアント分)が対象になる。
+const buildScoutPrompt = (client) => (client ? `${client.clientCode}の新着メールを処理して` : "新着メールを処理して");
 
 const PROMPT_BUILDERS = {
   archivist: buildArchivistPrompt,
@@ -94,13 +106,15 @@ const buildPrompt = (agentId, client) => {
   return builder ? builder(client) : "";
 };
 
-function AgentTicket({ agent, client, ticket, live, onStart, expanded, onToggle }) {
+function AgentTicket({ agent, client, ticket, live, global, onStart, expanded, onToggle }) {
   // 前回実行したジョブがあれば、その時点で実際に送信された指示文(ticket.prompt)を優先表示する。
-  // 未実行の場合は現在のクライアント情報から組み立てたプレビュー文言を表示する。
+  // 未実行の場合は現在のクライアント情報(全クライアント向けタブではclient=null)から
+  // 組み立てたプレビュー文言を表示する。
   const instruction =
-    ticket.prompt ?? (live && client ? buildPrompt(agent.id, client) : agent.instruction);
-  const showFolders = agent.id === "archivist";
-  const showUketoriFolder = agent.id === "scout";
+    ticket.prompt ?? (live && (global || client) ? buildPrompt(agent.id, client) : agent.instruction);
+  // 全クライアント向けタブでは対象フォルダが関与先ごとに異なるため、フォルダリンクは表示しない。
+  const showFolders = agent.id === "archivist" && !global;
+  const showUketoriFolder = agent.id === "scout" && !global;
   const inputFolderUrl = live ? driveUrl(client?.receiptFolderId) : null;
   const outputFolderUrl = live ? driveUrl(client?.renamedFolderId) : null;
   const uketoriFolderUrl = live ? driveUrl(client?.uketoriFolderId) : null;
@@ -128,7 +142,7 @@ function AgentTicket({ agent, client, ticket, live, onStart, expanded, onToggle 
                 type="button"
                 className="btn btn--ghost agent-ticket__start"
                 onClick={() => onStart(agent)}
-                disabled={!client}
+                disabled={!global && !client}
               >
                 {ticket.status === "queued" ? "開始する" : "再実行"}
               </button>
@@ -215,7 +229,15 @@ const initialTickets = () =>
     ])
   );
 
-export function AgentsPanel({ client }) {
+// scope="client": 特定の関与先(client)向け(コンソールページ)。
+// scope="all": 特定の関与先を選ばず、全クライアントを対象に指示する(設定ページ)。
+export function AgentsPanel({ client, scope = "client" }) {
+  const isGlobal = scope === "all";
+  // 全クライアント向けタブでは特定のclientを持たないため、プロンプト組み立てにはnullを渡し
+  // (buildPromptが「全クライアントの〜」文言を生成する)、ジョブ保存・ポーリングのキーには
+  // 専用のダミー関与先コードを使う。
+  const effectiveClient = isGlobal ? null : client;
+  const jobClientCode = isGlobal ? GLOBAL_CLIENT_CODE : client?.clientCode;
   const [expandedId, setExpandedId] = useState(null);
   const [tickets, setTickets] = useState(initialTickets);
 
@@ -226,7 +248,7 @@ export function AgentsPanel({ client }) {
   // チケットに反映する。展開中でも稼働中(status: "running")のポーリングは上書きしない。
   const loadLastJob = async (agentId) => {
     try {
-      const jobs = await api.listAgentJobs(client.clientCode, agentId);
+      const jobs = await api.listAgentJobs(jobClientCode, agentId);
       const latest = jobs?.[0];
       if (!latest) return;
       setTickets((prev) => {
@@ -243,7 +265,7 @@ export function AgentsPanel({ client }) {
         };
       });
       if (latest.status === "processing") {
-        pollJob(agentId, client.clientCode, latest.jobId);
+        pollJob(agentId, jobClientCode, latest.jobId);
       }
     } catch {
       // 前回ジョブが存在しない/取得失敗時は何もしない(初期のqueued表示のまま)
@@ -253,7 +275,7 @@ export function AgentsPanel({ client }) {
   const toggle = (agentId) => {
     const opening = expandedId !== agentId;
     setExpandedId(opening ? agentId : null);
-    if (opening && client && LIVE_AGENT_IDS.includes(agentId)) {
+    if (opening && (isGlobal || client) && LIVE_AGENT_IDS.includes(agentId)) {
       loadLastJob(agentId);
     }
   };
@@ -261,13 +283,15 @@ export function AgentsPanel({ client }) {
   // クライアント切り替え時、チケットは別クライアントの実行結果を保持したままなので
   // いったんリセットする。展開中のライブエージェントがあれば新クライアントの
   // 前回ジョブを取り直す(展開したままクライアントを切り替えても表示が食い違わないように)。
+  // 全クライアント向けタブ(jobClientCodeが固定)ではクライアント切り替えは発生しないため、
+  // 初回マウント時にのみ実行される。
   useEffect(() => {
     setTickets(initialTickets());
     if (expandedId && LIVE_AGENT_IDS.includes(expandedId)) {
       loadLastJob(expandedId);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [client?.clientCode]);
+  }, [jobClientCode]);
 
   const pollJob = (agentId, clientCode, jobId, attempt = 0) => {
     if (attempt >= MAX_POLL_ATTEMPTS) {
@@ -293,8 +317,8 @@ export function AgentsPanel({ client }) {
   };
 
   const start = async (agent) => {
-    if (!client) return;
-    const prompt = buildPrompt(agent.id, client);
+    if (!isGlobal && !client) return;
+    const prompt = buildPrompt(agent.id, effectiveClient);
     patchTicket(agent.id, {
       status: "running",
       prompt,
@@ -303,8 +327,8 @@ export function AgentsPanel({ client }) {
       result: null,
     });
     try {
-      const job = await api.submitAgentJob(client.clientCode, agent.id, prompt);
-      pollJob(agent.id, client.clientCode, job.jobId);
+      const job = await api.submitAgentJob(jobClientCode, agent.id, prompt);
+      pollJob(agent.id, jobClientCode, job.jobId);
     } catch (err) {
       patchTicket(agent.id, { status: "error", result: err.message, endTime: formatNow() });
     }
@@ -319,12 +343,18 @@ export function AgentsPanel({ client }) {
           は準備中です)
         </span>
       </div>
+      {isGlobal && (
+        <div className="agents__toolbar">
+          <span className="status-line">ここでの指示は全クライアントを対象に実行されます</span>
+        </div>
+      )}
       <div className="agents__list">
         {AGENTS.map((agent) => (
           <AgentTicket
             key={agent.id}
             agent={agent}
-            client={client}
+            client={effectiveClient}
+            global={isGlobal}
             ticket={tickets[agent.id]}
             live={LIVE_AGENT_IDS.includes(agent.id)}
             onStart={start}
