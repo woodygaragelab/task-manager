@@ -20,6 +20,11 @@
       "Effect": "Allow",
       "Action": "dynamodb:Query",
       "Resource": "arn:aws:dynamodb:ap-northeast-1:155830630328:table/TaskSeries"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["dynamodb:GetItem", "dynamodb:UpdateItem"],
+      "Resource": "arn:aws:dynamodb:ap-northeast-1:155830630328:table/Tasks"
     }
   ]
 }

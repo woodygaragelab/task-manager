@@ -595,6 +595,38 @@ async def create_history_entry(args: dict) -> dict:
 
 
 @tool(
+    "update_task",
+    "Update one task's status/assignee/complete_date. A task is identified "
+    "by client_code+series_code+frame_code. Omit status/assignee/"
+    "complete_date to leave that field unchanged. Fails if no task exists "
+    "yet for that series_code/frame_code combination (this tool never "
+    "creates a task).",
+    {
+        "type": "object",
+        "properties": {
+            "client_code": {"type": "string"},
+            "series_code": {"type": "string"},
+            "frame_code": {"type": "string"},
+            "status": {"type": "string"},
+            "assignee": {"type": "string"},
+            "complete_date": {"type": "string"},
+        },
+        "required": ["client_code", "series_code", "frame_code"],
+    },
+)
+async def update_task(args: dict) -> dict:
+    updated = repo.update_task(
+        client_code=args["client_code"],
+        series_code=args["series_code"],
+        frame_code=args["frame_code"],
+        status=args.get("status"),
+        assignee=args.get("assignee"),
+        complete_date=args.get("complete_date"),
+    )
+    return {"content": [{"type": "text", "text": json.dumps(updated, ensure_ascii=False)}]}
+
+
+@tool(
     "list_frames",
     "List all registered taskmanager frames (frameCode in YYYYMM format, "
     "frameName).",
@@ -625,6 +657,7 @@ task_manager_server = create_sdk_mcp_server(
         list_history,
         update_history_entry,
         create_history_entry,
+        update_task,
         list_frames,
         list_series,
     ],
@@ -655,6 +688,7 @@ def build_agent_options() -> ClaudeAgentOptions:
             "mcp__task-manager__list_history",
             "mcp__task-manager__update_history_entry",
             "mcp__task-manager__create_history_entry",
+            "mcp__task-manager__update_task",
             "mcp__task-manager__list_frames",
             "mcp__task-manager__list_series",
         ],
