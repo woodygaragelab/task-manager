@@ -11,7 +11,7 @@ from constructs import Construct
 # 対象のAgentCore Runtime ARN(メール要約/scoutスキルが動くtask-agent)
 AGENT_RUNTIME_ARN = (
     "arn:aws:bedrock-agentcore:ap-northeast-1:155830630328:"
-    "runtime/agent_agentcore-OTeMr39nYA"
+    "runtime/task_agent-lAAoax7UkB"
 )
 
 
@@ -38,7 +38,10 @@ class ScoutScheduleStack(Stack):
         invoke_fn.add_to_role_policy(
             iam.PolicyStatement(
                 actions=["bedrock-agentcore:InvokeAgentRuntime"],
-                resources=[AGENT_RUNTIME_ARN],
+                resources=[
+                    AGENT_RUNTIME_ARN,
+                    f"{AGENT_RUNTIME_ARN}/runtime-endpoint/*",
+                ],
             )
         )
 
@@ -55,8 +58,8 @@ class ScoutScheduleStack(Stack):
             self,
             "ScoutWeekdaySchedule",
             name="taskmanager-scout-email-summary-weekdays",
-            description="平日9/13/17時にメール要約(scout)エージェントを起動",
-            schedule_expression="cron(0 9,13,17 ? * MON-FRI *)",
+            description="平日6/12/18時にメール要約(scout)エージェントを起動",
+            schedule_expression="cron(0 6,12,18 ? * MON-FRI *)",
             schedule_expression_timezone="Asia/Tokyo",
             flexible_time_window=scheduler.CfnSchedule.FlexibleTimeWindowProperty(
                 mode="OFF"
