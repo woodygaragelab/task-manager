@@ -159,7 +159,7 @@
     {
       "type": "aws:cdk:creationStack",
       "data": [
-        "...aws-cdk-lib, jsii runtime...",
+        "...aws-cdk-lib...",
         "(no user code in 10 frames, use --stack-trace-limit to capture more)"
       ]
     }

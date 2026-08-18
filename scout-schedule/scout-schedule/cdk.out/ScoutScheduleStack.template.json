@@ -40,11 +40,69 @@
     "PolicyDocument": {
      "Statement": [
       {
-       "Action": "bedrock-agentcore:InvokeAgentRuntime",
+       "Action": [
+        "dynamodb:BatchWriteItem",
+        "dynamodb:PutItem",
+        "dynamodb:UpdateItem",
+        "dynamodb:DeleteItem",
+        "dynamodb:DescribeTable"
+       ],
        "Effect": "Allow",
        "Resource": [
-        "arn:aws:bedrock-agentcore:ap-northeast-1:155830630328:runtime/task_agent-lAAoax7UkB",
-        "arn:aws:bedrock-agentcore:ap-northeast-1:155830630328:runtime/task_agent-lAAoax7UkB/runtime-endpoint/*"
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":dynamodb:ap-northeast-1:",
+           {
+            "Ref": "AWS::AccountId"
+           },
+           ":table/TaskAgentJobs"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": "lambda:InvokeFunction",
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":lambda:ap-northeast-1:",
+           {
+            "Ref": "AWS::AccountId"
+           },
+           ":function:taskmanager-agent-job-processor"
+          ]
+         ]
+        },
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":lambda:ap-northeast-1:",
+           {
+            "Ref": "AWS::AccountId"
+           },
+           ":function:taskmanager-agent-job-processor:*"
+          ]
+         ]
+        }
        ]
       }
      ],
@@ -68,11 +126,12 @@
      "S3Bucket": {
       "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-ap-northeast-1"
      },
-     "S3Key": "124c11675a2f84c88b6034e5b5297db5c992c5b5e6588aab6ac56be03932a5a8.zip"
+     "S3Key": "40c66560adb4721bc2b0f8472ff4fe1610e4ad132723dfd9bf8e30ee57474860.zip"
     },
     "Environment": {
      "Variables": {
-      "AGENT_RUNTIME_ARN": "arn:aws:bedrock-agentcore:ap-northeast-1:155830630328:runtime/task_agent-lAAoax7UkB"
+      "AGENT_JOBS_TABLE": "TaskAgentJobs",
+      "AGENT_JOB_PROCESSOR_FUNCTION_NAME": "taskmanager-agent-job-processor"
      }
     },
     "FunctionName": "taskmanager-scout-email-summary-trigger",
@@ -92,7 +151,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "ScoutScheduleStack/ScoutInvokeFunction/Resource",
-    "aws:asset:path": "asset.124c11675a2f84c88b6034e5b5297db5c992c5b5e6588aab6ac56be03932a5a8",
+    "aws:asset:path": "asset.40c66560adb4721bc2b0f8472ff4fe1610e4ad132723dfd9bf8e30ee57474860",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -296,7 +355,7 @@
        "Arn"
       ]
      },
-     "Input": "{\"skill\": \"email-summary\"}",
+     "Input": "{}",
      "RetryPolicy": {
       "MaximumEventAgeInSeconds": 3600,
       "MaximumRetryAttempts": 2
@@ -316,7 +375,7 @@
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/zWNwQqDMBBEv6X3ddsq9l4LPfUg+gGyxtWmxgTcBBHx34vant6bgWFijG8pXk40SaSaPjK6xqX0pHqgSarF0FA3hMszWOW1s/Bo7d9X0DTgUjjDW70zd0areYuHrSBJRSLsBe8bQBLMgurZZyQMxnWCL9cV7NnuB6Le3ATDIz5aW/7CCvu49NRp2+1vLC6MiuEvK+Szfzt7TvCaYHr6iNbRGKzXA2Nx8AvIu/KI7gAAAA=="
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/zWNwY6CQBBEv8V707tK3LuaePJgYO+mmWlxlqEnoWdiCOHfNwxyqvcqqdQBDz9H/N7RWwtju8K7Bqc6kumA3vqY7CjUB9vgLzWez6QMnvrGEk7XJCa6ILncBC5P2XgGRz1OVfC81DnvwTszLrrSDFo+SJWj4mkJ0BLPyXQc17PQKt5CW3FkyQdqXmyT5wEvT6k/MkMe15FaJ21+Yw1pMAwbzHAf4yvIV4n7Eo+7P3WuGJJE1zNWa/4DcVF8LQ4BAAA="
    },
    "Metadata": {
     "aws:cdk:path": "ScoutScheduleStack/CDKMetadata/Default"

@@ -2,24 +2,33 @@ from aws_cdk import (
     Stack,
     Duration,
     aws_lambda as _lambda,
+    aws_dynamodb as dynamodb,
     aws_iam as iam,
     aws_scheduler as scheduler,
     aws_logs as logs,
 )
 from constructs import Construct
 
-# 対象のAgentCore Runtime ARN(メール要約/scoutスキルが動くtask-agent)
-AGENT_RUNTIME_ARN = (
-    "arn:aws:bedrock-agentcore:ap-northeast-1:155830630328:"
-    "runtime/task_agent-lAAoax7UkB"
-)
+# メインスタック(template.yaml)側のリソース名。実処理(AgentCore Runtime呼び出し)は
+# taskmanager-agent-job-processorに委ね、このスタックはTaskAgentJobsへのジョブ登録と
+# 非同期呼び出しのみを担う(Web版「エージェント」タブと同じ非同期ジョブの仕組みに乗せる)。
+AGENT_JOBS_TABLE_NAME = "TaskAgentJobs"
+AGENT_JOB_PROCESSOR_FUNCTION_NAME = "taskmanager-agent-job-processor"
 
 
 class ScoutScheduleStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
 
-        # --- Lambda: AgentCore Runtimeを起動する薄いトリガー ---
+        agent_jobs_table = dynamodb.Table.from_table_name(
+            self, "AgentJobsTable", AGENT_JOBS_TABLE_NAME
+        )
+        agent_job_processor_fn = _lambda.Function.from_function_name(
+            self, "AgentJobProcessorFunction", AGENT_JOB_PROCESSOR_FUNCTION_NAME
+        )
+
+        # --- Lambda: TaskAgentJobsにジョブを登録し、AgentCore呼び出しを担う
+        #     taskmanager-agent-job-processorを非同期(Event)起動する薄いトリガー ---
         invoke_fn = _lambda.Function(
             self,
             "ScoutInvokeFunction",
@@ -30,20 +39,13 @@ class ScoutScheduleStack(Stack):
             timeout=Duration.seconds(60),
             log_retention=logs.RetentionDays.ONE_MONTH,
             environment={
-                "AGENT_RUNTIME_ARN": AGENT_RUNTIME_ARN,
+                "AGENT_JOBS_TABLE": AGENT_JOBS_TABLE_NAME,
+                "AGENT_JOB_PROCESSOR_FUNCTION_NAME": AGENT_JOB_PROCESSOR_FUNCTION_NAME,
             },
         )
 
-        # AgentCore Runtime起動権限を対象ARNに限定して付与
-        invoke_fn.add_to_role_policy(
-            iam.PolicyStatement(
-                actions=["bedrock-agentcore:InvokeAgentRuntime"],
-                resources=[
-                    AGENT_RUNTIME_ARN,
-                    f"{AGENT_RUNTIME_ARN}/runtime-endpoint/*",
-                ],
-            )
-        )
+        agent_jobs_table.grant_write_data(invoke_fn)
+        agent_job_processor_fn.grant_invoke(invoke_fn)
 
         # --- EventBridge Scheduler用の実行ロール(Lambda呼び出し専用) ---
         scheduler_role = iam.Role(
@@ -71,6 +73,8 @@ class ScoutScheduleStack(Stack):
                     maximum_retry_attempts=2,
                     maximum_event_age_in_seconds=3600,
                 ),
-                input='{"skill": "email-summary"}',
+                # handler.py側はプロンプト・関与先コードを定数で持つためevent入力は使わないが、
+                # CfnSchedule.TargetPropertyはinputを省略できないため空オブジェクトを渡す。
+                input="{}",
             ),
         )
