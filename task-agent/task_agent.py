@@ -668,6 +668,12 @@ def build_agent_options() -> ClaudeAgentOptions:
     """Single place where the agent's tool/skill configuration is defined."""
     return ClaudeAgentOptions(
         cwd=PROJECT_ROOT,
+        # Default is 1MB; the Read tool embeds base64 image/PDF-page data in
+        # its CLI stdout message, and a single receipt scan (e.g. a
+        # multi-page PDF) easily exceeds that, killing the SDK's message
+        # reader with "JSON message exceeded maximum buffer size of
+        # 1048576 bytes" (see anthropics/claude-agent-sdk-python#98).
+        max_buffer_size=10 * 1024 * 1024,
         allowed_tools=[
             "Read",
             "Write",
