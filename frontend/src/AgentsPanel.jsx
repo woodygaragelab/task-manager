@@ -19,7 +19,7 @@ const AGENTS = [
     id: "scout",
     name: "受領",
     role: "情報収集・調査",
-    description: "新着メールを要約して履歴に記録し、添付ファイルがあれば受領フォルダに格納する",
+    description: "エージェント(仮:woodygaragelab@gmail.com)に転送された、メールを要約して履歴に記録し、添付ファイルがあれば受領フォルダに格納する",
   },
   {
     id: "archivist",
