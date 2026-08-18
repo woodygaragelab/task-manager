@@ -107,6 +107,14 @@ const MARKDOWN_COMPONENTS = {
   ),
 };
 
+// scout-schedule/scout-schedule/scout_schedule/scout_schedule_stack.py の
+// ScoutWeekdaySchedule(schedule_expression)と一致させること。
+// 定期実行ジョブは関与先未指定(全クライアント対象)でTaskAgentJobsのGLOBAL_CLIENT_CODEに
+// 記録される(scout-schedule/scout-schedule/lambda/handler.py参照)。
+const SCHEDULE_INFO = {
+  scout: "平日 6:00 / 12:00 / 18:00(JST)に自動実行されます(全クライアント対象)",
+};
+
 const PROMPT_BUILDERS = {
   archivist: buildArchivistPrompt,
   progress: buildProgressPrompt,
@@ -163,6 +171,10 @@ function AgentTicket({ agent, client, ticket, live, global, onStart, expanded, o
             <button type="button" className="btn btn--ghost agent-ticket__start" disabled>
               開始する(準備中)
             </button>
+          )}
+
+          {SCHEDULE_INFO[agent.id] && (
+            <p className="agent-ticket__schedule-info">{SCHEDULE_INFO[agent.id]}</p>
           )}
 
           <dl className="agent-ticket__fields">

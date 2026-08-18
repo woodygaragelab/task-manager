@@ -1078,6 +1078,12 @@
   margin-bottom: 14px;
 }
 
+.agent-ticket__schedule-info {
+  margin: -6px 0 14px;
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
 .agent-ticket__fields {
   margin: 0;
   display: flex;
