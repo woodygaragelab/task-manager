@@ -104,6 +104,60 @@
          ]
         }
        ]
+      },
+      {
+       "Action": [
+        "dynamodb:BatchGetItem",
+        "dynamodb:Query",
+        "dynamodb:GetItem",
+        "dynamodb:Scan",
+        "dynamodb:ConditionCheckItem",
+        "dynamodb:DescribeTable"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":dynamodb:ap-northeast-1:",
+           {
+            "Ref": "AWS::AccountId"
+           },
+           ":table/TaskClients"
+          ]
+         ]
+        }
+       ]
+      },
+      {
+       "Action": [
+        "dynamodb:GetRecords",
+        "dynamodb:GetShardIterator"
+       ],
+       "Effect": "Allow",
+       "Resource": [
+        {
+         "Fn::Join": [
+          "",
+          [
+           "arn:",
+           {
+            "Ref": "AWS::Partition"
+           },
+           ":dynamodb:ap-northeast-1:",
+           {
+            "Ref": "AWS::AccountId"
+           },
+           ":table/TaskClients"
+          ]
+         ]
+        }
+       ]
       }
      ],
      "Version": "2012-10-17"
@@ -126,12 +180,13 @@
      "S3Bucket": {
       "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-ap-northeast-1"
      },
-     "S3Key": "40c66560adb4721bc2b0f8472ff4fe1610e4ad132723dfd9bf8e30ee57474860.zip"
+     "S3Key": "71f09f670c98305ef6b111ac5c67b6c997d937bdd655b5d10f772d5fcd52d26e.zip"
     },
     "Environment": {
      "Variables": {
       "AGENT_JOBS_TABLE": "TaskAgentJobs",
-      "AGENT_JOB_PROCESSOR_FUNCTION_NAME": "taskmanager-agent-job-processor"
+      "AGENT_JOB_PROCESSOR_FUNCTION_NAME": "taskmanager-agent-job-processor",
+      "CLIENTS_TABLE": "TaskClients"
      }
     },
     "FunctionName": "taskmanager-scout-email-summary-trigger",
@@ -151,7 +206,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "ScoutScheduleStack/ScoutInvokeFunction/Resource",
-    "aws:asset:path": "asset.40c66560adb4721bc2b0f8472ff4fe1610e4ad132723dfd9bf8e30ee57474860",
+    "aws:asset:path": "asset.71f09f670c98305ef6b111ac5c67b6c997d937bdd655b5d10f772d5fcd52d26e",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }

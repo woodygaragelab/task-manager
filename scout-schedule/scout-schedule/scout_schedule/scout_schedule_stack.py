@@ -14,6 +14,9 @@ from constructs import Construct
 # 非同期呼び出しのみを担う(Web版「エージェント」タブと同じ非同期ジョブの仕組みに乗せる)。
 AGENT_JOBS_TABLE_NAME = "TaskAgentJobs"
 AGENT_JOB_PROCESSOR_FUNCTION_NAME = "taskmanager-agent-job-processor"
+# 関与先ごとにジョブを分割するため、TaskClients(layer/python/task_repository.pyの
+# list_clientsと同じテーブル)を読み取り専用で参照する。
+CLIENTS_TABLE_NAME = "TaskClients"
 
 
 class ScoutScheduleStack(Stack):
@@ -25,6 +28,9 @@ class ScoutScheduleStack(Stack):
         )
         agent_job_processor_fn = _lambda.Function.from_function_name(
             self, "AgentJobProcessorFunction", AGENT_JOB_PROCESSOR_FUNCTION_NAME
+        )
+        clients_table = dynamodb.Table.from_table_name(
+            self, "ClientsTable", CLIENTS_TABLE_NAME
         )
 
         # --- Lambda: TaskAgentJobsにジョブを登録し、AgentCore呼び出しを担う
@@ -41,11 +47,13 @@ class ScoutScheduleStack(Stack):
             environment={
                 "AGENT_JOBS_TABLE": AGENT_JOBS_TABLE_NAME,
                 "AGENT_JOB_PROCESSOR_FUNCTION_NAME": AGENT_JOB_PROCESSOR_FUNCTION_NAME,
+                "CLIENTS_TABLE": CLIENTS_TABLE_NAME,
             },
         )
 
         agent_jobs_table.grant_write_data(invoke_fn)
         agent_job_processor_fn.grant_invoke(invoke_fn)
+        clients_table.grant_read_data(invoke_fn)
 
         # --- EventBridge Scheduler用の実行ロール(Lambda呼び出し専用) ---
         scheduler_role = iam.Role(
