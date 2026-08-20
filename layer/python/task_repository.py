@@ -37,6 +37,12 @@ SERIES_BUCKET = "SERIES"
 FRAME_BUCKET = "FRAME"
 AXIS_BUCKET = "AXIS"
 RULE_BUCKET_PREFIX = "RULE#"
+CLIENT_FIELD_LABEL_BUCKET = "CLIENT_FIELD_LABELS"
+CLIENT_FIELD_LABEL_KEY = "LABELS"
+
+# 関与先プロフィール画面の汎用カスタム項目(col01-col20、すべて文字列)。
+# 表示名は設定ページ(TaskClassificationRulesTableを流用したCLIENT_FIELD_LABELSバケット)で管理する。
+CUSTOM_FIELD_CODES = [f"col{i:02d}" for i in range(1, 21)]
 
 
 class TaskNotFoundError(Exception):
@@ -160,6 +166,26 @@ def create_client(
     uketori_folder_id: Optional[str] = None,
     engagement_type: Optional[str] = None,
     payment_method: Optional[str] = None,
+    col01: Optional[str] = None,
+    col02: Optional[str] = None,
+    col03: Optional[str] = None,
+    col04: Optional[str] = None,
+    col05: Optional[str] = None,
+    col06: Optional[str] = None,
+    col07: Optional[str] = None,
+    col08: Optional[str] = None,
+    col09: Optional[str] = None,
+    col10: Optional[str] = None,
+    col11: Optional[str] = None,
+    col12: Optional[str] = None,
+    col13: Optional[str] = None,
+    col14: Optional[str] = None,
+    col15: Optional[str] = None,
+    col16: Optional[str] = None,
+    col17: Optional[str] = None,
+    col18: Optional[str] = None,
+    col19: Optional[str] = None,
+    col20: Optional[str] = None,
 ) -> dict:
     """クライアントを新規登録する(ドロップダウンの「新規作成」操作専用)。
 
@@ -177,7 +203,11 @@ def create_client(
     関与先を判定し、添付ファイルの保存先を決めるための属性。sender_emailsは1つの
     関与先に複数登録できる想定で、同じアドレスが別の関与先に登録されることは無い
     前提(重複チェックはアプリ側では行わない)。いずれも省略時は属性ごと書き込まない。
+
+    col01-col20 は関与先プロフィール画面の汎用カスタム項目(すべて文字列、用途自由)。
+    表示名は get_client_field_labels/update_client_field_labels で別管理する。
     """
+    custom_fields = {code: locals()[code] for code in CUSTOM_FIELD_CODES}
     item = {
         "lookupBucket": CLIENT_BUCKET,
         "clientCode": client_code,
@@ -205,6 +235,10 @@ def create_client(
         item["engagementType"] = engagement_type
     if payment_method:
         item["paymentMethod"] = payment_method
+    for code in CUSTOM_FIELD_CODES:
+        value = custom_fields.get(code)
+        if value:
+            item[code] = value
     try:
         clients_table.put_item(
             Item=item,
@@ -229,8 +263,30 @@ def update_client(
     uketori_folder_id: Optional[str] = None,
     engagement_type: Optional[str] = None,
     payment_method: Optional[str] = None,
+    col01: Optional[str] = None,
+    col02: Optional[str] = None,
+    col03: Optional[str] = None,
+    col04: Optional[str] = None,
+    col05: Optional[str] = None,
+    col06: Optional[str] = None,
+    col07: Optional[str] = None,
+    col08: Optional[str] = None,
+    col09: Optional[str] = None,
+    col10: Optional[str] = None,
+    col11: Optional[str] = None,
+    col12: Optional[str] = None,
+    col13: Optional[str] = None,
+    col14: Optional[str] = None,
+    col15: Optional[str] = None,
+    col16: Optional[str] = None,
+    col17: Optional[str] = None,
+    col18: Optional[str] = None,
+    col19: Optional[str] = None,
+    col20: Optional[str] = None,
 ) -> dict:
-    """既存クライアントのクライアント名・Driveフォルダ設定・担当者・決算月・3か月後月・中間月・9か月後月・差出人メールアドレス・受領フォルダ・関与タイプ・納付方式を更新する(指定した項目のみ変更)。"""
+    """既存クライアントのクライアント名・Driveフォルダ設定・担当者・決算月・3か月後月・中間月・9か月後月・差出人メールアドレス・受領フォルダ・関与タイプ・納付方式・col01-col20カスタム項目を更新する(指定した項目のみ変更)。"""
+    custom_fields = {code: locals()[code] for code in CUSTOM_FIELD_CODES}
+
     key = {"lookupBucket": CLIENT_BUCKET, "clientCode": client_code}
     resp = clients_table.get_item(Key=key)
     if not resp.get("Item"):
@@ -275,6 +331,11 @@ def update_client(
     if payment_method is not None:
         update_expr.append("paymentMethod = :pm")
         expr_values[":pm"] = payment_method
+    for code in CUSTOM_FIELD_CODES:
+        if code in custom_fields and custom_fields[code] is not None:
+            placeholder = f":{code}"
+            update_expr.append(f"{code} = {placeholder}")
+            expr_values[placeholder] = custom_fields[code]
 
     if not update_expr:
         return resp["Item"]
@@ -286,6 +347,38 @@ def update_client(
         ReturnValues="ALL_NEW",
     )
     return resp["Attributes"]
+
+
+def get_client_field_labels() -> dict:
+    """関与先プロフィール画面のcol01-col20カスタム項目に設定された表示名を取得する(未設定の項目は空文字)。"""
+    resp = classification_rules_table.get_item(
+        Key={"lookupBucket": CLIENT_FIELD_LABEL_BUCKET, "sortKey": CLIENT_FIELD_LABEL_KEY}
+    )
+    item = resp.get("Item") or {}
+    return {code: item.get(code, "") for code in CUSTOM_FIELD_CODES}
+
+
+def update_client_field_labels(labels: dict) -> dict:
+    """col01-col20カスタム項目の表示名を更新する(設定ページ専用、指定されたキーのみ変更)。"""
+    unknown_fields = set(labels) - set(CUSTOM_FIELD_CODES)
+    if unknown_fields:
+        raise ValueError(f"不明なカスタム項目です: {sorted(unknown_fields)}")
+
+    update_expr = []
+    expr_values = {}
+    for code in CUSTOM_FIELD_CODES:
+        if code in labels:
+            placeholder = f":{code}"
+            update_expr.append(f"{code} = {placeholder}")
+            expr_values[placeholder] = labels[code] or ""
+
+    if update_expr:
+        classification_rules_table.update_item(
+            Key={"lookupBucket": CLIENT_FIELD_LABEL_BUCKET, "sortKey": CLIENT_FIELD_LABEL_KEY},
+            UpdateExpression="SET " + ", ".join(update_expr),
+            ExpressionAttributeValues=expr_values,
+        )
+    return get_client_field_labels()
 
 
 def delete_client(client_code: str) -> None:

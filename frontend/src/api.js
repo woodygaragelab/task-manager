@@ -51,6 +51,11 @@ export const api = {
   deleteClient: (clientCode) =>
     request(`/clients/${encodeURIComponent(clientCode)}`, { method: "DELETE" }),
 
+  getClientFieldLabels: () => request(`/client-field-labels`),
+
+  updateClientFieldLabels: (patch) =>
+    request(`/client-field-labels`, { method: "PATCH", body: patch }),
+
   listSeries: () => request(`/series`),
 
   createSeries: (seriesCode, seriesName, taskGroup) =>

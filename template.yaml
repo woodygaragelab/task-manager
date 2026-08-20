@@ -206,6 +206,18 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /clients/{clientCode}
             Method: delete
+        GetClientFieldLabels:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /client-field-labels
+            Method: get
+        UpdateClientFieldLabels:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /client-field-labels
+            Method: patch
         SubmitAgentJob:
           Type: HttpApi
           Properties:

@@ -2,9 +2,10 @@ import { useState } from "react";
 import { SeriesListPage } from "./SeriesListPage";
 import { FrameListPage } from "./FrameListPage";
 import { ClassificationAxesPage } from "./ClassificationAxesPage";
+import { ClientFieldLabelsPage } from "./ClientFieldLabelsPage";
 import { AgentsPanel } from "./AgentsPanel";
 
-const TABS = ["タスク", "フレーム", "分類ルール", "エージェント"];
+const TABS = ["タスク", "フレーム", "分類ルール", "項目名", "エージェント"];
 
 export function SettingsPage({ seriesList, frameList, onRefresh }) {
   const [activeTab, setActiveTab] = useState(TABS[0]);
@@ -31,6 +32,7 @@ export function SettingsPage({ seriesList, frameList, onRefresh }) {
         <FrameListPage frameList={frameList} onRefresh={onRefresh} />
       )}
       {activeTab === "分類ルール" && <ClassificationAxesPage />}
+      {activeTab === "項目名" && <ClientFieldLabelsPage />}
       {activeTab === "エージェント" && <AgentsPanel scope="all" />}
     </>
   );

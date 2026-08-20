@@ -1,14 +1,23 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { api } from "./api";
 
 const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1);
 const ENGAGEMENT_TYPE_OPTIONS = ["年一", "自計化", "反自計化"];
 const PAYMENT_METHOD_OPTIONS = ["ダイレクト", "振替", "納付書"];
+export const CUSTOM_FIELD_CODES = Array.from(
+  { length: 20 },
+  (_, i) => `col${String(i + 1).padStart(2, "0")}`
+);
 
 export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
   const [current, setCurrent] = useState(client);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [fieldLabels, setFieldLabels] = useState({});
+
+  useEffect(() => {
+    api.getClientFieldLabels().then(setFieldLabels).catch((err) => setError(err.message));
+  }, []);
 
   const commit = async (patch) => {
     setSaving(true);
@@ -201,6 +210,21 @@ export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
             onBlur={commitEmails}
           />
         </div>
+
+        {CUSTOM_FIELD_CODES.map((code, i) => (
+          <div className="profile-field" key={code}>
+            <label htmlFor={`profile-${code}`}>
+              {fieldLabels[code] || `カスタム項目${i + 1}`}
+            </label>
+            <input
+              id={`profile-${code}`}
+              defaultValue={current[code] ?? ""}
+              key={`${code}-${current.clientCode}`}
+              placeholder="未設定"
+              onBlur={commitText(code)}
+            />
+          </div>
+        ))}
       </div>
 
       <button type="button" className="simple-table__delete" onClick={remove}>

@@ -60,6 +60,7 @@ def handler(event, context):
         if route_key == "POST /clients":
             if "clientCode" not in body or "clientName" not in body:
                 return _error(400, "clientCode と clientName は必須です")
+            custom_fields = {code: body.get(code) for code in repo.CUSTOM_FIELD_CODES}
             item = repo.create_client(
                 client_code=body["clientCode"],
                 client_name=body["clientName"],
@@ -74,11 +75,13 @@ def handler(event, context):
                 uketori_folder_id=body.get("uketoriFolderId"),
                 engagement_type=body.get("engagementType"),
                 payment_method=body.get("paymentMethod"),
+                **custom_fields,
             )
             return _response(201, item)
 
         # ---- PATCH /clients/{clientCode} ----
         if route_key == "PATCH /clients/{clientCode}":
+            custom_fields = {code: body.get(code) for code in repo.CUSTOM_FIELD_CODES}
             item = repo.update_client(
                 client_code=path_params["clientCode"],
                 client_name=body.get("clientName"),
@@ -93,6 +96,7 @@ def handler(event, context):
                 uketori_folder_id=body.get("uketoriFolderId"),
                 engagement_type=body.get("engagementType"),
                 payment_method=body.get("paymentMethod"),
+                **custom_fields,
             )
             return _response(200, item)
 
@@ -100,6 +104,14 @@ def handler(event, context):
         if route_key == "DELETE /clients/{clientCode}":
             repo.delete_client(client_code=path_params["clientCode"])
             return _response(200, {"clientCode": path_params["clientCode"]})
+
+        # ---- GET /client-field-labels ----
+        if route_key == "GET /client-field-labels":
+            return _response(200, repo.get_client_field_labels())
+
+        # ---- PATCH /client-field-labels ----
+        if route_key == "PATCH /client-field-labels":
+            return _response(200, repo.update_client_field_labels(body))
 
         # ---- GET /series ----
         if route_key == "GET /series":
