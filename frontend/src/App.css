@@ -672,6 +672,14 @@
   color: var(--ink);
 }
 
+.simple-table__input--narrow {
+  min-width: 44px;
+}
+
+.simple-table--fixed {
+  table-layout: fixed;
+}
+
 /* ---------- Client profile page ---------- */
 .profile-back {
   display: inline-block;

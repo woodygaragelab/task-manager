@@ -144,13 +144,15 @@ export function ClientListPage({ onSelectClient }) {
               <div className="empty__title">クライアントがありません</div>
             </div>
           ) : (
-            <table className="simple-table">
+            <table className="simple-table simple-table--fixed">
               <thead>
                 <tr>
                   <th>関与先番号</th>
                   <th>関与先名</th>
                   {CORPORATE_TAX_FIELD_CODES.map((code, i) => (
-                    <th key={code}>{fieldLabels[code] || `カスタム項目${i + 1}`}</th>
+                    <th key={code} style={{ width: "5%" }}>
+                      {fieldLabels[code] || `カスタム項目${i + 1}`}
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -170,7 +172,7 @@ export function ClientListPage({ onSelectClient }) {
                     {CORPORATE_TAX_FIELD_CODES.map((code) => (
                       <td key={code}>
                         <input
-                          className="simple-table__input"
+                          className="simple-table__input simple-table__input--narrow"
                           defaultValue={c[code] ?? ""}
                           key={`${code}-${c[code] ?? ""}`}
                           onBlur={commitField(c.clientCode, code)}
@@ -194,13 +196,15 @@ export function ClientListPage({ onSelectClient }) {
               <div className="empty__title">クライアントがありません</div>
             </div>
           ) : (
-            <table className="simple-table">
+            <table className="simple-table simple-table--fixed">
               <thead>
                 <tr>
                   <th>関与先番号</th>
                   <th>関与先名</th>
                   {WITHHOLDING_FIELD_CODES.map((code, i) => (
-                    <th key={code}>{fieldLabels[code] || `カスタム項目${i + 11}`}</th>
+                    <th key={code} style={{ width: "5%" }}>
+                      {fieldLabels[code] || `カスタム項目${i + 11}`}
+                    </th>
                   ))}
                 </tr>
               </thead>
@@ -220,7 +224,7 @@ export function ClientListPage({ onSelectClient }) {
                     {WITHHOLDING_FIELD_CODES.map((code) => (
                       <td key={code}>
                         <input
-                          className="simple-table__input"
+                          className="simple-table__input simple-table__input--narrow"
                           defaultValue={c[code] ?? ""}
                           key={`${code}-${c[code] ?? ""}`}
                           onBlur={commitField(c.clientCode, code)}
