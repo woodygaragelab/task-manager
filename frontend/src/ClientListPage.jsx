@@ -3,7 +3,7 @@ import { api } from "./api";
 import { CUSTOM_FIELD_CODES } from "./ClientProfilePage";
 
 const TABS = ["法人", "法人税", "法人（源泉）", "年調", "個人"];
-const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(0, 10);
+const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(0, 5);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
 const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
 
@@ -151,7 +151,7 @@ export function ClientListPage({ onSelectClient }) {
                   <th>関与先番号</th>
                   <th>関与先名</th>
                   {CORPORATE_TAX_FIELD_CODES.map((code, i) => (
-                    <th key={code} style={{ width: "6.5%" }}>
+                    <th key={code} style={{ width: "13%" }}>
                       {fieldLabels[code] || `カスタム項目${i + 1}`}
                     </th>
                   ))}
