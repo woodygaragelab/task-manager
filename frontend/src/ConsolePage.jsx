@@ -11,6 +11,7 @@ const TABS = ["基本情報", "法人税", "源泉", "年調", "資料進捗", "
 const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
 const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(0, 10);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
+const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
 
 function CustomFieldsTable({ client, fieldLabels, codes, labelOffset, onCommitField }) {
   return (
@@ -257,9 +258,13 @@ export function ConsolePage({ seriesList, frameList, initialClientCode, onBackTo
               {activeTab === "エージェント" && <AgentsPanel client={client} />}
 
               {activeTab === "年調" && (
-                <div className="empty">
-                  <div className="empty__title">工事中</div>
-                </div>
+                <CustomFieldsTable
+                  client={client}
+                  fieldLabels={fieldLabels}
+                  codes={YEAR_END_ADJUSTMENT_FIELD_CODES}
+                  labelOffset={21}
+                  onCommitField={commitClientField}
+                />
               )}
             </>
           ) : (

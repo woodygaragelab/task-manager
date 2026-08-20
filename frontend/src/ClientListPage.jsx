@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { api } from "./api";
 import { CUSTOM_FIELD_CODES } from "./ClientProfilePage";
 
-const TABS = ["法人", "法人税", "法人（源泉）", "個人"];
+const TABS = ["法人", "法人税", "法人（源泉）", "年調", "個人"];
 const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(0, 10);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
+const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
 
 export function ClientListPage({ onSelectClient }) {
   const [activeTab, setActiveTab] = useState(TABS[0]);
@@ -222,6 +223,58 @@ export function ClientListPage({ onSelectClient }) {
                       </button>
                     </td>
                     {WITHHOLDING_FIELD_CODES.map((code) => (
+                      <td key={code}>
+                        <input
+                          className="simple-table__input simple-table__input--narrow"
+                          defaultValue={c[code] ?? ""}
+                          key={`${code}-${c[code] ?? ""}`}
+                          onBlur={commitField(c.clientCode, code)}
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      )}
+
+      {activeTab === "年調" && (
+        <>
+          {error && <div className="error-banner">{error}</div>}
+
+          {clients.length === 0 ? (
+            <div className="empty">
+              <div className="empty__title">クライアントがありません</div>
+            </div>
+          ) : (
+            <table className="simple-table simple-table--fixed">
+              <thead>
+                <tr>
+                  <th>関与先番号</th>
+                  <th>関与先名</th>
+                  {YEAR_END_ADJUSTMENT_FIELD_CODES.map((code, i) => (
+                    <th key={code} style={{ width: "5%" }}>
+                      {fieldLabels[code] || `カスタム項目${i + 21}`}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {clients.map((c) => (
+                  <tr key={c.clientCode}>
+                    <td className="simple-table__code">{c.clientCode}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="simple-table__link"
+                        onClick={() => onSelectClient(c.clientCode)}
+                      >
+                        {c.clientName}
+                      </button>
+                    </td>
+                    {YEAR_END_ADJUSTMENT_FIELD_CODES.map((code) => (
                       <td key={code}>
                         <input
                           className="simple-table__input simple-table__input--narrow"
