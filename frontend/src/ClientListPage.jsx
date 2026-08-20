@@ -1,11 +1,15 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
+import { CUSTOM_FIELD_CODES } from "./ClientProfilePage";
 
-const TABS = ["法人", "個人"];
+const TABS = ["法人", "法人税", "法人（源泉）", "個人"];
+const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(0, 10);
+const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
 
 export function ClientListPage({ onSelectClient }) {
   const [activeTab, setActiveTab] = useState(TABS[0]);
   const [clients, setClients] = useState([]);
+  const [fieldLabels, setFieldLabels] = useState({});
   const [error, setError] = useState(null);
   const [newCode, setNewCode] = useState("");
   const [newName, setNewName] = useState("");
@@ -13,6 +17,7 @@ export function ClientListPage({ onSelectClient }) {
 
   useEffect(() => {
     api.listClients().then(setClients).catch((e) => setError(e.message));
+    api.getClientFieldLabels().then(setFieldLabels).catch((e) => setError(e.message));
   }, []);
 
   const create = async (e) => {
@@ -115,6 +120,92 @@ export function ClientListPage({ onSelectClient }) {
               {submitting ? "登録中…" : "追加"}
             </button>
           </form>
+        </>
+      )}
+
+      {activeTab === "法人税" && (
+        <>
+          {error && <div className="error-banner">{error}</div>}
+
+          {clients.length === 0 ? (
+            <div className="empty">
+              <div className="empty__title">クライアントがありません</div>
+            </div>
+          ) : (
+            <table className="simple-table">
+              <thead>
+                <tr>
+                  <th>関与先番号</th>
+                  <th>関与先名</th>
+                  {CORPORATE_TAX_FIELD_CODES.map((code, i) => (
+                    <th key={code}>{fieldLabels[code] || `カスタム項目${i + 1}`}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {clients.map((c) => (
+                  <tr key={c.clientCode}>
+                    <td className="simple-table__code">{c.clientCode}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="simple-table__link"
+                        onClick={() => onSelectClient(c.clientCode)}
+                      >
+                        {c.clientName}
+                      </button>
+                    </td>
+                    {CORPORATE_TAX_FIELD_CODES.map((code) => (
+                      <td key={code}>{c[code] || "—"}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </>
+      )}
+
+      {activeTab === "法人（源泉）" && (
+        <>
+          {error && <div className="error-banner">{error}</div>}
+
+          {clients.length === 0 ? (
+            <div className="empty">
+              <div className="empty__title">クライアントがありません</div>
+            </div>
+          ) : (
+            <table className="simple-table">
+              <thead>
+                <tr>
+                  <th>関与先番号</th>
+                  <th>関与先名</th>
+                  {WITHHOLDING_FIELD_CODES.map((code, i) => (
+                    <th key={code}>{fieldLabels[code] || `カスタム項目${i + 11}`}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {clients.map((c) => (
+                  <tr key={c.clientCode}>
+                    <td className="simple-table__code">{c.clientCode}</td>
+                    <td>
+                      <button
+                        type="button"
+                        className="simple-table__link"
+                        onClick={() => onSelectClient(c.clientCode)}
+                      >
+                        {c.clientName}
+                      </button>
+                    </td>
+                    {WITHHOLDING_FIELD_CODES.map((code) => (
+                      <td key={code}>{c[code] || "—"}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
         </>
       )}
 
