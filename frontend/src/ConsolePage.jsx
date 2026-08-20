@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ClientProfilePage } from "./ClientProfilePage";
+import { ClientProfilePage, CUSTOM_FIELD_CODES } from "./ClientProfilePage";
 import { ProgressTable } from "./ProgressTable";
 import { TaskDetailPanel } from "./TaskDetailPanel";
 import { HistoryPanel } from "./HistoryPanel";
@@ -7,8 +7,31 @@ import { AgentsPanel } from "./AgentsPanel";
 import { api } from "./api";
 
 const POLL_INTERVAL_MS = 4000;
-const TABS = ["基本情報", "資料進捗", "履歴", "エージェント", "源泉", "年調"];
+const TABS = ["基本情報", "法人税", "源泉", "年調", "資料進捗", "履歴", "エージェント"];
 const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
+const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(0, 10);
+const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
+
+function CustomFieldsTable({ client, fieldLabels, codes, labelOffset }) {
+  return (
+    <table className="simple-table">
+      <thead>
+        <tr>
+          <th>項目名</th>
+          <th>値</th>
+        </tr>
+      </thead>
+      <tbody>
+        {codes.map((code, i) => (
+          <tr key={code}>
+            <td>{fieldLabels[code] || `カスタム項目${i + labelOffset}`}</td>
+            <td>{client[code] || "—"}</td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  );
+}
 
 export function ConsolePage({ seriesList, frameList, initialClientCode, onBackToList }) {
   const initialCode = initialClientCode || DEFAULT_CLIENT.clientCode;
@@ -23,6 +46,11 @@ export function ConsolePage({ seriesList, frameList, initialClientCode, onBackTo
   const [lastSynced, setLastSynced] = useState(null);
   const [selectedTaskKey, setSelectedTaskKey] = useState(null); // {seriesCode, frameCode} | null
   const [activeTab, setActiveTab] = useState("資料進捗");
+  const [fieldLabels, setFieldLabels] = useState({});
+
+  useEffect(() => {
+    api.getClientFieldLabels().then(setFieldLabels).catch(() => {});
+  }, []);
 
   const refresh = useCallback(async (clientCode) => {
     if (!clientCode) return;
@@ -166,6 +194,24 @@ export function ConsolePage({ seriesList, frameList, initialClientCode, onBackTo
                 />
               )}
 
+              {activeTab === "法人税" && (
+                <CustomFieldsTable
+                  client={client}
+                  fieldLabels={fieldLabels}
+                  codes={CORPORATE_TAX_FIELD_CODES}
+                  labelOffset={1}
+                />
+              )}
+
+              {activeTab === "源泉" && (
+                <CustomFieldsTable
+                  client={client}
+                  fieldLabels={fieldLabels}
+                  codes={WITHHOLDING_FIELD_CODES}
+                  labelOffset={11}
+                />
+              )}
+
               {activeTab === "資料進捗" &&
                 (loading ? (
                   <div className="status-line">読み込み中…</div>
@@ -190,12 +236,6 @@ export function ConsolePage({ seriesList, frameList, initialClientCode, onBackTo
               )}
 
               {activeTab === "エージェント" && <AgentsPanel client={client} />}
-
-              {activeTab === "源泉" && (
-                <div className="empty">
-                  <div className="empty__title">工事中</div>
-                </div>
-              )}
 
               {activeTab === "年調" && (
                 <div className="empty">
