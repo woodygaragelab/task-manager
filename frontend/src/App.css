@@ -660,6 +660,18 @@
   color: #324c3b;
 }
 
+.simple-table__input {
+  width: 100%;
+  min-width: 90px;
+  font-family: var(--font-body);
+  font-size: 14px;
+  padding: 6px 8px;
+  border: 1px solid var(--paper-line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
 /* ---------- Client profile page ---------- */
 .profile-back {
   display: inline-block;

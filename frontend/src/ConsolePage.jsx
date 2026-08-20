@@ -12,7 +12,7 @@ const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
 const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(0, 10);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
 
-function CustomFieldsTable({ client, fieldLabels, codes, labelOffset }) {
+function CustomFieldsTable({ client, fieldLabels, codes, labelOffset, onCommitField }) {
   return (
     <table className="simple-table">
       <thead>
@@ -25,7 +25,14 @@ function CustomFieldsTable({ client, fieldLabels, codes, labelOffset }) {
         {codes.map((code, i) => (
           <tr key={code}>
             <td>{fieldLabels[code] || `カスタム項目${i + labelOffset}`}</td>
-            <td>{client[code] || "—"}</td>
+            <td>
+              <input
+                className="simple-table__input"
+                defaultValue={client[code] ?? ""}
+                key={`${code}-${client.clientCode}-${client[code] ?? ""}`}
+                onBlur={(e) => onCommitField(code, e.target.value)}
+              />
+            </td>
           </tr>
         ))}
       </tbody>
@@ -51,6 +58,16 @@ export function ConsolePage({ seriesList, frameList, initialClientCode, onBackTo
   useEffect(() => {
     api.getClientFieldLabels().then(setFieldLabels).catch(() => {});
   }, []);
+
+  const commitClientField = async (field, value) => {
+    if (!client || value === (client[field] ?? "")) return;
+    try {
+      const updated = await api.updateClient(client.clientCode, { [field]: value });
+      setClient(updated);
+    } catch (e) {
+      setError(e.message);
+    }
+  };
 
   const refresh = useCallback(async (clientCode) => {
     if (!clientCode) return;
@@ -200,6 +217,7 @@ export function ConsolePage({ seriesList, frameList, initialClientCode, onBackTo
                   fieldLabels={fieldLabels}
                   codes={CORPORATE_TAX_FIELD_CODES}
                   labelOffset={1}
+                  onCommitField={commitClientField}
                 />
               )}
 
@@ -209,6 +227,7 @@ export function ConsolePage({ seriesList, frameList, initialClientCode, onBackTo
                   fieldLabels={fieldLabels}
                   codes={WITHHOLDING_FIELD_CODES}
                   labelOffset={11}
+                  onCommitField={commitClientField}
                 />
               )}
 

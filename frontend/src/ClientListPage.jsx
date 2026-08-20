@@ -20,6 +20,18 @@ export function ClientListPage({ onSelectClient }) {
     api.getClientFieldLabels().then(setFieldLabels).catch((e) => setError(e.message));
   }, []);
 
+  const commitField = (clientCode, field) => async (e) => {
+    const value = e.target.value;
+    const target = clients.find((c) => c.clientCode === clientCode);
+    if (!target || value === (target[field] ?? "")) return;
+    try {
+      const updated = await api.updateClient(clientCode, { [field]: value });
+      setClients((prev) => prev.map((c) => (c.clientCode === clientCode ? updated : c)));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   const create = async (e) => {
     e.preventDefault();
     if (!newCode.trim() || !newName.trim()) return;
@@ -156,7 +168,14 @@ export function ClientListPage({ onSelectClient }) {
                       </button>
                     </td>
                     {CORPORATE_TAX_FIELD_CODES.map((code) => (
-                      <td key={code}>{c[code] || "—"}</td>
+                      <td key={code}>
+                        <input
+                          className="simple-table__input"
+                          defaultValue={c[code] ?? ""}
+                          key={`${code}-${c[code] ?? ""}`}
+                          onBlur={commitField(c.clientCode, code)}
+                        />
+                      </td>
                     ))}
                   </tr>
                 ))}
@@ -199,7 +218,14 @@ export function ClientListPage({ onSelectClient }) {
                       </button>
                     </td>
                     {WITHHOLDING_FIELD_CODES.map((code) => (
-                      <td key={code}>{c[code] || "—"}</td>
+                      <td key={code}>
+                        <input
+                          className="simple-table__input"
+                          defaultValue={c[code] ?? ""}
+                          key={`${code}-${c[code] ?? ""}`}
+                          onBlur={commitField(c.clientCode, code)}
+                        />
+                      </td>
                     ))}
                   </tr>
                 ))}
