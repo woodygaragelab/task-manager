@@ -7,7 +7,7 @@ import { AgentsPanel } from "./AgentsPanel";
 import { api } from "./api";
 
 const POLL_INTERVAL_MS = 4000;
-const TABS = ["基本情報", "法人税", "源泉", "年調", "資料進捗", "履歴", "エージェント"];
+const TABS = ["基本情報", "法人税", "源泉R8上期", "年調R7", "資料進捗", "履歴", "エージェント"];
 const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
 const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(0, 10);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
@@ -222,7 +222,7 @@ export function ConsolePage({ seriesList, frameList, initialClientCode, onBackTo
                 />
               )}
 
-              {activeTab === "源泉" && (
+              {activeTab === "源泉R8上期" && (
                 <CustomFieldsTable
                   client={client}
                   fieldLabels={fieldLabels}
@@ -257,7 +257,7 @@ export function ConsolePage({ seriesList, frameList, initialClientCode, onBackTo
 
               {activeTab === "エージェント" && <AgentsPanel client={client} />}
 
-              {activeTab === "年調" && (
+              {activeTab === "年調R7" && (
                 <CustomFieldsTable
                   client={client}
                   fieldLabels={fieldLabels}
