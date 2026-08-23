@@ -5,7 +5,7 @@ import { CUSTOM_FIELD_CODES } from "./ClientProfilePage";
 const TABS = ["法人", "法人税", "源泉R8上期", "年調R7", "個人"];
 const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(0, 5);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
-const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
+const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(30, 40);
 
 export function ClientListPage({ onSelectClient }) {
   const [activeTab, setActiveTab] = useState(TABS[0]);
@@ -256,7 +256,7 @@ export function ClientListPage({ onSelectClient }) {
                   <th>関与先名</th>
                   {YEAR_END_ADJUSTMENT_FIELD_CODES.map((code, i) => (
                     <th key={code} style={{ width: "6.5%" }}>
-                      {fieldLabels[code] || `カスタム項目${i + 21}`}
+                      {fieldLabels[code] || `カスタム項目${i + 31}`}
                     </th>
                   ))}
                 </tr>
