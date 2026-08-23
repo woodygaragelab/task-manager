@@ -10,8 +10,8 @@ const POLL_INTERVAL_MS = 4000;
 const TABS = ["基本情報", "法人税", "源泉R8上期", "年調R7", "資料進捗", "履歴", "エージェント"];
 const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
 const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(0, 10);
-const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
-const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
+const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
+const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(30, 40);
 
 function CustomFieldsTable({ client, fieldLabels, codes, labelOffset, onCommitField }) {
   return (
@@ -227,7 +227,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                   client={client}
                   fieldLabels={fieldLabels}
                   codes={WITHHOLDING_FIELD_CODES}
-                  labelOffset={11}
+                  labelOffset={21}
                   onCommitField={commitClientField}
                 />
               )}
@@ -262,7 +262,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                   client={client}
                   fieldLabels={fieldLabels}
                   codes={YEAR_END_ADJUSTMENT_FIELD_CODES}
-                  labelOffset={21}
+                  labelOffset={31}
                   onCommitField={commitClientField}
                 />
               )}
