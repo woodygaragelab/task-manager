@@ -5,7 +5,7 @@ import { NavMenu } from "./NavMenu";
 import { ClientListPage } from "./ClientListPage";
 import { SettingsPage } from "./SettingsPage";
 import { DataQueryPage } from "./DataQueryPage";
-import { ConsolePage } from "./ConsolePage";
+import { ClientConsolePage } from "./ClientConsolePage";
 import { api } from "./api";
 import "./App.css";
 
@@ -99,7 +99,7 @@ export default function App() {
       {currentView === "データ照会" && <DataQueryPage />}
 
       {currentView === "コンソール" && (
-        <ConsolePage
+        <ClientConsolePage
           key={consoleClientCode ?? "default"}
           initialClientCode={consoleClientCode}
           seriesList={seriesList}

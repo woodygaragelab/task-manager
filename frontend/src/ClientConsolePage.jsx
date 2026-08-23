@@ -41,7 +41,7 @@ function CustomFieldsTable({ client, fieldLabels, codes, labelOffset, onCommitFi
   );
 }
 
-export function ConsolePage({ seriesList, frameList, initialClientCode, onBackToList }) {
+export function ClientConsolePage({ seriesList, frameList, initialClientCode, onBackToList }) {
   const initialCode = initialClientCode || DEFAULT_CLIENT.clientCode;
   const [client, setClient] = useState(() =>
     initialClientCode
