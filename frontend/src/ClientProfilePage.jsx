@@ -5,7 +5,7 @@ const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1);
 const ENGAGEMENT_TYPE_OPTIONS = ["年一", "自計化", "反自計化"];
 const PAYMENT_METHOD_OPTIONS = ["ダイレクト", "振替", "納付書"];
 export const CUSTOM_FIELD_CODES = Array.from(
-  { length: 30 },
+  { length: 40 },
   (_, i) => `col${String(i + 1).padStart(2, "0")}`
 );
 

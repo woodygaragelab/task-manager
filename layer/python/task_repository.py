@@ -40,9 +40,9 @@ RULE_BUCKET_PREFIX = "RULE#"
 CLIENT_FIELD_LABEL_BUCKET = "CLIENT_FIELD_LABELS"
 CLIENT_FIELD_LABEL_KEY = "LABELS"
 
-# 関与先プロフィール画面の汎用カスタム項目(col01-col30、すべて文字列)。
+# 関与先プロフィール画面の汎用カスタム項目(col01-col40、すべて文字列)。
 # 表示名は設定ページ(TaskClassificationRulesTableを流用したCLIENT_FIELD_LABELSバケット)で管理する。
-CUSTOM_FIELD_CODES = [f"col{i:02d}" for i in range(1, 31)]
+CUSTOM_FIELD_CODES = [f"col{i:02d}" for i in range(1, 41)]
 
 
 class TaskNotFoundError(Exception):
@@ -196,6 +196,16 @@ def create_client(
     col28: Optional[str] = None,
     col29: Optional[str] = None,
     col30: Optional[str] = None,
+    col31: Optional[str] = None,
+    col32: Optional[str] = None,
+    col33: Optional[str] = None,
+    col34: Optional[str] = None,
+    col35: Optional[str] = None,
+    col36: Optional[str] = None,
+    col37: Optional[str] = None,
+    col38: Optional[str] = None,
+    col39: Optional[str] = None,
+    col40: Optional[str] = None,
 ) -> dict:
     """クライアントを新規登録する(ドロップダウンの「新規作成」操作専用)。
 
@@ -214,7 +224,7 @@ def create_client(
     関与先に複数登録できる想定で、同じアドレスが別の関与先に登録されることは無い
     前提(重複チェックはアプリ側では行わない)。いずれも省略時は属性ごと書き込まない。
 
-    col01-col30 は関与先プロフィール画面の汎用カスタム項目(すべて文字列、用途自由)。
+    col01-col40 は関与先プロフィール画面の汎用カスタム項目(すべて文字列、用途自由)。
     表示名は get_client_field_labels/update_client_field_labels で別管理する。
     """
     custom_fields = {code: locals()[code] for code in CUSTOM_FIELD_CODES}
@@ -303,8 +313,18 @@ def update_client(
     col28: Optional[str] = None,
     col29: Optional[str] = None,
     col30: Optional[str] = None,
+    col31: Optional[str] = None,
+    col32: Optional[str] = None,
+    col33: Optional[str] = None,
+    col34: Optional[str] = None,
+    col35: Optional[str] = None,
+    col36: Optional[str] = None,
+    col37: Optional[str] = None,
+    col38: Optional[str] = None,
+    col39: Optional[str] = None,
+    col40: Optional[str] = None,
 ) -> dict:
-    """既存クライアントのクライアント名・Driveフォルダ設定・担当者・決算月・3か月後月・中間月・9か月後月・差出人メールアドレス・受領フォルダ・関与タイプ・納付方式・col01-col30カスタム項目を更新する(指定した項目のみ変更)。"""
+    """既存クライアントのクライアント名・Driveフォルダ設定・担当者・決算月・3か月後月・中間月・9か月後月・差出人メールアドレス・受領フォルダ・関与タイプ・納付方式・col01-col40カスタム項目を更新する(指定した項目のみ変更)。"""
     custom_fields = {code: locals()[code] for code in CUSTOM_FIELD_CODES}
 
     key = {"lookupBucket": CLIENT_BUCKET, "clientCode": client_code}
@@ -370,7 +390,7 @@ def update_client(
 
 
 def get_client_field_labels() -> dict:
-    """関与先プロフィール画面のcol01-col30カスタム項目に設定された表示名を取得する(未設定の項目は空文字)。"""
+    """関与先プロフィール画面のcol01-col40カスタム項目に設定された表示名を取得する(未設定の項目は空文字)。"""
     resp = classification_rules_table.get_item(
         Key={"lookupBucket": CLIENT_FIELD_LABEL_BUCKET, "sortKey": CLIENT_FIELD_LABEL_KEY}
     )
@@ -379,7 +399,7 @@ def get_client_field_labels() -> dict:
 
 
 def update_client_field_labels(labels: dict) -> dict:
-    """col01-col30カスタム項目の表示名を更新する(設定ページ専用、指定されたキーのみ変更)。"""
+    """col01-col40カスタム項目の表示名を更新する(設定ページ専用、指定されたキーのみ変更)。"""
     unknown_fields = set(labels) - set(CUSTOM_FIELD_CODES)
     if unknown_fields:
         raise ValueError(f"不明なカスタム項目です: {sorted(unknown_fields)}")
