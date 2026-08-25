@@ -123,7 +123,7 @@ export function ClientListPage({ onSelectClient }) {
 
           <form className="list-form" onSubmit={create}>
             <div className="field">
-              <label htmlFor="new-client-code">クライアントコード</label>
+              <label htmlFor="new-client-code">関与先番号</label>
               <input
                 id="new-client-code"
                 value={newCode}
@@ -132,7 +132,7 @@ export function ClientListPage({ onSelectClient }) {
               />
             </div>
             <div className="field">
-              <label htmlFor="new-client-name">クライアント名</label>
+              <label htmlFor="new-client-name">関与先名</label>
               <input
                 id="new-client-name"
                 value={newName}
