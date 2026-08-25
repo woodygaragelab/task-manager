@@ -4,7 +4,7 @@ import { CUSTOM_FIELD_CODES } from "./ClientProfileTab";
 
 // 「項目名」タブ: 関与先プロフィール画面のcol01-col40カスタム項目の表示名を設定する。
 // 型は全て文字列固定・使用方法は自由なため、ここでは表示名の割り当てのみを行う。
-export function ClientFieldLabelsPage() {
+export function SettingClientFields() {
   const [labels, setLabels] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

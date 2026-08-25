@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { api } from "./api";
 
-export function SeriesListPage({ seriesList, onRefresh }) {
+export function SettingSeries({ seriesList, onRefresh }) {
   const [error, setError] = useState(null);
   const [newCode, setNewCode] = useState("");
   const [newName, setNewName] = useState("");

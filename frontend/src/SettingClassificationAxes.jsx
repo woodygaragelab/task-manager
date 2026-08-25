@@ -18,7 +18,7 @@ const ruleDraftFromRule = (rule) => ({
 // 「分類ルール」ページ: 軸(観点)タブの切り替え+軸の追加・改名・削除+
 // 軸ごとのルール一覧・編集フォーム。ルールはHistoryTabの履歴一覧と同様、
 // 行クリックでフォームに読み込んで編集する方式(4-5節の既存UXを踏襲)。
-export function ClassificationAxesPage() {
+export function SettingClassificationAxes() {
   const [axes, setAxes] = useState([]);
   const [activeAxisId, setActiveAxisId] = useState(null);
   const [rules, setRules] = useState([]);

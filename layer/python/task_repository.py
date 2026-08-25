@@ -39,6 +39,12 @@ AXIS_BUCKET = "AXIS"
 RULE_BUCKET_PREFIX = "RULE#"
 CLIENT_FIELD_LABEL_BUCKET = "CLIENT_FIELD_LABELS"
 CLIENT_FIELD_LABEL_KEY = "LABELS"
+TAB_COMMENT_BUCKET = "TAB_COMMENTS"
+TAB_COMMENT_KEY = "COMMENTS"
+
+# ClientConsolePage.jsxのタブ名(=ユーザー要望コメントを保存するキー)。
+# クライアントごとではなくタブごとに1件、内容を問わない自由記述コメントを保持する。
+TAB_KEYS = ["基本情報", "法人税", "源泉R8上期", "年調R7", "資料進捗", "履歴", "エージェント"]
 
 # 関与先プロフィール画面の汎用カスタム項目(col01-col40、すべて文字列)。
 # 表示名は設定ページ(TaskClassificationRulesTableを流用したCLIENT_FIELD_LABELSバケット)で管理する。
@@ -419,6 +425,31 @@ def update_client_field_labels(labels: dict) -> dict:
             ExpressionAttributeValues=expr_values,
         )
     return get_client_field_labels()
+
+
+def get_tab_comments() -> dict:
+    """関与先コンソール画面の各タブに設定されたユーザー要望コメントを取得する(未設定のタブは空文字)。
+
+    クライアントコードに依らない、タブ単位で1つだけ共有されるコメントである点に注意。
+    """
+    resp = classification_rules_table.get_item(
+        Key={"lookupBucket": TAB_COMMENT_BUCKET, "sortKey": TAB_COMMENT_KEY}
+    )
+    item = resp.get("Item") or {}
+    return {tab: item.get(tab, "") for tab in TAB_KEYS}
+
+
+def update_tab_comment(tab_key: str, comment: str) -> dict:
+    """指定タブのユーザー要望コメントを更新する(関与先コンソール画面の各タブ最下部の入力欄用)。"""
+    if tab_key not in TAB_KEYS:
+        raise ValueError(f"不明なタブです: {tab_key}")
+    classification_rules_table.update_item(
+        Key={"lookupBucket": TAB_COMMENT_BUCKET, "sortKey": TAB_COMMENT_KEY},
+        UpdateExpression="SET #t = :c",
+        ExpressionAttributeNames={"#t": tab_key},
+        ExpressionAttributeValues={":c": comment or ""},
+    )
+    return get_tab_comments()
 
 
 def delete_client(client_code: str) -> None:

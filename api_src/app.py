@@ -113,6 +113,18 @@ def handler(event, context):
         if route_key == "PATCH /client-field-labels":
             return _response(200, repo.update_client_field_labels(body))
 
+        # ---- GET /tab-comments ----
+        if route_key == "GET /tab-comments":
+            return _response(200, repo.get_tab_comments())
+
+        # ---- PATCH /tab-comments/{tabKey} ----
+        if route_key == "PATCH /tab-comments/{tabKey}":
+            item = repo.update_tab_comment(
+                tab_key=path_params["tabKey"],
+                comment=body.get("comment", ""),
+            )
+            return _response(200, item)
+
         # ---- GET /series ----
         if route_key == "GET /series":
             return _response(200, repo.list_series())

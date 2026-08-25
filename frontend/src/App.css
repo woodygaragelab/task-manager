@@ -1243,7 +1243,8 @@
 }
 
 .field input,
-.field select {
+.field select,
+.field textarea {
   font-family: var(--font-body);
   font-size: 14px;
   padding: 8px 10px;
@@ -1251,6 +1252,16 @@
   border-radius: 4px;
   background: var(--paper);
   color: var(--ink);
+}
+
+.field textarea {
+  resize: vertical;
+}
+
+.tab-comment {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px dashed var(--paper-line);
 }
 
 .series-select {

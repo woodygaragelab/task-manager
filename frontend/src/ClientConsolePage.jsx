@@ -13,6 +13,22 @@ const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
 const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(30, 40);
 
+function TabCommentBox({ tabKey, comment, onCommit }) {
+  return (
+    <div className="tab-comment field">
+      <label htmlFor={`tab-comment-${tabKey}`}>ユーザー要望コメント</label>
+      <textarea
+        id={`tab-comment-${tabKey}`}
+        rows={3}
+        defaultValue={comment}
+        key={`${tabKey}-${comment}`}
+        placeholder="このタブに関する要望・申し送りを自由に記入してください(タブ単位で共有されます)"
+        onBlur={(e) => onCommit(tabKey, e.target.value)}
+      />
+    </div>
+  );
+}
+
 function ClientFieldsTab({ client, fieldLabels, codes, labelOffset, onCommitField }) {
   return (
     <table className="simple-table">
@@ -55,9 +71,11 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
   const [selectedTaskKey, setSelectedTaskKey] = useState(null); // {seriesCode, frameCode} | null
   const [activeTab, setActiveTab] = useState("資料進捗");
   const [fieldLabels, setFieldLabels] = useState({});
+  const [tabComments, setTabComments] = useState({});
 
   useEffect(() => {
     api.getClientFieldLabels().then(setFieldLabels).catch(() => {});
+    api.getTabComments().then(setTabComments).catch(() => {});
   }, []);
 
   const commitClientField = async (field, value) => {
@@ -65,6 +83,16 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
     try {
       const updated = await api.updateClient(client.clientCode, { [field]: value });
       setClient(updated);
+    } catch (e) {
+      setError(e.message);
+    }
+  };
+
+  const commitTabComment = async (tabKey, value) => {
+    if (value === (tabComments[tabKey] ?? "")) return;
+    try {
+      const updated = await api.updateTabComment(tabKey, value);
+      setTabComments(updated);
     } catch (e) {
       setError(e.message);
     }
@@ -266,6 +294,12 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                   onCommitField={commitClientField}
                 />
               )}
+
+              <TabCommentBox
+                tabKey={activeTab}
+                comment={tabComments[activeTab] ?? ""}
+                onCommit={commitTabComment}
+              />
             </>
           ) : (
             <div className="empty">

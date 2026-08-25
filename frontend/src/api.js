@@ -56,6 +56,14 @@ export const api = {
   updateClientFieldLabels: (patch) =>
     request(`/client-field-labels`, { method: "PATCH", body: patch }),
 
+  getTabComments: () => request(`/tab-comments`),
+
+  updateTabComment: (tabKey, comment) =>
+    request(`/tab-comments/${encodeURIComponent(tabKey)}`, {
+      method: "PATCH",
+      body: { comment },
+    }),
+
   listSeries: () => request(`/series`),
 
   createSeries: (seriesCode, seriesName, taskGroup) =>

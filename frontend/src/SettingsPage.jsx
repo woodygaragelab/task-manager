@@ -1,8 +1,8 @@
 import { useState } from "react";
-import { SeriesListPage } from "./SeriesListPage";
-import { FrameListPage } from "./FrameListPage";
-import { ClassificationAxesPage } from "./ClassificationAxesPage";
-import { ClientFieldLabelsPage } from "./ClientFieldLabelsPage";
+import { SettingSeries } from "./SettingSeries";
+import { SettingFrame } from "./SettingFrame";
+import { SettingClassificationAxes } from "./SettingClassificationAxes";
+import { SettingClientFields } from "./SettingClientFields";
 import { AgentsPanel } from "./AgentsPanel";
 
 const TABS = ["タスク", "フレーム", "分類ルール", "項目名", "エージェント"];
@@ -26,13 +26,13 @@ export function SettingsPage({ seriesList, frameList, onRefresh }) {
       </div>
 
       {activeTab === "タスク" && (
-        <SeriesListPage seriesList={seriesList} onRefresh={onRefresh} />
+        <SettingSeries seriesList={seriesList} onRefresh={onRefresh} />
       )}
       {activeTab === "フレーム" && (
-        <FrameListPage frameList={frameList} onRefresh={onRefresh} />
+        <SettingFrame frameList={frameList} onRefresh={onRefresh} />
       )}
-      {activeTab === "分類ルール" && <ClassificationAxesPage />}
-      {activeTab === "項目名" && <ClientFieldLabelsPage />}
+      {activeTab === "分類ルール" && <SettingClassificationAxes />}
+      {activeTab === "項目名" && <SettingClientFields />}
       {activeTab === "エージェント" && <AgentsPanel scope="all" />}
     </>
   );

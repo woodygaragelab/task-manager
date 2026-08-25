@@ -218,6 +218,18 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /client-field-labels
             Method: patch
+        GetTabComments:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /tab-comments
+            Method: get
+        UpdateTabComment:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /tab-comments/{tabKey}
+            Method: patch
         SubmitAgentJob:
           Type: HttpApi
           Properties:
