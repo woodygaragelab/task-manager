@@ -168,7 +168,7 @@ export function ClientListPage({ onSelectClient }) {
                   <th>関与先番号</th>
                   <th>関与先名</th>
                   {CORPORATE_TAX_FIELD_CODES.map((code, i) => (
-                    <th key={code} style={{ width: "6.5%" }}>
+                    <th key={code} style={{ width: "7.8%" }}>
                       {fieldLabels[code] || `カスタム項目${i + 11}`}
                     </th>
                   ))}
@@ -226,7 +226,7 @@ export function ClientListPage({ onSelectClient }) {
                   <th>関与先番号</th>
                   <th>関与先名</th>
                   {WITHHOLDING_FIELD_CODES.map((code, i) => (
-                    <th key={code} style={{ width: "6.5%" }}>
+                    <th key={code} style={{ width: "7.8%" }}>
                       {fieldLabels[code] || `カスタム項目${i + 21}`}
                     </th>
                   ))}
@@ -284,7 +284,7 @@ export function ClientListPage({ onSelectClient }) {
                   <th>関与先番号</th>
                   <th>関与先名</th>
                   {YEAR_END_ADJUSTMENT_FIELD_CODES.map((code, i) => (
-                    <th key={code} style={{ width: "6.5%" }}>
+                    <th key={code} style={{ width: "7.8%" }}>
                       {fieldLabels[code] || `カスタム項目${i + 31}`}
                     </th>
                   ))}
