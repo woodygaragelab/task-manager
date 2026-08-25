@@ -112,7 +112,7 @@ function parseCsv(text) {
   return rows.filter((r) => r.some((cell) => cell.trim() !== ""));
 }
 
-export function HistoryPanel({ clientCode, seriesList = [], frameList = [], onTasksChanged }) {
+export function HistoryTab({ clientCode, seriesList = [], frameList = [], onTasksChanged }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);

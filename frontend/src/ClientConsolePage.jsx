@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ClientProfilePage, CUSTOM_FIELD_CODES } from "./ClientProfilePage";
-import { ProgressTable } from "./ProgressTable";
+import { ClientProfileTab, CUSTOM_FIELD_CODES } from "./ClientProfileTab";
+import { ProgressTab } from "./ProgressTab";
 import { TaskDetailPanel } from "./TaskDetailPanel";
-import { HistoryPanel } from "./HistoryPanel";
+import { HistoryTab } from "./HistoryTab";
 import { AgentsPanel } from "./AgentsPanel";
 import { api } from "./api";
 
@@ -13,7 +13,7 @@ const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
 const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(30, 40);
 
-function CustomFieldsTable({ client, fieldLabels, codes, labelOffset, onCommitField }) {
+function ClientFieldsTab({ client, fieldLabels, codes, labelOffset, onCommitField }) {
   return (
     <table className="simple-table">
       <thead>
@@ -205,7 +205,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
               </div>
 
               {activeTab === "基本情報" && (
-                <ClientProfilePage
+                <ClientProfileTab
                   client={client}
                   onUpdated={setClient}
                   onDeleted={() => setClient(null)}
@@ -213,7 +213,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
               )}
 
               {activeTab === "法人税" && (
-                <CustomFieldsTable
+                <ClientFieldsTab
                   client={client}
                   fieldLabels={fieldLabels}
                   codes={CORPORATE_TAX_FIELD_CODES}
@@ -223,7 +223,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
               )}
 
               {activeTab === "源泉R8上期" && (
-                <CustomFieldsTable
+                <ClientFieldsTab
                   client={client}
                   fieldLabels={fieldLabels}
                   codes={WITHHOLDING_FIELD_CODES}
@@ -236,7 +236,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                 (loading ? (
                   <div className="status-line">読み込み中…</div>
                 ) : (
-                  <ProgressTable
+                  <ProgressTab
                     tasks={tasks}
                     seriesNameByCode={seriesNameByCode}
                     frameNameByCode={frameNameByCode}
@@ -247,7 +247,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                 ))}
 
               {activeTab === "履歴" && (
-                <HistoryPanel
+                <HistoryTab
                   clientCode={client.clientCode}
                   seriesList={seriesList}
                   frameList={frameList}
@@ -258,7 +258,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
               {activeTab === "エージェント" && <AgentsPanel client={client} />}
 
               {activeTab === "年調R7" && (
-                <CustomFieldsTable
+                <ClientFieldsTab
                   client={client}
                   fieldLabels={fieldLabels}
                   codes={YEAR_END_ADJUSTMENT_FIELD_CODES}

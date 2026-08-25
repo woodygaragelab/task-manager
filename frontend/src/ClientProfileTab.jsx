@@ -1,15 +1,13 @@
 import { useState } from "react";
 import { api } from "./api";
 
-const MONTH_OPTIONS = Array.from({ length: 12 }, (_, i) => i + 1);
 const ENGAGEMENT_TYPE_OPTIONS = ["年一", "自計化", "反自計化"];
-const PAYMENT_METHOD_OPTIONS = ["ダイレクト", "振替", "納付書"];
 export const CUSTOM_FIELD_CODES = Array.from(
   { length: 40 },
   (_, i) => `col${String(i + 1).padStart(2, "0")}`
 );
 
-export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
+export function ClientProfileTab({ client, onBack, onUpdated, onDeleted }) {
   const [current, setCurrent] = useState(client);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -60,25 +58,6 @@ export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
       setError(err.message);
     }
   };
-
-  const MonthField = ({ id, label, field }) => (
-    <div className="profile-field">
-      <label htmlFor={id}>{label}</label>
-      <select
-        id={id}
-        defaultValue={current[field] ?? ""}
-        key={`${field}-${current.clientCode}`}
-        onChange={commitSelect(field)}
-      >
-        <option value="">未設定</option>
-        {MONTH_OPTIONS.map((m) => (
-          <option key={m} value={m}>
-            {m}月
-          </option>
-        ))}
-      </select>
-    </div>
-  );
 
   const ChoiceField = ({ id, label, field, options }) => (
     <div className="profile-field">
@@ -150,17 +129,6 @@ export function ClientProfilePage({ client, onBack, onUpdated, onDeleted }) {
           field="engagementType"
           options={ENGAGEMENT_TYPE_OPTIONS}
         />
-        <ChoiceField
-          id="profile-payment-method"
-          label="納付方式"
-          field="paymentMethod"
-          options={PAYMENT_METHOD_OPTIONS}
-        />
-
-        <MonthField id="profile-fiscal-year-end-month" label="決算月" field="fiscalYearEndMonth" />
-        <MonthField id="profile-three-months-after-month" label="3か月後月" field="threeMonthsAfterMonth" />
-        <MonthField id="profile-interim-month" label="中間月" field="interimMonth" />
-        <MonthField id="profile-nine-months-after-month" label="9か月後月" field="nineMonthsAfterMonth" />
 
         <div className="profile-field">
           <label htmlFor="profile-receipt-folder">領収書フォルダ</label>

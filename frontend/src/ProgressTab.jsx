@@ -8,7 +8,7 @@ const STATUS_ABBR = {
   完了: "完",
 };
 
-export function ProgressTable({
+export function ProgressTab({
   tasks,
   seriesNameByCode,
   frameNameByCode,

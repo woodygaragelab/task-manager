@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
-import { CUSTOM_FIELD_CODES } from "./ClientProfilePage";
+import { CUSTOM_FIELD_CODES } from "./ClientProfileTab";
 
 const TABS = ["法人", "法人税", "源泉R8上期", "年調R7", "個人"];
 const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
