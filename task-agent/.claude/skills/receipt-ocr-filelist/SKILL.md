@@ -210,7 +210,7 @@ python scripts/rename_and_save.py "/tmp/{案件コード}/entries.json" "/tmp/{�
 
 - 日付(date): 実行日(本日の日付、`YYYY-MM-DD`)
 - 分類(category): `支払`
-- タスク名(series_code): `処理登録`
+- タスク名(series_code): `512`(=「処理登録」のシリーズコード)
 - 担当者(assignee): `エージェント`
 - ステータス(status): `進行中`
 - 内容(content): `領収書の自動分類、リネーム保存`
