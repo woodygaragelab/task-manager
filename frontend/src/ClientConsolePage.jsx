@@ -13,7 +13,7 @@ const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
 const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(30, 40);
 
-function TabCommentBox({ tabKey, comment, onCommit }) {
+export function TabCommentBox({ tabKey, comment, onCommit }) {
   return (
     <div className="tab-comment field">
       <label htmlFor={`tab-comment-${tabKey}`}>ユーザー要望コメント</label>

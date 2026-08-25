@@ -1,8 +1,11 @@
 import { useEffect, useState } from "react";
 import { api } from "./api";
 import { CUSTOM_FIELD_CODES } from "./ClientProfileTab";
+import { TabCommentBox } from "./ClientConsolePage";
 
 const TABS = ["法人", "法人税", "源泉R8上期", "年調R7", "個人"];
+// 関与先コンソール画面の同名タブとコメントが混ざらないよう、一覧画面専用のキーを使う
+const TAB_COMMENT_KEYS = Object.fromEntries(TABS.map((tab) => [tab, `一覧:${tab}`]));
 const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
 const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(30, 40);
@@ -15,11 +18,23 @@ export function ClientListPage({ onSelectClient }) {
   const [newCode, setNewCode] = useState("");
   const [newName, setNewName] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [tabComments, setTabComments] = useState({});
 
   useEffect(() => {
     api.listClients().then(setClients).catch((e) => setError(e.message));
     api.getClientFieldLabels().then(setFieldLabels).catch((e) => setError(e.message));
+    api.getTabComments().then(setTabComments).catch(() => {});
   }, []);
+
+  const commitTabComment = async (tabKey, value) => {
+    if (value === (tabComments[tabKey] ?? "")) return;
+    try {
+      const updated = await api.updateTabComment(tabKey, value);
+      setTabComments(updated);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
 
   const commitField = (clientCode, field) => async (e) => {
     const value = e.target.value;
@@ -129,6 +144,12 @@ export function ClientListPage({ onSelectClient }) {
               {submitting ? "登録中…" : "追加"}
             </button>
           </form>
+
+          <TabCommentBox
+            tabKey={TAB_COMMENT_KEYS["法人"]}
+            comment={tabComments[TAB_COMMENT_KEYS["法人"]] ?? ""}
+            onCommit={commitTabComment}
+          />
         </>
       )}
 
@@ -181,6 +202,12 @@ export function ClientListPage({ onSelectClient }) {
               </tbody>
             </table>
           )}
+
+          <TabCommentBox
+            tabKey={TAB_COMMENT_KEYS["法人税"]}
+            comment={tabComments[TAB_COMMENT_KEYS["法人税"]] ?? ""}
+            onCommit={commitTabComment}
+          />
         </>
       )}
 
@@ -233,6 +260,12 @@ export function ClientListPage({ onSelectClient }) {
               </tbody>
             </table>
           )}
+
+          <TabCommentBox
+            tabKey={TAB_COMMENT_KEYS["源泉R8上期"]}
+            comment={tabComments[TAB_COMMENT_KEYS["源泉R8上期"]] ?? ""}
+            onCommit={commitTabComment}
+          />
         </>
       )}
 
@@ -285,13 +318,27 @@ export function ClientListPage({ onSelectClient }) {
               </tbody>
             </table>
           )}
+
+          <TabCommentBox
+            tabKey={TAB_COMMENT_KEYS["年調R7"]}
+            comment={tabComments[TAB_COMMENT_KEYS["年調R7"]] ?? ""}
+            onCommit={commitTabComment}
+          />
         </>
       )}
 
       {activeTab === "個人" && (
-        <div className="empty">
-          <div className="empty__title">工事中</div>
-        </div>
+        <>
+          <div className="empty">
+            <div className="empty__title">工事中</div>
+          </div>
+
+          <TabCommentBox
+            tabKey={TAB_COMMENT_KEYS["個人"]}
+            comment={tabComments[TAB_COMMENT_KEYS["個人"]] ?? ""}
+            onCommit={commitTabComment}
+          />
+        </>
       )}
     </section>
   );
