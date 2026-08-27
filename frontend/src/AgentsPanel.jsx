@@ -114,8 +114,13 @@ const MARKDOWN_COMPONENTS = {
 // 関与先やどの関与先にも一致しないメール(未分類)向けの全体ジョブ1本だけが
 // TaskAgentJobsのGLOBAL_CLIENT_CODEに記録され、設定ページの「全クライアント」タブから
 // 確認できる(scout-schedule/scout-schedule/lambda/handler.py参照)。
+// archivistはArchivistWeekdaySchedule(同スタック)と一致させること。scoutの10分後に
+// 実行され、receiptFolderId登録済みの関与先ごとに個別ジョブとして起動される
+// (未登録の関与先向けの全体ジョブは無い。scout-schedule/scout-schedule/lambda_archivist/
+// handler.py参照)。
 const SCHEDULE_INFO = {
   scout: "平日 6:00 / 12:00 / 18:00(JST)に自動実行されます",
+  archivist: "平日 6:10 / 12:10 / 18:10(JST)に自動実行されます",
 };
 
 const PROMPT_BUILDERS = {

@@ -111,6 +111,27 @@
   text-align: right;
 }
 
+.header__right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.admin-mode-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+  cursor: pointer;
+  user-select: none;
+}
+
+.admin-mode-toggle input {
+  cursor: pointer;
+}
+
 /* ---------- Client selector (header) ---------- */
 .client-selector {
   position: relative;

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { signOut } from "aws-amplify/auth";
 import { useAuthenticator } from "@aws-amplify/ui-react";
 import { NavMenu } from "./NavMenu";
+import { useAdminMode } from "./AdminModeContext";
 import { ClientListPage } from "./ClientListPage";
 import { SettingsPage } from "./SettingsPage";
 import { DataQueryPage } from "./DataQueryPage";
@@ -11,6 +12,7 @@ import "./App.css";
 
 export default function App() {
   const { user } = useAuthenticator((ctx) => [ctx.user]);
+  const { adminMode, setAdminMode } = useAdminMode();
   const [seriesList, setSeriesList] = useState([]);
   const [frameList, setFrameList] = useState([]);
   const [error, setError] = useState(null);
@@ -75,12 +77,23 @@ export default function App() {
           />
         </div>
 
-        <div className="header__meta">
-          {user?.signInDetails?.loginId ?? user?.username}
-          <br />
-          <button className="header__signout" onClick={() => signOut()}>
-            ログアウト
-          </button>
+        <div className="header__right">
+          <label className="admin-mode-toggle">
+            <input
+              type="checkbox"
+              checked={adminMode}
+              onChange={(e) => setAdminMode(e.target.checked)}
+            />
+            管理モード
+          </label>
+
+          <div className="header__meta">
+            {user?.signInDetails?.loginId ?? user?.username}
+            <br />
+            <button className="header__signout" onClick={() => signOut()}>
+              ログアウト
+            </button>
+          </div>
         </div>
       </header>
 

@@ -86,3 +86,56 @@ class ScoutScheduleStack(Stack):
                 input="{}",
             ),
         )
+
+        # --- Lambda: receiptFolderId登録済みの関与先ごとにarchivist(receipt-ocr-filelist)
+        #     ジョブを起動する薄いトリガー(ScoutInvokeFunctionのarchivist版) ---
+        archivist_invoke_fn = _lambda.Function(
+            self,
+            "ArchivistInvokeFunction",
+            function_name="taskmanager-archivist-receipt-ocr-trigger",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            handler="handler.handler",
+            code=_lambda.Code.from_asset("lambda_archivist"),
+            timeout=Duration.seconds(60),
+            log_retention=logs.RetentionDays.ONE_MONTH,
+            environment={
+                "AGENT_JOBS_TABLE": AGENT_JOBS_TABLE_NAME,
+                "AGENT_JOB_PROCESSOR_FUNCTION_NAME": AGENT_JOB_PROCESSOR_FUNCTION_NAME,
+                "CLIENTS_TABLE": CLIENTS_TABLE_NAME,
+            },
+        )
+
+        agent_jobs_table.grant_write_data(archivist_invoke_fn)
+        agent_job_processor_fn.grant_invoke(archivist_invoke_fn)
+        clients_table.grant_read_data(archivist_invoke_fn)
+
+        archivist_scheduler_role = iam.Role(
+            self,
+            "ArchivistSchedulerRole",
+            assumed_by=iam.ServicePrincipal("scheduler.amazonaws.com"),
+        )
+        archivist_invoke_fn.grant_invoke(archivist_scheduler_role)
+
+        # --- ScoutWeekdayScheduleの10分後(平日6:10/12:10/18:10 JST)に実行するスケジュール ---
+        # scoutが受領フォルダに保存した新着添付をarchivistが拾えるよう、scoutの後に
+        # 実行する(ユーザー指定:「既存のscoutスケジュールの10分後」)。
+        scheduler.CfnSchedule(
+            self,
+            "ArchivistWeekdaySchedule",
+            name="taskmanager-archivist-receipt-ocr-weekdays",
+            description="平日6:10/12:10/18:10時に領収書分類(archivist)エージェントを起動",
+            schedule_expression="cron(10 6,12,18 ? * MON-FRI *)",
+            schedule_expression_timezone="Asia/Tokyo",
+            flexible_time_window=scheduler.CfnSchedule.FlexibleTimeWindowProperty(
+                mode="OFF"
+            ),
+            target=scheduler.CfnSchedule.TargetProperty(
+                arn=archivist_invoke_fn.function_arn,
+                role_arn=archivist_scheduler_role.role_arn,
+                retry_policy=scheduler.CfnSchedule.RetryPolicyProperty(
+                    maximum_retry_attempts=2,
+                    maximum_event_age_in_seconds=3600,
+                ),
+                input="{}",
+            ),
+        )

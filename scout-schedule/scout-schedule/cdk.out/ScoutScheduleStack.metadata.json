@@ -21,6 +21,19 @@
       ]
     }
   ],
+  "/ScoutScheduleStack/ArchivistWeekdaySchedule": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ArchivistWeekdaySchedule"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
   "/ScoutScheduleStack/BootstrapVersion": [
     {
       "type": "aws:cdk:logicalId",
@@ -77,6 +90,32 @@
     {
       "type": "aws:cdk:logicalId",
       "data": "ScoutSchedulerRoleAEB2BE76"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/ScoutScheduleStack/ArchivistInvokeFunction/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ArchivistInvokeFunctionF745126B"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/ScoutScheduleStack/ArchivistSchedulerRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ArchivistSchedulerRoleFABEC5B0"
     },
     {
       "type": "aws:cdk:creationStack",
@@ -151,6 +190,45 @@
       ]
     }
   ],
+  "/ScoutScheduleStack/ArchivistInvokeFunction/ServiceRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ArchivistInvokeFunctionServiceRoleE5DA01E4"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/ScoutScheduleStack/ArchivistInvokeFunction/LogRetention/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ArchivistInvokeFunctionLogRetentionC41A4544"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/ScoutScheduleStack/ArchivistSchedulerRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ArchivistSchedulerRoleDefaultPolicyB3D196D0"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
   "/ScoutScheduleStack/ScoutInvokeFunction/ServiceRole/DefaultPolicy/Resource": [
     {
       "type": "aws:cdk:logicalId",
@@ -168,6 +246,19 @@
     {
       "type": "aws:cdk:logicalId",
       "data": "LogRetentionaae0aa3c5b4d4f87b02d85b201efdd8aServiceRoleDefaultPolicyADDA7DEB"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/ScoutScheduleStack/ArchivistInvokeFunction/ServiceRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "ArchivistInvokeFunctionServiceRoleDefaultPolicy8BA306DE"
     },
     {
       "type": "aws:cdk:creationStack",

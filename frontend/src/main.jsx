@@ -10,6 +10,7 @@ import { I18n } from "aws-amplify/utils";
 import "@aws-amplify/ui-react/styles.css";
 
 import { amplifyConfig } from "./config";
+import { AdminModeProvider } from "./AdminModeContext";
 import App from "./App";
 import "./styles.css";
 import "./auth-theme.css";
@@ -54,7 +55,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
       <Authenticator hideSignUp>
-        <App />
+        <AdminModeProvider>
+          <App />
+        </AdminModeProvider>
       </Authenticator>
     </ThemeProvider>
   </React.StrictMode>

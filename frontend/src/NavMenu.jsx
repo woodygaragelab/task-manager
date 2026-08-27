@@ -1,6 +1,4 @@
 const ITEMS = [
-  { value: "クライアント", label: "関与先リスト" },
-  { value: "コンソール", label: "コンソール" },
   { value: "設定", label: "設定" },
   { value: "データ照会", label: "データ照会" },
 ];
