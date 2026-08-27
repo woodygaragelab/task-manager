@@ -4,10 +4,12 @@ import { ProgressTab } from "./ProgressTab";
 import { TaskDetailPanel } from "./TaskDetailPanel";
 import { HistoryTab } from "./HistoryTab";
 import { AgentsPanel } from "./AgentsPanel";
+import { useAdminMode } from "./AdminModeContext";
 import { api } from "./api";
 
 const POLL_INTERVAL_MS = 4000;
-const TABS = ["基本情報", "法人税", "源泉R8上期", "年調R7", "資料進捗", "履歴", "エージェント"];
+const ADMIN_ONLY_TABS = ["法人税", "源泉R8上期", "年調R7"];
+const ALL_TABS = ["基本情報", "法人税", "源泉R8上期", "年調R7", "資料進捗", "履歴", "エージェント"];
 const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
 const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
@@ -58,6 +60,10 @@ function ClientFieldsTab({ client, fieldLabels, codes, labelOffset, onCommitFiel
 }
 
 export function ClientConsolePage({ seriesList, frameList, initialClientCode, onBackToList }) {
+  const { adminMode } = useAdminMode();
+  const TABS = adminMode
+    ? ALL_TABS
+    : ALL_TABS.filter((tab) => !ADMIN_ONLY_TABS.includes(tab));
   const initialCode = initialClientCode || DEFAULT_CLIENT.clientCode;
   const [client, setClient] = useState(() =>
     initialClientCode
@@ -77,6 +83,13 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
     api.getClientFieldLabels().then(setFieldLabels).catch(() => {});
     api.getTabComments().then(setTabComments).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (!TABS.includes(activeTab)) {
+      setActiveTab("資料進捗");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [adminMode]);
 
   const commitClientField = async (field, value) => {
     if (!client || value === (client[field] ?? "")) return;
@@ -240,7 +253,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                 />
               )}
 
-              {activeTab === "法人税" && (
+              {adminMode && activeTab === "法人税" && (
                 <ClientFieldsTab
                   client={client}
                   fieldLabels={fieldLabels}
@@ -250,7 +263,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                 />
               )}
 
-              {activeTab === "源泉R8上期" && (
+              {adminMode && activeTab === "源泉R8上期" && (
                 <ClientFieldsTab
                   client={client}
                   fieldLabels={fieldLabels}
@@ -285,7 +298,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
 
               {activeTab === "エージェント" && <AgentsPanel client={client} />}
 
-              {activeTab === "年調R7" && (
+              {adminMode && activeTab === "年調R7" && (
                 <ClientFieldsTab
                   client={client}
                   fieldLabels={fieldLabels}
