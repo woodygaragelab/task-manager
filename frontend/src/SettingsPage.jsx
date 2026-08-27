@@ -1,19 +1,31 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { SettingSeries } from "./SettingSeries";
 import { SettingFrame } from "./SettingFrame";
 import { SettingClassificationAxes } from "./SettingClassificationAxes";
 import { SettingClientFields } from "./SettingClientFields";
 import { AgentsPanel } from "./AgentsPanel";
+import { useAdminMode } from "./AdminModeContext";
 
-const TABS = ["タスク", "フレーム", "分類ルール", "項目名", "エージェント"];
+const ADMIN_ONLY_TABS = ["タスク", "フレーム", "分類ルール", "項目名"];
+const ALL_TABS = [...ADMIN_ONLY_TABS, "エージェント"];
 
 export function SettingsPage({ seriesList, frameList, onRefresh }) {
-  const [activeTab, setActiveTab] = useState(TABS[0]);
+  const { adminMode } = useAdminMode();
+  const tabs = adminMode
+    ? ALL_TABS
+    : ALL_TABS.filter((tab) => !ADMIN_ONLY_TABS.includes(tab));
+  const [activeTab, setActiveTab] = useState(tabs[0]);
+
+  useEffect(() => {
+    if (!tabs.includes(activeTab)) {
+      setActiveTab(tabs[0]);
+    }
+  }, [tabs, activeTab]);
 
   return (
     <>
       <div className="tabs">
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab}
             type="button"
@@ -25,14 +37,14 @@ export function SettingsPage({ seriesList, frameList, onRefresh }) {
         ))}
       </div>
 
-      {activeTab === "タスク" && (
+      {adminMode && activeTab === "タスク" && (
         <SettingSeries seriesList={seriesList} onRefresh={onRefresh} />
       )}
-      {activeTab === "フレーム" && (
+      {adminMode && activeTab === "フレーム" && (
         <SettingFrame frameList={frameList} onRefresh={onRefresh} />
       )}
-      {activeTab === "分類ルール" && <SettingClassificationAxes />}
-      {activeTab === "項目名" && <SettingClientFields />}
+      {adminMode && activeTab === "分類ルール" && <SettingClassificationAxes />}
+      {adminMode && activeTab === "項目名" && <SettingClientFields />}
       {activeTab === "エージェント" && <AgentsPanel scope="all" />}
     </>
   );
