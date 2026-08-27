@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api } from "./api";
 
-// 現時点でAgentCoreに実接続しているのは「分類」(archivist)と「進捗更新」(progress)のみ。
+// 現時点でAgentCoreに実接続しているのは「整理係」(archivist)と「進捗管理係」(progress)のみ。
 // 他のエージェントは今後の実装予定のダミー表示。
 const LIVE_AGENT_IDS = ["scout", "archivist", "progress"];
 const POLL_INTERVAL_MS = 3000;
@@ -17,33 +17,33 @@ const GLOBAL_CLIENT_CODE = "ALL";
 const AGENTS = [
   {
     id: "scout",
-    name: "受領",
-    role: "情報収集・調査",
+    name: "受付係",
+    role: "資料受領",
     description: "エージェント(仮:woodygaragelab@gmail.com)に転送された、メールを要約して履歴に記録し、添付ファイルがあれば受領フォルダに格納する",
   },
   {
     id: "archivist",
-    name: "分類",
+    name: "整理係",
     role: "文書整理・分類",
     description: "receiptフォルダの新しい領収書画像を勘定科目ごとにリネーム・分類する",
   },
   {
     id: "courier",
-    name: "会計",
-    role: "外部連携・送信",
+    name: "変換係",
+    role: "データ変換",
     description: "領収書リストから仕訳データに変換する",
     instruction: "領収書リストから仕訳データに変換する",
   },
   {
     id: "auditor",
-    name: "チェック",
+    name: "チェック係",
     role: "検証・照合",
     description: "仕訳データの科目コードをマスタと照合する",
     instruction: "仕訳データの科目コードをマスタと照合する",
   },
   {
     id: "progress",
-    name: "進捗更新",
+    name: "進捗管理係",
     role: "進捗管理・更新",
     description: "履歴レコードを順に読み取り、内容を解釈して日付・分類・担当者・ステータスを更新する",
   },
