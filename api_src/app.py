@@ -115,11 +115,13 @@ def handler(event, context):
                 client_code, CLIENT_DRIVE_PARENT_FOLDER_ID, CLIENT_FOLDER_TEMPLATE_ID
             )
             # 作成したreceipt/renamedフォルダのIDを、クライアントの領収書フォルダ/
-            # 分類後フォルダ欄にそのまま反映する。
+            # 分類後フォルダ欄にそのまま反映する。受領フォルダ(uketoriFolderId)も
+            # receiptフォルダを共用する。
             updated_client = repo.update_client(
                 client_code=client_code,
                 receipt_folder_id=result["receiptFolderId"],
                 renamed_folder_id=result["renamedFolderId"],
+                uketori_folder_id=result["receiptFolderId"],
             )
             return _response(201, updated_client)
 
