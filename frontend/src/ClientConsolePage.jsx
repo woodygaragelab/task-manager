@@ -208,7 +208,8 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
         }))
     );
     try {
-      await api.createClientDriveFolder(client.clientCode);
+      const updatedClient = await api.createClientDriveFolder(client.clientCode);
+      setClient(updatedClient);
       if (toCreate.length > 0) {
         await Promise.all(toCreate.map((task) => api.createTask(task)));
       }

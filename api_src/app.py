@@ -111,10 +111,17 @@ def handler(event, context):
         # ---- POST /clients/{clientCode}/drive-folder ----
         if route_key == "POST /clients/{clientCode}/drive-folder":
             client_code = path_params["clientCode"]
-            folder = google_drive.initialize_client_folder(
+            result = google_drive.initialize_client_folder(
                 client_code, CLIENT_DRIVE_PARENT_FOLDER_ID, CLIENT_FOLDER_TEMPLATE_ID
             )
-            return _response(201, folder)
+            # 作成したreceipt/renamedフォルダのIDを、クライアントの領収書フォルダ/
+            # 分類後フォルダ欄にそのまま反映する。
+            updated_client = repo.update_client(
+                client_code=client_code,
+                receipt_folder_id=result["receiptFolderId"],
+                renamed_folder_id=result["renamedFolderId"],
+            )
+            return _response(201, updated_client)
 
         # ---- GET /client-field-labels ----
         if route_key == "GET /client-field-labels":

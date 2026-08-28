@@ -158,7 +158,18 @@ def replicate_folder_structure(source_parent_id: str, dest_parent_id: str) -> No
 
 def initialize_client_folder(client_code: str, parent_id: str, template_folder_id: str) -> dict:
     """clientCode名のフォルダをparent_id直下に作成し、template_folder_idと同じ
-    サブフォルダ構成をその下に複製する。"""
+    サブフォルダ構成をその下に複製する。
+
+    戻り値には作成したフォルダ本体に加え、直下の"receipt"/"renamed"フォルダ(存在すれば)
+    のIDを含める。呼び出し側でクライアントのreceiptFolderId/renamedFolderIdに
+    反映するため。
+    """
     folder = create_folder(client_code, parent_id)
     replicate_folder_structure(template_folder_id, folder["id"])
-    return folder
+    receipt_folder = find_folder("receipt", folder["id"])
+    renamed_folder = find_folder("renamed", folder["id"])
+    return {
+        "folder": folder,
+        "receiptFolderId": receipt_folder["id"] if receipt_folder else None,
+        "renamedFolderId": renamed_folder["id"] if renamed_folder else None,
+    }
