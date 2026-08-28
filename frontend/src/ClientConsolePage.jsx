@@ -16,6 +16,8 @@ const PROGRESS_TABS = [
   { tab: "源泉資料", groups: ["給与"] },
   { tab: "年調資料", groups: ["給与"] },
 ];
+// 「このクライアントを初期化」で追加するSeriesのtaskGroup(変更しやすいようここに集約)。
+const INIT_TASK_GROUPS = ["売上", "支払", "給与", "銀行通帳"];
 const ALL_TABS = [
   "基本情報",
   "法人税",
@@ -190,6 +192,31 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
     }
   };
 
+  const initializeClient = async () => {
+    if (!client) return;
+    const targetSeries = seriesList.filter((s) => INIT_TASK_GROUPS.includes(s.taskGroup));
+    const existingKeys = new Set(tasks.map((t) => `${t.seriesCode}#${t.frameCode}`));
+    const toCreate = targetSeries.flatMap((s) =>
+      frameList
+        .filter((f) => !existingKeys.has(`${s.seriesCode}#${f.frameCode}`))
+        .map((f) => ({
+          clientCode: client.clientCode,
+          seriesCode: s.seriesCode,
+          seriesName: s.seriesName,
+          frameCode: f.frameCode,
+          frameName: f.frameName,
+        }))
+    );
+    if (toCreate.length === 0) return;
+    try {
+      await Promise.all(toCreate.map((task) => api.createTask(task)));
+      await refresh(client.clientCode);
+    } catch (e) {
+      setError(e.message);
+      await refresh(client.clientCode);
+    }
+  };
+
   const seriesNameByCode = useMemo(
     () => Object.fromEntries(seriesList.map((s) => [s.seriesCode, s.seriesName])),
     [seriesList]
@@ -265,6 +292,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                   client={client}
                   onUpdated={setClient}
                   onDeleted={() => setClient(null)}
+                  onInitialize={initializeClient}
                 />
               )}
 

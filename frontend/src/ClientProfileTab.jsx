@@ -7,10 +7,11 @@ export const CUSTOM_FIELD_CODES = Array.from(
   (_, i) => `col${String(i + 1).padStart(2, "0")}`
 );
 
-export function ClientProfileTab({ client, onBack, onUpdated, onDeleted }) {
+export function ClientProfileTab({ client, onBack, onUpdated, onDeleted, onInitialize }) {
   const [current, setCurrent] = useState(client);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [initializing, setInitializing] = useState(false);
 
   const commit = async (patch) => {
     setSaving(true);
@@ -46,6 +47,24 @@ export function ClientProfileTab({ client, onBack, onUpdated, onDeleted }) {
     const current_ = current.senderEmails ?? [];
     if (emails.length === current_.length && emails.every((d, i) => d === current_[i])) return;
     commit({ senderEmails: emails });
+  };
+
+  const initialize = async () => {
+    if (
+      !window.confirm(
+        `クライアント「${current.clientCode}」に売上・支払・給与・銀行通帳の全月分タスクを追加します。よろしいですか？`
+      )
+    )
+      return;
+    setError(null);
+    setInitializing(true);
+    try {
+      await onInitialize?.();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setInitializing(false);
+    }
   };
 
   const remove = async () => {
@@ -174,6 +193,15 @@ export function ClientProfileTab({ client, onBack, onUpdated, onDeleted }) {
           />
         </div>
       </div>
+
+      <button
+        type="button"
+        className="btn btn--ghost"
+        onClick={initialize}
+        disabled={initializing}
+      >
+        {initializing ? "初期化中…" : "このクライアントを初期化"}
+      </button>
 
       <button type="button" className="simple-table__delete" onClick={remove}>
         このクライアントを削除
