@@ -52,7 +52,7 @@ export function ClientProfileTab({ client, onBack, onUpdated, onDeleted, onIniti
   const initialize = async () => {
     if (
       !window.confirm(
-        `クライアント「${current.clientCode}」に売上・支払・給与・銀行通帳の全月分タスクを追加します。よろしいですか？`
+        `クライアント「${current.clientCode}」用のDriveフォルダを作成し、売上・支払・給与・銀行通帳の全月分タスクを追加します。よろしいですか？`
       )
     )
       return;
@@ -196,7 +196,7 @@ export function ClientProfileTab({ client, onBack, onUpdated, onDeleted, onIniti
 
       <button
         type="button"
-        className="btn btn--ghost"
+        className="simple-table__action"
         onClick={initialize}
         disabled={initializing}
       >

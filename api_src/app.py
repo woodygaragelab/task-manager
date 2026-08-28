@@ -16,10 +16,12 @@ from typing import Any
 
 import boto3
 
+import google_drive
 import task_repository as repo
 
 lambda_client = boto3.client("lambda")
 AGENT_JOB_PROCESSOR_FUNCTION_NAME = os.environ["AGENT_JOB_PROCESSOR_FUNCTION_NAME"]
+CLIENT_DRIVE_PARENT_FOLDER_ID = os.environ["CLIENT_DRIVE_PARENT_FOLDER_ID"]
 
 
 def _response(status_code: int, body: Any) -> dict:
@@ -104,6 +106,12 @@ def handler(event, context):
         if route_key == "DELETE /clients/{clientCode}":
             repo.delete_client(client_code=path_params["clientCode"])
             return _response(200, {"clientCode": path_params["clientCode"]})
+
+        # ---- POST /clients/{clientCode}/drive-folder ----
+        if route_key == "POST /clients/{clientCode}/drive-folder":
+            client_code = path_params["clientCode"]
+            folder = google_drive.create_folder(client_code, CLIENT_DRIVE_PARENT_FOLDER_ID)
+            return _response(201, folder)
 
         # ---- GET /client-field-labels ----
         if route_key == "GET /client-field-labels":

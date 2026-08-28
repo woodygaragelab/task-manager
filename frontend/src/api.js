@@ -51,6 +51,9 @@ export const api = {
   deleteClient: (clientCode) =>
     request(`/clients/${encodeURIComponent(clientCode)}`, { method: "DELETE" }),
 
+  createClientDriveFolder: (clientCode) =>
+    request(`/clients/${encodeURIComponent(clientCode)}/drive-folder`, { method: "POST" }),
+
   getClientFieldLabels: () => request(`/client-field-labels`),
 
   updateClientFieldLabels: (patch) =>

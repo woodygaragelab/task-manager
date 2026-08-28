@@ -164,6 +164,9 @@ Resources:
           AGENT_JOBS_TABLE: TaskAgentJobs
           CLASSIFICATION_RULES_TABLE: TaskClassificationRules
           AGENT_JOB_PROCESSOR_FUNCTION_NAME: !Ref TaskAgentJobProcessorFunction
+          # 「このクライアントを初期化」ボタンで関与先フォルダを作成する先の親フォルダ
+          # (Drive上の共有フォルダ、フォルダ名=clientCode で直下に作成する)
+          CLIENT_DRIVE_PARENT_FOLDER_ID: "1ezirArdhTVC0TwCZe3bZifYXuZwjBO4W"
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Tasks
@@ -181,6 +184,12 @@ Resources:
             TableName: TaskClassificationRules
         - LambdaInvokePolicy:
             FunctionName: !Ref TaskAgentJobProcessorFunction
+        - Statement:
+            - Effect: Allow
+              Action: secretsmanager:GetSecretValue
+              # task-agent(Bedrock AgentCore)側と同じユーザーOAuthリフレッシュトークンを再利用
+              # (google_drive.pyがクライアント初期化フォルダの作成に使う)
+              Resource: "arn:aws:secretsmanager:ap-northeast-1:155830630328:secret:task-agent/google-drive-user-token-*"
       Events:
         ListClients:
           Type: HttpApi
@@ -206,6 +215,12 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /clients/{clientCode}
             Method: delete
+        CreateClientDriveFolder:
+          Type: HttpApi
+          Properties:
+            ApiId: !Ref HttpApi
+            Path: /clients/{clientCode}/drive-folder
+            Method: post
         GetClientFieldLabels:
           Type: HttpApi
           Properties:

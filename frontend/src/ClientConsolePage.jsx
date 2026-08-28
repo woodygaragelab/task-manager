@@ -207,9 +207,11 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
           frameName: f.frameName,
         }))
     );
-    if (toCreate.length === 0) return;
     try {
-      await Promise.all(toCreate.map((task) => api.createTask(task)));
+      await api.createClientDriveFolder(client.clientCode);
+      if (toCreate.length > 0) {
+        await Promise.all(toCreate.map((task) => api.createTask(task)));
+      }
       await refresh(client.clientCode);
     } catch (e) {
       setError(e.message);
