@@ -9,7 +9,22 @@ import { api } from "./api";
 
 const POLL_INTERVAL_MS = 4000;
 const ADMIN_ONLY_TABS = ["法人税", "源泉R8上期", "年調R7"];
-const ALL_TABS = ["基本情報", "法人税", "源泉R8上期", "年調R7", "資料進捗", "履歴", "エージェント"];
+// 「資料進捗」タブ(taskGroup別の進捗表)を3タブに分割したもの。
+// groups: nullは全taskGroupを対象、配列を指定するとそのtaskGroupのみに絞り込む(変更しやすいようここに集約)。
+const PROGRESS_TABS = [
+  { tab: "法人税資料", groups: null },
+  { tab: "源泉資料", groups: ["給与"] },
+  { tab: "年調資料", groups: ["給与"] },
+];
+const ALL_TABS = [
+  "基本情報",
+  "法人税",
+  "源泉R8上期",
+  "年調R7",
+  ...PROGRESS_TABS.map((p) => p.tab),
+  "履歴",
+  "エージェント",
+];
 const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
 const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
@@ -75,7 +90,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
   const [error, setError] = useState(null);
   const [lastSynced, setLastSynced] = useState(null);
   const [selectedTaskKey, setSelectedTaskKey] = useState(null); // {seriesCode, frameCode} | null
-  const [activeTab, setActiveTab] = useState("資料進捗");
+  const [activeTab, setActiveTab] = useState(PROGRESS_TABS[0].tab);
   const [fieldLabels, setFieldLabels] = useState({});
   const [tabComments, setTabComments] = useState({});
 
@@ -86,7 +101,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
 
   useEffect(() => {
     if (!TABS.includes(activeTab)) {
-      setActiveTab("資料進捗");
+      setActiveTab(PROGRESS_TABS[0].tab);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminMode]);
@@ -273,19 +288,29 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                 />
               )}
 
-              {activeTab === "資料進捗" &&
-                (loading ? (
-                  <div className="status-line">読み込み中…</div>
-                ) : (
-                  <ProgressTab
-                    tasks={tasks}
-                    seriesNameByCode={seriesNameByCode}
-                    frameNameByCode={frameNameByCode}
-                    seriesGroupByCode={seriesGroupByCode}
-                    selectedTaskKey={selectedTaskCombinedKey}
-                    onSelect={selectTask}
-                  />
-                ))}
+              {PROGRESS_TABS.map(
+                ({ tab, groups }) =>
+                  activeTab === tab &&
+                  (loading ? (
+                    <div key={tab} className="status-line">読み込み中…</div>
+                  ) : (
+                    <ProgressTab
+                      key={tab}
+                      tasks={
+                        groups
+                          ? tasks.filter((t) =>
+                              groups.includes(seriesGroupByCode[t.seriesCode])
+                            )
+                          : tasks
+                      }
+                      seriesNameByCode={seriesNameByCode}
+                      frameNameByCode={frameNameByCode}
+                      seriesGroupByCode={seriesGroupByCode}
+                      selectedTaskKey={selectedTaskCombinedKey}
+                      onSelect={selectTask}
+                    />
+                  ))
+              )}
 
               {activeTab === "履歴" && (
                 <HistoryTab
