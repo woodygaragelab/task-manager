@@ -167,6 +167,10 @@ Resources:
           # 「このクライアントを初期化」ボタンで関与先フォルダを作成する先の親フォルダ
           # (Drive上の共有フォルダ、フォルダ名=clientCode で直下に作成する)
           CLIENT_DRIVE_PARENT_FOLDER_ID: "1ezirArdhTVC0TwCZe3bZifYXuZwjBO4W"
+          # 上記の関与先フォルダ作成時に、サブフォルダ構成をコピーする元のテンプレートフォルダ
+          # (CLIENT_DRIVE_PARENT_FOLDER_ID直下の"templatefolder"。中身は都度参照するため、
+          # テンプレート側の構成変更は次回の初期化からそのまま反映される)
+          CLIENT_FOLDER_TEMPLATE_ID: "1uGTjR4FfP2d_WcHGVrISfkZtyNz_VekR"
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Tasks

@@ -103,3 +103,37 @@ def create_folder(name: str, parent_id: str) -> dict:
     return _drive_request(
         "POST", access_token, query={"fields": "id,name,webViewLink"}, body=body
     )
+
+
+def list_subfolders(parent_id: str) -> list:
+    """parent_id直下のフォルダ一覧(id, name)を返す(ファイルは対象外)。"""
+    access_token = _get_access_token()
+    query_string = (
+        f"'{parent_id}' in parents and mimeType = 'application/vnd.google-apps.folder' "
+        "and trashed = false"
+    )
+    result = _drive_request(
+        "GET", access_token, query={"q": query_string, "fields": "files(id,name)"}
+    )
+    return result.get("files", [])
+
+
+def replicate_folder_structure(source_parent_id: str, dest_parent_id: str) -> None:
+    """source_parent_id直下のフォルダ構成をdest_parent_id直下に再帰的に複製する。
+
+    テンプレートフォルダの中身を都度参照するため、テンプレート側にフォルダを
+    追加・変更すれば次回の複製にそのまま反映される(構成をコード側に固定しない)。
+    既に同名フォルダがある階層は作り直さずその配下へ再帰するだけなので、
+    繰り返し呼んでも安全(冪等)。
+    """
+    for folder in list_subfolders(source_parent_id):
+        created = create_folder(folder["name"], dest_parent_id)
+        replicate_folder_structure(folder["id"], created["id"])
+
+
+def initialize_client_folder(client_code: str, parent_id: str, template_folder_id: str) -> dict:
+    """clientCode名のフォルダをparent_id直下に作成し、template_folder_idと同じ
+    サブフォルダ構成をその下に複製する。"""
+    folder = create_folder(client_code, parent_id)
+    replicate_folder_structure(template_folder_id, folder["id"])
+    return folder

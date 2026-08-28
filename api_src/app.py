@@ -22,6 +22,7 @@ import task_repository as repo
 lambda_client = boto3.client("lambda")
 AGENT_JOB_PROCESSOR_FUNCTION_NAME = os.environ["AGENT_JOB_PROCESSOR_FUNCTION_NAME"]
 CLIENT_DRIVE_PARENT_FOLDER_ID = os.environ["CLIENT_DRIVE_PARENT_FOLDER_ID"]
+CLIENT_FOLDER_TEMPLATE_ID = os.environ["CLIENT_FOLDER_TEMPLATE_ID"]
 
 
 def _response(status_code: int, body: Any) -> dict:
@@ -110,7 +111,9 @@ def handler(event, context):
         # ---- POST /clients/{clientCode}/drive-folder ----
         if route_key == "POST /clients/{clientCode}/drive-folder":
             client_code = path_params["clientCode"]
-            folder = google_drive.create_folder(client_code, CLIENT_DRIVE_PARENT_FOLDER_ID)
+            folder = google_drive.initialize_client_folder(
+                client_code, CLIENT_DRIVE_PARENT_FOLDER_ID, CLIENT_FOLDER_TEMPLATE_ID
+            )
             return _response(201, folder)
 
         # ---- GET /client-field-labels ----
