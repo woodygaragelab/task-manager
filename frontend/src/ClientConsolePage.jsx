@@ -38,7 +38,7 @@ export function TabCommentBox({ tabKey, comment, onCommit }) {
       <label htmlFor={`tab-comment-${tabKey}`}>ユーザー要望コメント</label>
       <textarea
         id={`tab-comment-${tabKey}`}
-        rows={3}
+        rows={10}
         defaultValue={comment}
         key={`${tabKey}-${comment}`}
         placeholder="このタブに関する要望・申し送りを自由に記入してください(タブ単位で共有されます)"
