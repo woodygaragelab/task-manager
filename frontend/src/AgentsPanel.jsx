@@ -7,7 +7,9 @@ import { api } from "./api";
 // 他のエージェントは今後の実装予定のダミー表示。
 const LIVE_AGENT_IDS = ["scout", "archivist", "progress"];
 const POLL_INTERVAL_MS = 3000;
-const MAX_POLL_ATTEMPTS = 100;
+// バックエンド(TaskAgentJobProcessorFunction)側のAgentCore呼び出しread_timeoutが850秒
+// (agent_job_src/app.py)のため、それより短い840秒(14分)でフロントエンドも諦める。
+const MAX_POLL_ATTEMPTS = 280;
 
 // 設定ページの「全クライアント」向けエージェントタブは特定の関与先に紐付かないため、
 // ジョブ保存・ポーリングのキーとして専用のダミー関与先コードを使う

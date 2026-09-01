@@ -9,9 +9,11 @@ description: |
   関与先(案件)はtaskmanagerの案件マスタで管理しており、都度MCPツールで取得する
   (詳細は本文参照)。「領収書を整理して」「receiptフォルダを整理して」
   「領収書一覧を更新して」「領収書を分類して」「receiptフォルダの中身を分類して」
-  「MAXの領収書を処理して」「IKKのreceiptを整理して」のように言われたら必ず
-  このスキルを使うこと。使用時は最初に必ずどの関与先(案件コード)を処理するか
-  確認してから、該当するDriveフォルダIDで作業すること。仕訳データの作成は行わない
+  「11の領収書を処理して」「12のreceiptを整理して」のように言われたら、または
+  定期実行(スケジュール)で呼ばれたら必ずこのスキルを使うこと。対象の関与先は
+  プロンプトに関与先コードが含まれていればそれを、含まれていなければ
+  `receiptFolderId` 設定済みの全関与先を、ユーザーに確認を求めず自動的に対象と
+  すること(詳細は本文Step 0参照)。仕訳データの作成は行わない
   (それは receipt-to-journal スキルの役割、対象は支払のみ)。ファイルが増えるたびに
   再実行できるよう作られており、未処理(新規)のファイルだけを自動検出して処理する。
   ローカルファイルシステムではなくGoogle Drive上のファイルを対象とする点が、旧来の
@@ -62,10 +64,10 @@ claude.aiコネクタ経由など、別の実行環境では同じtaskmanager MC
 
 ```json
 [
-  {"clientCode": "AMR", "clientName": "AMORPHOUS事務所", "receiptFolderId": "1lSUy...", "renamedFolderId": null, "lookupBucket": "CLIENT"},
-  {"clientCode": "IKK", "clientName": "Ikkoh株式会社", "receiptFolderId": "1w6R9...", "renamedFolderId": "1L-j-...", "lookupBucket": "CLIENT"},
-  {"clientCode": "JKL", "clientName": "JAKALULU株式会社", "receiptFolderId": "1weJd...", "renamedFolderId": null, "lookupBucket": "CLIENT"},
-  {"clientCode": "MAX", "clientName": "Maximo事業所", "receiptFolderId": "1QZ67...", "renamedFolderId": null, "lookupBucket": "CLIENT"}
+  {"clientCode": "11", "clientName": "AMORPHOUS事務所", "receiptFolderId": "1lSUy...", "renamedFolderId": null, "lookupBucket": "CLIENT"},
+  {"clientCode": "12", "clientName": "Ikkoh株式会社", "receiptFolderId": "1w6R9...", "renamedFolderId": "1L-j-...", "lookupBucket": "CLIENT"},
+  {"clientCode": "13", "clientName": "JAKALULU株式会社", "receiptFolderId": "1weJd...", "renamedFolderId": null, "lookupBucket": "CLIENT"},
+  {"clientCode": "14", "clientName": "Maximo事業所", "receiptFolderId": "1QZ67...", "renamedFolderId": null, "lookupBucket": "CLIENT"}
 ]
 ```
 
@@ -89,12 +91,20 @@ claude.aiコネクタ経由など、別の実行環境では同じtaskmanager MC
 
 ## 全体の流れ
 
-### Step 0. 関与先の確認とローカル作業ディレクトリの準備
+### Step 0. 対象関与先の決定とローカル作業ディレクトリの準備
 
-作業を始める前に、上記のMCPツールを呼び出して現在対応している関与先コード一覧を取得し、
-必ずユーザーにどの関与先(案件)を処理するか確認する
-(例:「JKL・MAX・AMR・IKKのどれを処理しますか?」のように、APIから取得した候補を
-挙げる)。決まったら、以下を用意する。
+`mcp__task-manager__list_clients` を呼び、関与先コード一覧を取得する。対象とする
+関与先は、**ユーザーに確認を求めず**、以下のルールで自動的に決定する
+(定期実行(スケジュール)など、応答を待つ相手がいない経路で呼ばれることを
+前提とするため)。
+
+- プロンプトに関与先コード(または関与先名)が含まれる場合: その関与先だけを対象にする。
+- 含まれない場合: `receiptFolderId` が設定されている関与先すべてを対象にする
+  (`receiptFolderId` が未設定の関与先は対象外)。
+
+対象が複数ある場合は、関与先ごとに以下のStep 1〜7を順に最後まで実行し、1件終えてから
+次の関与先へ進む(処理の途中でユーザーに確認や進捗確認を挟まない)。関与先ごとに、
+以下を用意する。
 
 ```bash
 mkdir -p /tmp/{案件コード}/receipt /tmp/{案件コード}/renamed
@@ -308,8 +318,8 @@ Step 2で売上・給与・銀行通帳に分類した各ファイルについ�
   常にこちらを使い、完全削除にあたる操作は行わない。
 - 1領収書 = 1行が基本。1枚の領収書に複数の取引が混在する場合のみ複数行に分けてよい。
 - 関与先ごとに `receipt_filelist.xlsx` も `renamed`/`売上`/`給与`/`銀行通帳` フォルダも
-  完全に独立している(他の関与先のデータと混ざることはない)。複数の関与先をまとめて
-  処理してほしいと言われた場合は、関与先ごとに Step 0〜7 を繰り返す。
+  完全に独立している(他の関与先のデータと混ざることはない)。Step 0で対象が複数に
+  なった場合は、関与先ごとに Step 1〜7 を繰り返す。
 - 売上・給与・銀行通帳に分類したファイルは `receipt_filelist.xlsx` に記載されないため、
   内容の集計や仕訳化が必要な場合は別途対応すること(このスキルはDrive上での仕分け保存
   までが役割で、それらのデータ加工は行わない)。
