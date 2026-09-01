@@ -155,11 +155,17 @@ content: {Step2で作成した要約}
 ### Step 4. 添付ファイルの保存
 
 添付があり、かつ関与先が判定できていて `uketoriFolderId` が設定されている場合
-のみ、各添付を以下の手順で保存する。
+で、かつ同名ファイルが受領フォルダに無い場合のみ、各添付を以下の手順で保存する。
 
-1. `mcp__gmail__get_attachment(message_id, attachment_id, save_path="/tmp/{client_code}/mail/{filename}")`
+1. `mcp__google-drive__search_files`(または同等の一覧・検索ツール)で
+   `uketoriFolderId` 直下に添付と同名(filename完全一致)のファイルが既に
+   存在しないか確認する。既に存在する場合はその添付の保存をスキップし、
+   その旨をStep 3の `content` に「添付: ファイル名(同名ファイルが既存のため保存スキップ)」
+   のように明記する。
+2. 同名ファイルが無い場合のみ、
+   `mcp__gmail__get_attachment(message_id, attachment_id, save_path="/tmp/{client_code}/mail/{filename}")`
    でローカルに保存
-2. `mcp__google-drive__create_file(local_path, name=filename, parent_id={uketoriFolderId}, mime_type)`
+3. `mcp__google-drive__create_file(local_path, name=filename, parent_id={uketoriFolderId}, mime_type)`
    でDriveの受領フォルダへアップロード
 
 「未分類」の場合や `uketoriFolderId` が未設定の場合は添付保存をスキップし、
