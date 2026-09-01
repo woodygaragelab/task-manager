@@ -77,8 +77,14 @@ class ScoutScheduleStack(Stack):
             target=scheduler.CfnSchedule.TargetProperty(
                 arn=invoke_fn.function_arn,
                 role_arn=scheduler_role.role_arn,
+                # maximum_retry_attempts=0: handler.py側はジョブ起動を都度新規UUIDで
+                # 行うため冪等ではない。EventBridge Schedulerがリトライすると、既に
+                # 成功した関与先分のジョブまで重複起動してしまう(Gmail添付やDrive
+                # 保存ファイルが3件などに重複する不具合の原因だった)。handler.py側も
+                # 部分失敗で例外を投げないよう修正済みだが、念のためリトライ自体も
+                # 無効化しておく。失敗した関与先は次回のスケジュール実行で拾われる。
                 retry_policy=scheduler.CfnSchedule.RetryPolicyProperty(
-                    maximum_retry_attempts=2,
+                    maximum_retry_attempts=0,
                     maximum_event_age_in_seconds=3600,
                 ),
                 # handler.py側はプロンプト・関与先コードを定数で持つためevent入力は使わないが、
@@ -132,8 +138,14 @@ class ScoutScheduleStack(Stack):
             target=scheduler.CfnSchedule.TargetProperty(
                 arn=archivist_invoke_fn.function_arn,
                 role_arn=archivist_scheduler_role.role_arn,
+                # maximum_retry_attempts=0: handler.py側はジョブ起動を都度新規UUIDで
+                # 行うため冪等ではない。EventBridge Schedulerがリトライすると、既に
+                # 成功した関与先分のジョブまで重複起動してしまう(Gmail添付やDrive
+                # 保存ファイルが3件などに重複する不具合の原因だった)。handler.py側も
+                # 部分失敗で例外を投げないよう修正済みだが、念のためリトライ自体も
+                # 無効化しておく。失敗した関与先は次回のスケジュール実行で拾われる。
                 retry_policy=scheduler.CfnSchedule.RetryPolicyProperty(
-                    maximum_retry_attempts=2,
+                    maximum_retry_attempts=0,
                     maximum_event_age_in_seconds=3600,
                 ),
                 input="{}",
