@@ -75,11 +75,12 @@ AgentCore環境でのツール名。別の実行環境では異なるプレフ�
 
 1. `mcp__task-manager__list_clients` を呼び、`clientCode → {senderEmails, uketoriFolderId}`
    の対応表をメモリ上に作る(このスキル実行中はこの表を使い回し、都度問い合わせない)。
-2. `mcp__task-manager__list_series` を呼び、`taskGroup`(=分類/category)が `"支払"`
-   かつ `seriesName`(=シリーズ名)が `"資料受領"` である項目を探し、その `seriesCode`
-   をStep 3で使う「資料受領」の `series_code` として控える(このスキル実行中は
-   使い回し、都度問い合わせない)。該当するシリーズが見つからない場合は、
-   履歴記録を行わずその旨をStep 6で報告する。
+2. `mcp__task-manager__list_series` を呼び、`taskGroup`(=分類/category)が
+   `"支払"` `"銀行通帳"` `"売上"` `"給与"` のそれぞれについて、`seriesName`
+   (=シリーズ名)が `"資料受領"` である項目を探し、`category → seriesCode` の
+   対応表を作る(このスキル実行中は使い回し、都度問い合わせない)。Step 2で
+   判定した `category` に対応するシリーズが見つからない場合、そのメールは
+   履歴記録を行わずその旨をStep 6で報告する(他のカテゴリの処理は継続する)。
 3. `mcp__gmail__list_labels` で `エージェント処理済` ラベルの有無を確認し、無ければ
    `mcp__gmail__create_label` で作成する。
 
@@ -93,7 +94,7 @@ query: label:inbox -label:エージェント処理済
 
 該当が0件なら「新着メールはありません」と報告して終了する。
 
-### Step 2. 関与先判定・要約・添付有無の確認
+### Step 2. 関与先判定・分類(category)判定・要約・添付有無の確認
 
 各メールについて `mcp__gmail__get_message` で headers(From/To/Cc)・本文
 (bodyText)・添付一覧(attachments)を取得し、以下の順で `client_code` を判定する。
@@ -118,6 +119,21 @@ query: label:inbox -label:エージェント処理済
 - `bodyText` を2〜3行に要約する
 - `attachments` の有無を確認する(あればファイル名一覧を控える)
 
+判定した`client_code`とは別に、メールの`category`(分類)を件名(Subject)・
+添付ファイル名に含まれるキーワードから、以下の4種のいずれかに推定する
+(本文は参考程度に留め、件名・ファイル名を優先する)。
+
+- `"銀行通帳"`:「通帳」「口座明細」「取引明細」「残高証明」等
+- `"給与"`:「給与」「給与明細」「賞与」「賃金」等
+- `"売上"`:「売上」「請求書」(自社が発行・送付した請求書、または入金・
+  振込のお知らせ)「入金」「納品書」等
+- `"支払"`:上記以外で、取引先からの請求書・領収書・支払案内など
+  (キーワードが複数の分類にまたがる、またはどれにも当てはまらず
+  判断がつかない場合のデフォルト)
+
+いずれの分類にも明確に一致しない場合は `"支払"` とし、根拠が弱い旨をStep 3の
+`content` に付記する。
+
 ### Step 3. 履歴への記録
 
 判定した `client_code` ごとに `mcp__task-manager__create_history_entry` を呼ぶ
@@ -126,13 +142,14 @@ query: label:inbox -label:エージェント処理済
 ```
 client_code: {判定結果}
 date: {メールのDateヘッダーから得た受信日, YYYY-MM-DD}
-category: "支払"
-series_code: {Step 0で控えた、category="支払"・series="資料受領"に一致するseriesCode}
+category: {Step2で推定したcategory("支払"/"銀行通帳"/"売上"/"給与")}
+series_code: {Step 0で控えた対応表から、上記categoryに一致する「資料受領」のseriesCode}
 frame_codes: [{受信月, YYYYMM}]
-assignee: "資料整理君"
+assignee: "整理係"
 status: "完了"
 content: {Step2で作成した要約}
-  (判定根拠を付記。添付があれば末尾に「添付: ファイル名」も付記)
+  (判定根拠を付記。添付があれば末尾に「添付: ファイル名」も付記。
+  categoryの判定根拠が弱い場合はその旨も付記)
 ```
 
 ### Step 4. 添付ファイルの保存
@@ -155,8 +172,10 @@ Step 3〜4が成功したメールに `mcp__gmail__label_message` で `エージ
 
 ### Step 6. 報告
 
-処理件数、関与先ごとの内訳(件数)、添付保存件数、未分類件数(未分類は履歴未記録
-である旨も)を簡潔に報告する。
+処理件数、関与先ごとの内訳(件数)、category(支払/銀行通帳/売上/給与)ごとの
+内訳(件数)、添付保存件数、未分類件数(未分類は履歴未記録である旨も)、
+対応する「資料受領」シリーズが無く履歴記録をスキップしたcategoryがあれば
+その旨を簡潔に報告する。
 
 ## 補足
 
