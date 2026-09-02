@@ -52,6 +52,7 @@ from claude_agent_sdk import (
 )
 from google.oauth2.credentials import Credentials as UserCredentials
 from googleapiclient.discovery import build as build_drive_service
+from googleapiclient.errors import HttpError
 from googleapiclient.http import MediaIoBaseDownload
 
 import task_repository as repo
@@ -426,13 +427,20 @@ async def get_attachment(args: dict) -> dict:
     import os as _os
 
     service = _get_gmail_service()
-    att = (
-        service.users()
-        .messages()
-        .attachments()
-        .get(userId="me", messageId=args["message_id"], id=args["attachment_id"])
-        .execute()
-    )
+    try:
+        att = (
+            service.users()
+            .messages()
+            .attachments()
+            .get(userId="me", messageId=args["message_id"], id=args["attachment_id"])
+            .execute()
+        )
+    except HttpError:
+        logger.exception(
+            "get_attachment failed message_id=%s attachment_id=%s",
+            args["message_id"], args["attachment_id"],
+        )
+        raise
     data = base64.urlsafe_b64decode(att["data"])
     save_path = args["save_path"]
     _os.makedirs(_os.path.dirname(save_path), exist_ok=True)
