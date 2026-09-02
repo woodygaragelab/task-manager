@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { api } from "./api";
 import { StatusSelect, STATUS_OPTIONS } from "./StatusSelect";
 import { FrameMultiSelect } from "./FrameMultiSelect";
@@ -68,50 +68,6 @@ const draftFromEntry = (entry) => ({
   classifications: entry.classifications ?? {},
 });
 
-// クォート囲み・エスケープ("")・改行を含むフィールドに対応した最小限のCSVパーサー。
-function parseCsv(text) {
-  const rows = [];
-  let row = [];
-  let field = "";
-  let inQuotes = false;
-
-  for (let i = 0; i < text.length; i++) {
-    const ch = text[i];
-    if (inQuotes) {
-      if (ch === '"') {
-        if (text[i + 1] === '"') {
-          field += '"';
-          i++;
-        } else {
-          inQuotes = false;
-        }
-      } else {
-        field += ch;
-      }
-      continue;
-    }
-    if (ch === '"') {
-      inQuotes = true;
-    } else if (ch === ",") {
-      row.push(field);
-      field = "";
-    } else if (ch === "\r") {
-      // 無視(\r\nの\nで改行処理する)
-    } else if (ch === "\n") {
-      row.push(field);
-      rows.push(row);
-      row = [];
-      field = "";
-    } else {
-      field += ch;
-    }
-  }
-  row.push(field);
-  if (row.length > 1 || row[0] !== "") rows.push(row);
-
-  return rows.filter((r) => r.some((cell) => cell.trim() !== ""));
-}
-
 export function HistoryTab({ clientCode, seriesList = [], frameList = [], onTasksChanged }) {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -120,10 +76,6 @@ export function HistoryTab({ clientCode, seriesList = [], frameList = [], onTask
   const [editingId, setEditingId] = useState(null); // null: 新規追加モード, historyId: 編集モード
   const [submitting, setSubmitting] = useState(false);
   const [reflecting, setReflecting] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [axes, setAxes] = useState([]);
-  const [classifying, setClassifying] = useState(false);
-  const fileInputRef = useRef(null);
 
   const seriesNameByCode = useMemo(
     () => Object.fromEntries(seriesList.map((s) => [s.seriesCode, s.seriesName])),
@@ -167,14 +119,6 @@ export function HistoryTab({ clientCode, seriesList = [], frameList = [], onTask
       cancelled = true;
     };
   }, [clientCode]);
-
-  // 分類軸(観点)はクライアント横断の共通マスタなので、パネル表示時に1回だけ取得する
-  useEffect(() => {
-    api
-      .listClassificationAxes()
-      .then(setAxes)
-      .catch(() => {});
-  }, []);
 
   const cancelEdit = () => {
     setEditingId(null);
@@ -240,83 +184,6 @@ export function HistoryTab({ clientCode, seriesList = [], frameList = [], onTask
     await reflectProgress(draft.seriesCode, draft.frameCodes, draft.status);
   };
 
-  // 登録済み全軸を「内容」の文面でまとめて判定し、結果をclassifications(軸ID→分類名)へ反映する。
-  // あわせて「内容」中の「1-9月」のような対象月表記をdate(入力済みの年)基準でframeCodesへ抽出反映する。
-  // status軸の判定結果がStatusSelectの選択肢と一致する場合は、ステータスにもそのまま反映する。
-  const handleAutoClassify = async () => {
-    if (!draft.content.trim()) return;
-    setClassifying(true);
-    setError(null);
-    try {
-      const year = draft.date?.slice(0, 4);
-      const { results, frameCodes } = await api.classify(draft.content, year);
-      const classifications = Object.fromEntries(
-        results.map((r) => [r.axisId, r.category ?? ""])
-      );
-      // axisIdは分類ルールページで自由入力されるため、大文字小文字の揺れ
-      // (taskGroup/TaskGroup等)を区別せずtaskGroup/taskSeries軸を探す。
-      const findClassification = (axisName) => {
-        const key = Object.keys(classifications).find(
-          (k) => k.toLowerCase() === axisName.toLowerCase()
-        );
-        return key ? classifications[key] : undefined;
-      };
-      const matchedSeries = seriesList.find(
-        (s) =>
-          s.taskGroup === findClassification("taskGroup") &&
-          s.seriesName === findClassification("taskSeries")
-      );
-      const classifiedStatus = findClassification("status");
-      setDraft((prev) => ({
-        ...prev,
-        classifications,
-        ...(frameCodes && frameCodes.length > 0 ? { frameCodes } : {}),
-        ...(matchedSeries
-          ? { category: matchedSeries.taskGroup, seriesCode: matchedSeries.seriesCode }
-          : {}),
-        ...(classifiedStatus && STATUS_OPTIONS.includes(classifiedStatus)
-          ? { status: classifiedStatus }
-          : {}),
-      }));
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setClassifying(false);
-    }
-  };
-
-  const handleCsvSelected = async (e) => {
-    const file = e.target.files?.[0];
-    e.target.value = ""; // 同じファイルを連続で選び直せるようにする
-    if (!file) return;
-
-    const text = await file.text();
-    const rows = parseCsv(text);
-    if (rows.length === 0) return;
-
-    setUploading(true);
-    setError(null);
-    try {
-      for (const row of rows) {
-        await api.createHistoryEntry(clientCode, {
-          date: "",
-          category: "",
-          seriesCode: "",
-          frameCodes: [],
-          assignee: "",
-          status: "",
-          content: row.map((cell) => cell.trim()).join(" "),
-        });
-      }
-      await load();
-    } catch (err) {
-      setError(err.message);
-      await load();
-    } finally {
-      setUploading(false);
-    }
-  };
-
   const handleDelete = async (historyId) => {
     setEntries((prev) => prev.filter((it) => it.historyId !== historyId));
     if (editingId === historyId) cancelEdit();
@@ -360,51 +227,6 @@ export function HistoryTab({ clientCode, seriesList = [], frameList = [], onTask
               placeholder="履歴・引き継ぎ事項などを記録してください"
             />
           </div>
-          <button
-            type="button"
-            className="btn btn--ghost"
-            onClick={handleAutoClassify}
-            disabled={classifying || !draft.content.trim()}
-            title="登録済みの分類ルールで「内容」を自動判定します"
-          >
-            {classifying ? "判定中…" : "自動判定"}
-          </button>
-          <input
-            ref={fileInputRef}
-            type="file"
-            accept=".csv,text/csv"
-            className="history__file-input"
-            onChange={handleCsvSelected}
-            disabled={uploading}
-          />
-          <button
-            type="button"
-            className="btn btn--ghost history__csv-btn"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={uploading}
-            title="CSVアップロード"
-            aria-label="CSVアップロード"
-          >
-            {uploading ? (
-              "アップロード中…"
-            ) : (
-              <svg
-                viewBox="0 0 24 24"
-                width="18"
-                height="18"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden="true"
-              >
-                <path d="M12 3v12" />
-                <path d="M7 10l5 5 5-5" />
-                <path d="M5 21h14" />
-              </svg>
-            )}
-          </button>
         </div>
 
         <div className="history__new-row">
@@ -485,28 +307,6 @@ export function HistoryTab({ clientCode, seriesList = [], frameList = [], onTask
             </button>
           )}
         </div>
-
-        {axes.length > 0 && (
-          <div className="history__new-row">
-            {axes.map((axis) => (
-              <div className="field" key={axis.axisId}>
-                <label>{axis.label || axis.axisId}</label>
-                <input
-                  value={draft.classifications[axis.axisId] ?? ""}
-                  onChange={(e) =>
-                    setDraft({
-                      ...draft,
-                      classifications: {
-                        ...draft.classifications,
-                        [axis.axisId]: e.target.value,
-                      },
-                    })
-                  }
-                />
-              </div>
-            ))}
-          </div>
-        )}
       </form>
 
       {entries.length === 0 ? (

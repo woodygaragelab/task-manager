@@ -955,17 +955,6 @@
   flex: 1 1 220px;
 }
 
-.history__file-input {
-  display: none;
-}
-
-.history__csv-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 9px;
-}
-
 /* ---------- Frame multi-select(対象月) ---------- */
 .frame-multiselect {
   position: relative;
