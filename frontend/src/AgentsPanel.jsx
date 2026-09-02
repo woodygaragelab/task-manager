@@ -27,7 +27,7 @@ const AGENTS = [
     id: "archivist",
     name: "整理係",
     role: "文書整理・分類",
-    description: "受領フォルダの新しい領収書画像を勘定科目ごとにリネーム・分類する",
+    description: "受領フォルダの新しい資料を整理し、領収書・請求書を勘定科目ごとにリネーム・分類する",
   },
   {
     id: "courier",
@@ -83,8 +83,8 @@ const driveUrl = (folderId) =>
 // (receipt-ocr-filelist/progress-updateは「全クライアントの〜」と明示することで
 // 都度の関与先確認をスキップし、list_clientsで取得した全件をまとめて処理する)。
 const buildArchivistPrompt = (client) => {
-  if (!client) return "全クライアントの領収書を整理して";
-  const base = `${client.clientCode}の領収書を整理して`;
+  if (!client) return "全クライアントの資料を整理してください";
+  const base = `${client.clientCode}の資料を整理してください`;
   if (!client.receiptFolderId) return base;
   return `${base}。受領フォルダのURLは https://drive.google.com/drive/folders/${client.receiptFolderId} です。`;
 };
