@@ -229,7 +229,7 @@ function AgentTicket({ agent, client, ticket, live, global, onStart, expanded, o
                   <dd>
                     {outputFolderUrl ? (
                       <a href={outputFolderUrl} target="_blank" rel="noreferrer" className="agent-ticket__code">
-                        /renamed
+                        /整理済
                       </a>
                     ) : (
                       <span className="agent-ticket__code">未設定</span>
