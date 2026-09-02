@@ -1,16 +1,16 @@
 ---
 name: receipt-ocr-filelist
 description: |
-  Google Drive上のreceiptフォルダに溜まるファイルをまず「支払(領収書・請求書)」
+  Google Drive上の受領フォルダに溜まるファイルをまず「支払(領収書・請求書)」
   「売上」「給与」「銀行通帳」の4種類に分類し、支払は従来通り読み取り(OCR)・
   ファイル一覧(receipt_filelist.xlsx)への追記・勘定科目名ごとのリネームしたコピーを
   Driveの整理済/支払フォルダへ保存し、それ以外(売上・給与・銀行通帳)はリネームせず
   そのまま整理済フォルダ配下の該当フォルダ(整理済/売上・整理済/給与・整理済/銀行通帳)へ
   保存するスキル(AgentCore版)。対応する
   関与先(案件)はtaskmanagerの案件マスタで管理しており、都度MCPツールで取得する
-  (詳細は本文参照)。「領収書を整理して」「receiptフォルダを整理して」
-  「領収書一覧を更新して」「領収書を分類して」「receiptフォルダの中身を分類して」
-  「11の領収書を処理して」「12のreceiptを整理して」のように言われたら、または
+  (詳細は本文参照)。「領収書を整理して」「受領フォルダを整理して」
+  「領収書一覧を更新して」「領収書を分類して」「受領フォルダの中身を分類して」
+  「11の領収書を処理して」「12の受領を整理して」のように言われたら、または
   定期実行(スケジュール)で呼ばれたら必ずこのスキルを使うこと。対象の関与先は
   プロンプトに関与先コードが含まれていればそれを、含まれていなければ
   `receiptFolderId` 設定済みの全関与先を、ユーザーに確認を求めず自動的に対象と
@@ -21,9 +21,9 @@ description: |
   ローカルパス版(C:\Users\woody\...)との違い。
 ---
 
-# receiptフォルダ 分類 → OCR → ファイル一覧 自動更新(AgentCore / Google Drive版)
+# 受領フォルダ 分類 → OCR → ファイル一覧 自動更新(AgentCore / Google Drive版)
 
-Google Drive上のreceiptフォルダに溜まっていくファイルを、まず「支払(領収書・請求書)」
+Google Drive上の受領フォルダに溜まっていくファイルを、まず「支払(領収書・請求書)」
 「売上」「給与」「銀行通帳」の4種類に分類する。支払に分類されたものだけ内容を読み取り、
 `receipt_filelist.xlsx` に追記し、勘定科目名ごとに整理したコピーをDrive上の
 `整理済/支払`フォルダへ保存する(従来の処理と同じ)。売上・給与・銀行通帳に分類されたものは、
@@ -54,7 +54,7 @@ claude.aiコネクタ経由など、別の実行環境では同じtaskmanager MC
 
 ## 対応する関与先(案件)とDriveフォルダID
 
-関与先コードとreceiptフォルダIDの対応表は、このファイルに直書きせず、taskmanagerの
+関与先コードと受領フォルダIDの対応表は、このファイルに直書きせず、taskmanagerの
 案件マスタ(DynamoDB `TaskClients`テーブル)を、MCPツール `mcp__task-manager__list_clients`
 から都度取得する(taskmanagerのWebアプリ・AgentsPanel.jsxも同じテーブルを参照しており、
 マスタは1か所で管理している。旧`receipt-agent-clients`テーブル/APIは廃止済み)。
@@ -73,16 +73,16 @@ claude.aiコネクタ経由など、別の実行環境では同じtaskmanager MC
 ```
 
 指定された関与先コードがこのレスポンスに無い場合、または `receiptFolderId` が
-未設定(キー自体が無い)の場合は、ユーザーにDrive上のreceiptフォルダのURL
+未設定(キー自体が無い)の場合は、ユーザーにDrive上の受領フォルダのURL
 (`https://drive.google.com/drive/folders/{フォルダID}`)を確認してから進める。
 
 いずれの関与先でも、フォルダ構成は共通:
 
-- receiptフォルダ(上記APIで取得した`receiptFolderId`)の直下(または再帰的な
+- 受領フォルダ(上記APIで取得した`receiptFolderId`)の直下(または再帰的な
   サブフォルダ)に、支払(領収書・請求書)・売上・給与・銀行通帳のファイルが
   区別なく溜まっていく(分類前の受け皿フォルダ)
-- ファイル一覧: receiptフォルダ直下の `receipt_filelist.xlsx`(支払のみを記録)
-- 支払のリネーム済みコピーの保存先: receiptフォルダの親フォルダ直下の `整理済`
+- ファイル一覧: 受領フォルダ直下の `receipt_filelist.xlsx`(支払のみを記録)
+- 支払のリネーム済みコピーの保存先: 受領フォルダの親フォルダ直下の `整理済`
   フォルダ(Driveの`parentId`をたどって取得する。ローカル版の「関与先フォルダ」に相当)
   さらにその下の `支払` フォルダ配下、勘定科目名ごとのフォルダ
   (`整理済/支払/<勘定科目名>/`。無ければ新規作成する)
@@ -113,20 +113,20 @@ claude.aiコネクタ経由など、別の実行環境では同じtaskmanager MC
 mkdir -p /tmp/{案件コード}/receipt /tmp/{案件コード}/renamed
 ```
 
-以降のStep 1〜7すべてで、この `/tmp/{案件コード}/` を「ローカル版でのreceiptフォルダ」
+以降のStep 1〜7すべてで、この `/tmp/{案件コード}/` を「ローカル版での受領フォルダ」
 として扱う。
 
 ### Step 1. Drive上の新規ファイルの検出とダウンロード
 
-`search_files` で receiptフォルダID配下を再帰的に列挙する(サブフォルダも
+`search_files` で受領フォルダID配下を再帰的に列挙する(サブフォルダも
 `parentId = '{サブフォルダID}'` で追って辿る)。この時点では支払・売上・給与・
-銀行通帳の区別なく、receiptフォルダ配下の全ファイルが対象になる。
+銀行通帳の区別なく、受領フォルダ配下の全ファイルが対象になる。
 
 ```
-query: parentId = '{receiptフォルダID}' and trashed = false
+query: parentId = '{受領フォルダID}' and trashed = false
 ```
 
-同時に、receiptフォルダ直下で `title = 'receipt_filelist.xlsx'` を検索し、既存の一覧が
+同時に、受領フォルダ直下で `title = 'receipt_filelist.xlsx'` を検索し、既存の一覧が
 あれば `download_file_content` で取得して `/tmp/{案件コード}/receipt/receipt_filelist.xlsx`
 に保存する(無ければこのステップはスキップ、新規作成は Step 4 が担う)。
 
@@ -135,7 +135,7 @@ query: parentId = '{receiptフォルダID}' and trashed = false
 `scan_new_receipts.py` と同じロジックを踏襲するため、比較自体はダウンロード後に
 `scripts/scan_new_receipts.py` に任せる。次のサブステップ参照)。
 `receipt_filelist.xlsx` には支払に分類したファイルしか記録しないが、売上・給与・
-銀行通帳に分類したファイルはStep 6で処理後にreceiptフォルダから`trash_file`する
+銀行通帳に分類したファイルはStep 6で処理後に受領フォルダから`trash_file`する
 ため、次回実行時にはDrive上に残っておらず、この比較で再び「新規」と検出されることは
 ない(詳細はStep 6-3)。
 
@@ -222,8 +222,8 @@ python scripts/rename_and_save.py "/tmp/{案件コード}/entries.json" "/tmp/{�
 
 **6-1. receipt_filelist.xlsx の反映(支払のみ)**
 
-1. `/tmp/{案件コード}/receipt/receipt_filelist.xlsx` を `create_file` でreceiptフォルダ
-   (`parentId = {receiptフォルダID}`)にアップロードする(新しいfileIdが発行される)。
+1. `/tmp/{案件コード}/receipt/receipt_filelist.xlsx` を `create_file` で受領フォルダ
+   (`parentId = {受領フォルダID}`)にアップロードする(新しいfileIdが発行される)。
 2. アップロードが成功したことを確認してから、Step 1で取得した旧`receipt_filelist.xlsx`の
    fileIdを `trash_file` でゴミ箱へ移動する(**必ずアップロード成功後に行う**。
    逆順にするとアップロード失敗時にデータが失われる)。
@@ -247,7 +247,7 @@ python scripts/rename_and_save.py "/tmp/{案件コード}/entries.json" "/tmp/{�
 Step 2で売上・給与・銀行通帳に分類した各ファイルについて、以下を行う
 (OCRやファイル名変更は行わない。元のファイル名のまま保存する)。
 
-1. receiptフォルダの親フォルダ(=関与先フォルダ)直下の `整理済` フォルダの下に、
+1. 受領フォルダの親フォルダ(=関与先フォルダ)直下の `整理済` フォルダの下に、
    分類先の名前(`売上` / `給与` / `銀行通帳`)のフォルダを `search_files` で探す
    (`整理済`フォルダ自体が無ければ先に作成する。その下の`売上`/`給与`/`銀行通帳`
    フォルダも無ければ`create_file`で`mimeType: application/vnd.google-apps.folder`を
@@ -255,7 +255,7 @@ Step 2で売上・給与・銀行通帳に分類した各ファイルについ�
    別に、`整理済`フォルダ直下(`支払`フォルダとは別)に置く)。
 2. `/tmp/{案件コード}/receipt/<filename>` を、そのフォルダへ元のファイル名のまま
    `create_file` でアップロードする。
-3. アップロードが成功したことを確認してから、receiptフォルダ内にある元ファイルを
+3. アップロードが成功したことを確認してから、受領フォルダ内にある元ファイルを
    `trash_file` でゴミ箱へ移動する(**必ずアップロード成功後に行う**。この移動により
    次回実行時のStep 1で再び「新規ファイル」として検出されなくなる)。
 

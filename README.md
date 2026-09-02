@@ -50,7 +50,7 @@ taskmanager/
   エージェントジョブ処理 (task-agent-job-processor)
             │ invoke_agent_runtime
             ▼
-  Amazon Bedrock AgentCore Runtime ──▶ Google Drive(receipt/renamedフォルダ)
+  Amazon Bedrock AgentCore Runtime ──▶ Google Drive(受領/renamedフォルダ)
 ```
 
 3つのLambda(MCPサーバー・Web API・エージェントジョブ処理)は共通のLambda Layer(`task_repository`)を

@@ -114,9 +114,9 @@ def handler(event, context):
             result = google_drive.initialize_client_folder(
                 client_code, CLIENT_DRIVE_PARENT_FOLDER_ID, CLIENT_FOLDER_TEMPLATE_ID
             )
-            # 作成したreceipt/整理済フォルダのIDを、クライアントの領収書フォルダ/
+            # 作成した受領/整理済フォルダのIDを、クライアントの領収書フォルダ/
             # 分類後フォルダ欄にそのまま反映する。受領フォルダ(uketoriFolderId)も
-            # receiptフォルダを共用する。
+            # 同じフォルダを共用する。
             updated_client = repo.update_client(
                 client_code=client_code,
                 receipt_folder_id=result["receiptFolderId"],

@@ -51,7 +51,7 @@ def _build_prompt(client_code, receipt_folder_id):
     # (ユーザーへの問い合わせ)をスキップし、自動実行できるようにしている)。
     return (
         f"{client_code}の領収書を整理して。"
-        f"receiptフォルダのURLは https://drive.google.com/drive/folders/{receipt_folder_id} です。"
+        f"受領フォルダのURLは https://drive.google.com/drive/folders/{receipt_folder_id} です。"
     )
 
 

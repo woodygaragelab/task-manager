@@ -724,7 +724,7 @@ async def agent_invocation(payload: dict, context) -> dict:
     """AgentCore Runtime entrypoint.
 
     payload example:
-        {"prompt": "IKKのreceiptフォルダに新しい領収書があるか確認して"}
+        {"prompt": "IKKの受領フォルダに新しい領収書があるか確認して"}
     """
     prompt = payload.get("prompt", "")
     if not prompt:

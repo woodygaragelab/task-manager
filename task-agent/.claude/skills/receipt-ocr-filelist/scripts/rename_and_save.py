@@ -4,15 +4,15 @@ receipt_filelist.xlsx に追記した新規領収書ファイルを、勘定科�
 "<勘定科目名>_<日付YYYYMMDD>_<金額>円_<取引先>.<拡張子>" にリネームされる。
 
 使い方:
-    python rename_and_save.py <entries.jsonのパス> <receiptフォルダ>
+    python rename_and_save.py <entries.jsonのパス> <受領フォルダ>
 
 entries.json は append_filelist.py と同じ形式(Step 3 で作成したものをそのまま再利用する)。
 このスクリプトは新規追加分だけを対象にする(filelist全体の再走査はしない)。
 
 保存先:
-    <receiptフォルダの親フォルダ(=関与先フォルダ)>\renamed\<勘定科目名>\
+    <受領フォルダの親フォルダ(=関与先フォルダ)>\renamed\<勘定科目名>\
         <勘定科目名>_<日付>_<金額>円_<取引先>.<拡張子>
-    例: receiptフォルダが ...\Data\MAX\receipt なら、保存先は ...\Data\MAX\renamed\...
+    例: 受領フォルダが ...\Data\MAX\receipt なら、保存先は ...\Data\MAX\renamed\...
     (関与先フォルダはどの案件でも共通してこの構造なので、案件コードを別途渡す必要はない)
 
 勘定科目名が null または空の場合は「未分類」フォルダに保存する(Step 2 で科目名の判断が

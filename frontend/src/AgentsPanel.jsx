@@ -27,7 +27,7 @@ const AGENTS = [
     id: "archivist",
     name: "整理係",
     role: "文書整理・分類",
-    description: "receiptフォルダの新しい領収書画像を勘定科目ごとにリネーム・分類する",
+    description: "受領フォルダの新しい領収書画像を勘定科目ごとにリネーム・分類する",
   },
   {
     id: "courier",
@@ -75,7 +75,7 @@ const driveUrl = (folderId) =>
   folderId ? `https://drive.google.com/drive/folders/${folderId}?usp=drive_link` : null;
 
 // receipt-ocr-filelistスキルは関与先コードを自スキル側のDynamoDBテーブルで解決しようとし、
-// 未登録の場合はDrive上のreceiptフォルダURLをユーザーに尋ねてくる(SKILL.md参照)。
+// 未登録の場合はDrive上の受領フォルダURLをユーザーに尋ねてくる(SKILL.md参照)。
 // taskmanager側のTaskClientsに登録済みのフォルダIDを持っている場合は、都度尋ね返される
 // 手戻りを避けるため指示文にURLを直接含めてしまう。
 // clientが無い場合(設定ページの「全クライアント」タブ)は、関与先コードを付けずに
@@ -86,7 +86,7 @@ const buildArchivistPrompt = (client) => {
   if (!client) return "全クライアントの領収書を整理して";
   const base = `${client.clientCode}の領収書を整理して`;
   if (!client.receiptFolderId) return base;
-  return `${base}。receiptフォルダのURLは https://drive.google.com/drive/folders/${client.receiptFolderId} です。`;
+  return `${base}。受領フォルダのURLは https://drive.google.com/drive/folders/${client.receiptFolderId} です。`;
 };
 
 // progress-updateスキルの呼び出しトリガー文言(SKILL.md参照)に関与先コードを添えて渡す。
@@ -217,7 +217,7 @@ function AgentTicket({ agent, client, ticket, live, global, onStart, expanded, o
                   <dd>
                     {inputFolderUrl ? (
                       <a href={inputFolderUrl} target="_blank" rel="noreferrer" className="agent-ticket__code">
-                        /receipt
+                        /受領
                       </a>
                     ) : (
                       <span className="agent-ticket__code">未設定</span>

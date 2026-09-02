@@ -160,13 +160,13 @@ def initialize_client_folder(client_code: str, parent_id: str, template_folder_i
     """clientCode名のフォルダをparent_id直下に作成し、template_folder_idと同じ
     サブフォルダ構成をその下に複製する。
 
-    戻り値には作成したフォルダ本体に加え、直下の"receipt"/"整理済"フォルダ(存在すれば)
+    戻り値には作成したフォルダ本体に加え、直下の"受領"/"整理済"フォルダ(存在すれば)
     のIDを含める。呼び出し側でクライアントのreceiptFolderId/renamedFolderIdに
     反映するため。
     """
     folder = create_folder(client_code, parent_id)
     replicate_folder_structure(template_folder_id, folder["id"])
-    receipt_folder = find_folder("receipt", folder["id"])
+    receipt_folder = find_folder("受領", folder["id"])
     renamed_folder = find_folder("整理済", folder["id"])
     return {
         "folder": folder,
