@@ -66,7 +66,8 @@ Web API LambdaからLambdaの`Event`非同期invocationで直接起動される(
 aws cloudformation deploy `
   --template-file tables.yaml `
   --stack-name task-tables `
-  --region ap-northeast-1
+  --region ap-northeast-1 `
+  --tags Project=taskmanager Component=data
 ```
 
 `Tasks`/`TaskClients`/`TaskSeries`/`TaskFrames`/`TaskHistory`/`TaskAgentJobs`の6テーブルが作成される。

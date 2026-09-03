@@ -1,6 +1,7 @@
 from aws_cdk import (
     Stack,
     Duration,
+    Tags,
     aws_lambda as _lambda,
     aws_dynamodb as dynamodb,
     aws_iam as iam,
@@ -22,6 +23,10 @@ CLIENTS_TABLE_NAME = "TaskClients"
 class ScoutScheduleStack(Stack):
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
         super().__init__(scope, construct_id, **kwargs)
+
+        # コスト管理用タグ。EventBridge SchedulerのCfnScheduleはタグ非対応のため
+        # Lambda/IAMロールにのみ付与される(スタックレベルのaspectとして適用)。
+        Tags.of(self).add("Project", "taskmanager")
 
         agent_jobs_table = dynamodb.Table.from_table_name(
             self, "AgentJobsTable", AGENT_JOBS_TABLE_NAME
@@ -54,6 +59,7 @@ class ScoutScheduleStack(Stack):
         agent_jobs_table.grant_write_data(invoke_fn)
         agent_job_processor_fn.grant_invoke(invoke_fn)
         clients_table.grant_read_data(invoke_fn)
+        Tags.of(invoke_fn).add("Component", "scout")
 
         # --- EventBridge Scheduler用の実行ロール(Lambda呼び出し専用) ---
         scheduler_role = iam.Role(
@@ -62,6 +68,7 @@ class ScoutScheduleStack(Stack):
             assumed_by=iam.ServicePrincipal("scheduler.amazonaws.com"),
         )
         invoke_fn.grant_invoke(scheduler_role)
+        Tags.of(scheduler_role).add("Component", "scout")
 
         # --- 平日9/13/17時(JST)に実行するスケジュール ---
         scheduler.CfnSchedule(
@@ -114,6 +121,7 @@ class ScoutScheduleStack(Stack):
         agent_jobs_table.grant_write_data(archivist_invoke_fn)
         agent_job_processor_fn.grant_invoke(archivist_invoke_fn)
         clients_table.grant_read_data(archivist_invoke_fn)
+        Tags.of(archivist_invoke_fn).add("Component", "archivist-trigger")
 
         archivist_scheduler_role = iam.Role(
             self,
@@ -121,6 +129,7 @@ class ScoutScheduleStack(Stack):
             assumed_by=iam.ServicePrincipal("scheduler.amazonaws.com"),
         )
         archivist_invoke_fn.grant_invoke(archivist_scheduler_role)
+        Tags.of(archivist_scheduler_role).add("Component", "archivist-trigger")
 
         # --- ScoutWeekdayScheduleの10分後(平日6:10/12:10/18:10 JST)に実行するスケジュール ---
         # scoutが受領フォルダに保存した新着添付をarchivistが拾えるよう、scoutの後に

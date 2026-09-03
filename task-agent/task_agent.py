@@ -35,6 +35,19 @@ Local run:
 Deploy:
     agentcore configure --entrypoint task_agent.py --region ap-northeast-1
     agentcore launch
+
+Cost allocation tags: `agentcore configure`/`launch` (bedrock-agentcore-starter-toolkit)
+has no --tags option, so the AgentCore Runtime/ECR repo/CodeBuild project/IAM roles it
+creates are untagged by default. After each `agentcore launch` (including redeploys that
+recreate any of these), tag them manually:
+    aws resourcegroupstaggingapi tag-resources --region ap-northeast-1 --tags Project=taskmanager,Component=task-agent --resource-arn-list \
+      arn:aws:bedrock-agentcore:ap-northeast-1:155830630328:runtime/task_agent-lAAoax7UkB \
+      arn:aws:ecr:ap-northeast-1:155830630328:repository/bedrock-agentcore-task_agent \
+      arn:aws:codebuild:ap-northeast-1:155830630328:project/bedrock-agentcore-task_agent-builder \
+      arn:aws:iam::155830630328:role/AmazonBedrockAgentCoreSDKRuntime-ap-northeast-1-b93c04ec99 \
+      arn:aws:iam::155830630328:role/AmazonBedrockAgentCoreSDKCodeBuild-ap-northeast-1-b93c04ec99
+    aws secretsmanager tag-resource --region ap-northeast-1 --secret-id task-agent/google-drive-user-token \
+      --tags Key=Project,Value=taskmanager Key=Component,Value=task-agent
 """
 import json
 import logging
