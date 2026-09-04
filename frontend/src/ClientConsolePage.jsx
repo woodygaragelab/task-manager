@@ -35,7 +35,7 @@ const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(30, 40);
 export function TabCommentBox({ tabKey, comment, onCommit }) {
   return (
     <div className="tab-comment field">
-      <label htmlFor={`tab-comment-${tabKey}`}>ユーザー要望コメント</label>
+      <label htmlFor={`tab-comment-${tabKey}`}>解説・コメント・要望（開発フェーズ用。あとで削除）</label>
       <textarea
         id={`tab-comment-${tabKey}`}
         rows={10}
