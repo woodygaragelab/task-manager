@@ -15,7 +15,12 @@ description: |
   「領収書一覧を更新して」「領収書を分類して」「受領フォルダの中身を分類して」
   「11の領収書を処理して」「12の受領を整理して」「13の資料を整理してください」のように
   言われたら、または
-  定期実行(スケジュール)で呼ばれたら必ずこのスキルを使うこと。対象の関与先は
+  定期実行(スケジュール)で呼ばれたら必ずこのスキルを使うこと。特に、関与先コードを
+  伴わない「資料を整理してください」「全クライアントの資料を整理してください」は、
+  taskmanagerのエージェントタブ「整理係」(archivist、frontend/src/AgentsPanel.jsxの
+  buildArchivistPrompt)が送る定型文言であり、email-summary(受付係/scout)や
+  progress-update(進捗管理係)ではなく必ずこのスキルを使うこと。この場合ユーザーに
+  確認は求めず、Step 0の自動判定ルールに従うこと。対象の関与先は
   プロンプトに関与先コードが含まれていればそれを、含まれていなければ
   `receiptFolderId` 設定済みの全関与先を、ユーザーに確認を求めず自動的に対象と
   すること(詳細は本文Step 0参照)。仕訳データの作成は行わない
@@ -40,9 +45,16 @@ Google Drive上の受領フォルダに溜まっていくファイルを、ま�
 (対象は支払のみ)ので、このスキルでは行わない。何度でも再実行できるように、
 `receipt_filelist.xlsx`に記録済みのファイルは前回までに処理済みとみなして自動でスキップする。
 
-このスキルはGoogle Drive MCPツール(`search_files` / `download_file_content` /
-`create_file` / `trash_file`)と、ローカルの一時作業ディレクトリ(`/tmp`)を組み合わせて動く。
-既存のPythonスクリプト(`scripts/`配下)は無改造で、`/tmp`上のファイルに対して実行する。
+このスキルは、判断を伴う処理(Step 2〜3の分類・OCR読み取り)はClaudeが`Read`ツールで
+直接行い、判断を伴わない機械的なDrive操作(Step 1の新規ファイル検出・ダウンロード、
+Step 6のアップロード・旧ファイルのtrash)は専用スクリプト
+(`scripts/drive_sync_download.py` / `scripts/drive_sync_upload.py`)がGoogle Drive
+APIを直接(かつファイル単位の処理は並列に)呼び出して行う。この2つのStepでは
+`search_files`/`download_file_content`/`create_file`/`trash_file`をファイルの数だけ
+逐次呼び出すことはしない(処理速度と、毎回のLLM判断に左右されない再現性のため)。
+ローカルの一時作業ディレクトリ(`/tmp`)を使う点、Step 3/4の既存Pythonスクリプト
+(`scripts/append_filelist.py`・`scripts/rename_and_save.py`)を無改造のまま使う点は
+従来通り。
 
 ## MCPツール名について(実行環境による違い)
 
@@ -59,6 +71,13 @@ claude.aiコネクタ経由など、別の実行環境では同じtaskmanager MC
    `"taskmanager list_history create_history_entry update_history_entry list_frames list_clients"`
    のようなキーワードで検索し、この環境での実際のツール名を特定してから呼び出す。
 3. それでも該当するツールが見つからない場合に限り、ユーザーにその旨を報告する。
+
+**Google Driveの個別ファイル操作について**: Step 1(新規ファイル検出・ダウンロード)と
+Step 6(アップロード・旧ファイルのtrash)は、下記の通り`scripts/drive_sync_download.py`・
+`scripts/drive_sync_upload.py`がGoogle Drive APIを直接呼び出して行うため、
+`mcp__google-drive__search_files`等をファイル単位で個別に呼び出す必要はない
+(フォルダの検索・作成、同名ファイルの新規アップロード後の旧ファイルtrashも、
+すべて各スクリプト内で完結する)。
 
 ## 対応する関与先(案件)とDriveフォルダID
 
@@ -131,38 +150,27 @@ mkdir -p /tmp/{案件コード}/receipt /tmp/{案件コード}/renamed
 
 ### Step 1. Drive上の新規ファイルの検出とダウンロード
 
-`search_files` で受領フォルダID配下を再帰的に列挙する(サブフォルダも
-`parentId = '{サブフォルダID}'` で追って辿る)。この時点では支払・売上・給与・
-銀行通帳の区別なく、受領フォルダ配下の全ファイルが対象になる。
-
-```
-query: parentId = '{受領フォルダID}' and trashed = false
-```
-
-同時に、受領フォルダ直下で `title = 'receipt_filelist.xlsx'` を検索し、既存の一覧が
-あれば `download_file_content` で取得して `/tmp/{案件コード}/receipt/receipt_filelist.xlsx`
-に保存する(無ければこのステップはスキップ、新規作成は Step 4 が担う)。
-
-一覧に載っている画像ファイル名(「ファイル名」列)と、Drive上で見つかったファイル名を
-比較し、まだ載っていないものだけを新規ファイルとする(旧来の
-`scan_new_receipts.py` と同じロジックを踏襲するため、比較自体はダウンロード後に
-`scripts/scan_new_receipts.py` に任せる。次のサブステップ参照)。
-支払・売上・給与・銀行通帳のいずれに分類したファイルも、処理後は
-`receipt_filelist.xlsx`に1行記録される(Step 4)ため、次回実行時はこの比較により
-既に処理済みと判定されてスキップされる(受領フォルダの元ファイル自体は削除しないので、
-「ファイル一覧に載っているかどうか」だけが処理済み判定の基準になる)。
-
-新規と判定したファイルを `download_file_content` で取得し、Driveのフォルダ階層を
-保った形で `/tmp/{案件コード}/receipt/` 配下に保存する
-(例: サブフォルダ「2026年6月」内の画像なら `/tmp/{案件コード}/receipt/2026年6月/IMG_....jpg`)。
-
-ダウンロード後、既存スクリプトで最終的な新規ファイル一覧を確定する
-(receipt_filelist.xlsxとの突き合わせを再度ローカルで行う。Drive側の一覧取得だけで
-判定を確定させず、ここで二重チェックすることで見落としを防ぐ)。
+`scripts/drive_sync_download.py` を実行する。受領フォルダ配下の再帰列挙、既存
+`receipt_filelist.xlsx`のダウンロード、「ファイル名」列との突き合わせによる新規
+ファイル判定、新規ファイルのダウンロード(フォルダ階層を保ったまま
+`/tmp/{案件コード}/receipt/`配下へ、複数ファイルは並列)までを1回の実行で行う
+(この時点では支払・売上・給与・銀行通帳の区別なく、受領フォルダ配下の全ファイルが
+対象になる)。
 
 ```bash
-python scripts/scan_new_receipts.py "/tmp/{案件コード}/receipt" "/tmp/{案件コード}/receipt/receipt_filelist.xlsx"
+python scripts/drive_sync_download.py {案件コード}
 ```
+
+標準出力にJSON(`{"client_code", "receipt_folder_id", "old_filelist_file_id",
+"new_files": [...]}`)が返る。`new_files`の各要素は旧来の`scan_new_receipts.py`と
+同じ`filename`/`taken_at`/`size_mb`/`type`に加え、Drive上の`file_id`を持つ
+(`filename`はDrive上のフォルダ階層を`/`区切りで表した相対パスで、
+`/tmp/{案件コード}/receipt/`からの相対パスと一致する)。同じ内容は
+`/tmp/{案件コード}/new_files.json`にも保存され、`old_filelist_file_id`は
+Step 6でのtrash対象として使われる。
+
+`receiptFolderId`が案件マスタに無い等でスクリプトが解決できない場合は
+`--receipt-folder-id {フォルダID}` を明示的に渡す。
 
 新規ファイルが0件なら「新しいファイルはありません」と伝えて終了する
 (ダウンロード済みの一時ファイルは削除してよい)。
@@ -199,7 +207,7 @@ Step 2 で **支払** に分類したファイルだけを対象に、内容を�
 売上・給与・銀行通帳に分類したファイルはOCRを行わず、このStepの対象外(Step 4で
 ファイル名などの機械的な情報だけを記録する)。
 
-`filename` に「サブフォルダ名\ファイル名」が入っている場合は、
+`filename` に「サブフォルダ名/ファイル名」が入っている場合は、
 `/tmp/{案件コード}/receipt/<filename>` を開くこと。読み取る項目はローカル版と同一。
 
 - 日付(領収書/請求書に記載の日付。西暦に変換する)
@@ -219,11 +227,10 @@ Step 3 で読み取った **支払** 分は、これまで通り `date`/`amount`
 完全な内容で `entries.json` にまとめる。各エントリに `classification: "支払"` を
 明示すること。
 
-**売上・給与・銀行通帳** 分はOCRを行っていないため、Step 1の
-`scan_new_receipts.py` の出力(`filename`/`taken_at`/`size_mb`/`type`)に
-`classification`(`売上`/`給与`/`銀行通帳`のいずれか)を付け加えただけの最小限の
-エントリでよい(`date`/`amount`/`vendor` 等は省略してよく、その場合は該当セルが
-空欄になる)。
+**売上・給与・銀行通帳** 分はOCRを行っていないため、Step 1(`drive_sync_download.py`)
+の出力(`filename`/`taken_at`/`size_mb`/`type`)に`classification`(`売上`/`給与`/
+`銀行通帳`のいずれか)を付け加えただけの最小限のエントリでよい(`date`/`amount`/
+`vendor` 等は省略してよく、その場合は該当セルが空欄になる)。
 
 支払分と売上・給与・銀行通帳分は同じ `entries.json` にまとめて1回で追記してもよいし、
 分けて2回実行してもよい(`append_filelist.py` は複数回呼んでも「No.」列の連番を
@@ -251,50 +258,47 @@ python scripts/rename_and_save.py "/tmp/{案件コード}/entries_payment.json" 
 
 ### Step 6. Driveへの反映(アップロード)
 
-**6-1. receipt_filelist.xlsx の反映(支払・売上・給与・銀行通帳のいずれか1件でも新規処理があれば実施)**
+Step 2で4分類のいずれにも新規ファイルが1件も無かった場合はこのStep自体を省略する。
+それ以外の場合、`scripts/drive_sync_upload.py` を実行する。
 
-1. `/tmp/{案件コード}/receipt/receipt_filelist.xlsx` を `create_file` で受領フォルダ
-   (`parentId = {受領フォルダID}`)にアップロードする(新しいfileIdが発行される)。
-2. アップロードが成功したことを確認してから、Step 1で取得した旧`receipt_filelist.xlsx`の
-   fileIdを `trash_file` でゴミ箱へ移動する(**必ずアップロード成功後に行う**。
-   逆順にするとアップロード失敗時にデータが失われる)。
-   旧ファイルが存在しなかった場合(新規作成のケース)はこの手順は不要。
-   Step 2で4分類のいずれにも新規ファイルが1件も無かった場合はこのStep自体を省略する。
+```bash
+python scripts/drive_sync_upload.py {案件コード}
+```
 
-**6-2. 整理済ファイルの反映(支払のみ)**
+このスクリプト1回の実行で、以下をすべて行う(6-1〜6-3相当。デフォルトでは
+`/tmp/{案件コード}/receipt/receipt_filelist.xlsx`・`/tmp/{案件コード}/renamed/`・
+`/tmp/{案件コード}/entries.json`・`/tmp/{案件コード}/new_files.json`を読む)。
 
-`/tmp/{案件コード}/renamed/` 配下の各ファイルについて、Drive上の対応する
-`整理済/支払/<勘定科目名>/` フォルダを `search_files` で探す(`整理済`直下の`支払`
-フォルダ自体が無ければ先に作成し、その下の`<勘定科目名>`フォルダも無ければ
-`create_file`で`mimeType: application/vnd.google-apps.folder`を指定してフォルダを
-新規作成する)。
+1. **receipt_filelist.xlsx の反映**: 新しい`receipt_filelist.xlsx`をアップロード →
+   アップロード成功を確認してから、Step 1で取得した旧`receipt_filelist.xlsx`の
+   fileId(`new_files.json`の`old_filelist_file_id`)をゴミ箱へ移動する(**必ず
+   アップロード成功後に行う**。逆順にするとアップロード失敗時にデータが失われる。
+   旧ファイルが無かった場合はこの手順自体が発生しない)。ローカルに
+   `receipt_filelist.xlsx`が無い場合はこの手順をスキップする。
+2. **整理済ファイルの反映(支払)**: `/tmp/{案件コード}/renamed/` 配下の各ファイルを、
+   対応する `整理済/支払/<勘定科目名>/` フォルダ(無ければ作成)へアップロードする
+   (同名ファイルが既に存在する場合は、新規アップロード後に旧ファイルをゴミ箱へ)。
+   複数ファイルは並列に処理される。
+3. **売上・給与・銀行通帳ファイルの反映**: `--entries-json`で指定したファイル
+   (デフォルト`/tmp/{案件コード}/entries.json`。Step 4で支払分と分けて別ファイルに
+   出力した場合は、売上・給与・銀行通帳分を含むファイルのパスを明示的に渡す)の
+   うち`classification`が`売上`/`給与`/`銀行通帳`のエントリについて、
+   `/tmp/{案件コード}/receipt/<filename>` を元のファイル名のまま
+   `整理済/<分類名>/` フォルダ(無ければ作成)へアップロードする(OCRやリネームは
+   行わない。同名ファイルが既にあれば新規アップロード後に旧ファイルをゴミ箱へ)。
+   受領フォルダ内の元ファイルは削除・移動しない。
 
-- 同名ファイルがDrive上に既に存在する場合(Step 5のスクリプト側の「上書き」判定と同じ
-  組み合わせ): 新規ファイルを `create_file` でアップロード後、旧ファイルを `trash_file`。
-- 存在しない場合: そのまま `create_file` でアップロード。
+個々のファイルのアップロードに失敗しても処理全体は止まらず、失敗したファイルは
+スキップして最後にまとめて報告される(標準出力のJSONの`failures`)。`failures`が
+空でない場合は、対象ファイルをユーザーへ報告する(手動での再実行、または次回の
+定期実行時に`receipt_filelist.xlsx`に記録が無ければ再度新規ファイルとして
+処理される)。
 
-**6-3. 売上・給与・銀行通帳ファイルの反映(リネームせずそのままコピー保存)**
+`整理済`フォルダの位置(受領フォルダの親フォルダ直下)をスクリプトが解決できない
+場合は `--organized-folder-id {フォルダID}` を明示的に渡す。
 
-Step 2で売上・給与・銀行通帳に分類した各ファイルについて、以下を行う
-(OCRやファイル名変更は行わない。元のファイル名のままコピーする)。
-
-1. 受領フォルダの親フォルダ(=関与先フォルダ)直下の `整理済` フォルダの下に、
-   分類先の名前(`売上` / `給与` / `銀行通帳`)のフォルダを `search_files` で探す
-   (`整理済`フォルダ自体が無ければ先に作成する。その下の`売上`/`給与`/`銀行通帳`
-   フォルダも無ければ`create_file`で`mimeType: application/vnd.google-apps.folder`を
-   指定して新規作成する。支払のリネーム済みコピー(`整理済/支払/<勘定科目名>/`)とは
-   別に、`整理済`フォルダ直下(`支払`フォルダとは別)に置く)。
-2. `/tmp/{案件コード}/receipt/<filename>` を、そのフォルダへ元のファイル名のまま
-   `create_file` でアップロードする(同名ファイルが既に存在する場合は、通常は
-   Step 1のスキップ判定により起こらないはずだが、念のため新規ファイルを
-   アップロード後に旧ファイルを `trash_file` して置き換える)。
-3. 受領フォルダ内の元ファイルは削除・移動しない(そのまま残す。支払と異なり、
-   このStepでは受領フォルダに対する操作は行わない)。
-
-**6-4. 後片付け**
-
-`/tmp/{案件コード}/` 配下は一時作業ディレクトリなので、Step 6完了後に削除してよい
-(次回実行時は Step 0 で作り直す)。
+**後片付け**: `/tmp/{案件コード}/` 配下は一時作業ディレクトリなので、Step 6完了後に
+削除してよい(次回実行時は Step 0 で作り直す)。
 
 ### Step 7. 報告
 
@@ -358,14 +362,16 @@ Step 2で売上・給与・銀行通帳に分類した各ファイルについ�
   コピーした後も元ファイルは受領フォルダに残る)。次回実行時の「処理済みかどうか」の判定は、
   すべて`receipt_filelist.xlsx`の「ファイル名」列への記載の有無だけで行う。受領フォルダの
   元ファイルが残り続けるため、Drive上のファイル数だけで新規/既処理を判断しないこと。
-- Google Driveの `create_file` は中身の上書き更新をサポートしないため、
+- Google Driveのファイル作成APIは中身の上書き更新をサポートしないため、
   「新規作成 → 旧ファイルをtrash」で更新を表現する。これによりファイルIDは
-  毎回変わるので、スキル側でIDをキャッシュせず、都度 `search_files` で
-  `title` + `parentId` から検索し直すこと。
-- `trash_file` は完全削除ではなくゴミ箱への移動(復元可能)。誤操作時の被害を抑えるため、
-  常にこちらを使い、完全削除にあたる操作は行わない。受領フォルダの元ファイルに対しては
-  このスキルは`trash_file`を一切使わない(常に残す)。`trash_file`を使うのは
-  `receipt_filelist.xlsx`・整理済フォルダ内ファイルの「旧バージョンの置き換え」時のみ。
+  毎回変わるので、`drive_sync_upload.py`内でもIDをキャッシュせず、都度
+  同名ファイルを検索し直してから置き換える(`drive_sync_common.py`の
+  `find_file_by_name`/`upload_file_replacing`参照)。
+- ファイルの「trash」は完全削除ではなくゴミ箱への移動(復元可能)。誤操作時の被害を
+  抑えるため常にこちらを使い、完全削除にあたる操作は行わない。受領フォルダの元
+  ファイルに対してはこのスキルはtrashを一切使わない(常に残す)。trashを使うのは
+  `receipt_filelist.xlsx`・整理済フォルダ内ファイルの「旧バージョンの置き換え」時のみ
+  (`drive_sync_upload.py`が担当)。
 - 1領収書 = 1行が基本。1枚の領収書に複数の取引が混在する場合のみ複数行に分けてよい。
 - 関与先ごとに `receipt_filelist.xlsx` も `整理済`(配下の`売上`/`給与`/`銀行通帳`を含む)
   フォルダも完全に独立している(他の関与先のデータと混ざることはない)。Step 0で
@@ -374,12 +380,14 @@ Step 2で売上・給与・銀行通帳に分類した各ファイルについ�
   日付・金額・取引先などの内容は読み取らないため空欄のまま。内容の集計や仕訳化が必要な
   場合は別途対応すること(このスキルはDrive上での分類・複製保存とファイル一覧への記録までが
   役割で、それらのデータ加工は行わない)。
-- Google Drive MCPツールの認証情報は、AWS Secrets Manager に保存した実ユーザーの
+- Google Driveへのアクセス(MCPツール経由・`drive_sync_download.py`/
+  `drive_sync_upload.py`経由のいずれも)は、AWS Secrets Manager に保存した実ユーザーの
   Google OAuthリフレッシュトークン(環境変数 `GOOGLE_USER_TOKEN_SECRET_NAME` で指定、
-  デフォルト `receipt-agent/google-drive-user-token`)から都度取得される
-  (`agent_agentcore.py` の `_get_drive_service()` 参照)。ローカル版のような
-  token.jsonファイルへの依存は無い。当初はAgentCore Identityの3LO(ユーザー委任)
-  OAuthフローやサービスアカウント方式も検討したが、前者は既知の未解決バグ
-  (awslabs/agentcore-samples#801、コールバックがauthorizationCode/stateを
-  受け取れない)、後者はストレージクォータが無くアップロードに失敗するため、
-  現在の方式に落ち着いている。
+  デフォルト `task-agent/google-drive-user-token`)から都度取得される
+  (`task_agent.py`の`_get_drive_service()`、および`scripts/drive_sync_common.py`の
+  `_get_credentials()`/`get_drive_service()`参照。両者は同じSecrets Managerの
+  シークレットを参照する)。ローカル版のようなtoken.jsonファイルへの依存は無い。
+  当初はAgentCore Identityの3LO(ユーザー委任)OAuthフローやサービスアカウント方式も
+  検討したが、前者は既知の未解決バグ(awslabs/agentcore-samples#801、コールバックが
+  authorizationCode/stateを受け取れない)、後者はストレージクォータが無くアップロードに
+  失敗するため、現在の方式に落ち着いている。
