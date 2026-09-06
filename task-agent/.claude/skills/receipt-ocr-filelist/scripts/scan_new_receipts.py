@@ -26,6 +26,9 @@ from openpyxl import load_workbook
 EXT_TYPE = {
     ".jpg": "JPEG画像", ".jpeg": "JPEG画像", ".png": "PNG画像",
     ".heic": "HEIC画像", ".pdf": "PDFファイル",
+    # 売上明細・売上集計表・賃金台帳・銀行の入出金明細などはスキャン画像ではなく
+    # Excel/CSVファイルでそのまま受領フォルダに置かれることが多いため対象に含める。
+    ".xlsx": "Excelファイル", ".xls": "Excelファイル", ".csv": "CSVファイル",
 }
 
 def main():
