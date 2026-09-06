@@ -26,6 +26,10 @@ class ScoutScheduleStack(Stack):
 
         # コスト管理用タグ。EventBridge SchedulerのCfnScheduleはタグ非対応のため
         # Lambda/IAMロールにのみ付与される(スタックレベルのaspectとして適用)。
+        # Component命名規則: 各エージェントの起動用Lambda/IAMロールは"<エージェントID>-trigger"
+        # で統一する(例: scout-trigger, archivist-trigger, progress-trigger)。
+        # 実処理(Bedrock/Claude呼び出し)はtask-agent側でComponent=task-agentとして
+        # 一括計上され、エージェント種別ごとには分解できない点に注意。
         Tags.of(self).add("Project", "taskmanager")
 
         agent_jobs_table = dynamodb.Table.from_table_name(
@@ -59,7 +63,7 @@ class ScoutScheduleStack(Stack):
         agent_jobs_table.grant_write_data(invoke_fn)
         agent_job_processor_fn.grant_invoke(invoke_fn)
         clients_table.grant_read_data(invoke_fn)
-        Tags.of(invoke_fn).add("Component", "scout")
+        Tags.of(invoke_fn).add("Component", "scout-trigger")
 
         # --- EventBridge Scheduler用の実行ロール(Lambda呼び出し専用) ---
         scheduler_role = iam.Role(
@@ -68,7 +72,7 @@ class ScoutScheduleStack(Stack):
             assumed_by=iam.ServicePrincipal("scheduler.amazonaws.com"),
         )
         invoke_fn.grant_invoke(scheduler_role)
-        Tags.of(scheduler_role).add("Component", "scout")
+        Tags.of(scheduler_role).add("Component", "scout-trigger")
 
         # --- 平日9/13/17時(JST)に実行するスケジュール ---
         scheduler.CfnSchedule(

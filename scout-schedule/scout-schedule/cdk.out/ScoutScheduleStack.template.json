@@ -32,7 +32,7 @@
     "Tags": [
      {
       "Key": "Component",
-      "Value": "scout"
+      "Value": "scout-trigger"
      },
      {
       "Key": "Project",
@@ -211,7 +211,7 @@
     "Tags": [
      {
       "Key": "Component",
-      "Value": "scout"
+      "Value": "scout-trigger"
      },
      {
       "Key": "Project",
@@ -378,7 +378,7 @@
     "Tags": [
      {
       "Key": "Component",
-      "Value": "scout"
+      "Value": "scout-trigger"
      },
      {
       "Key": "Project",
