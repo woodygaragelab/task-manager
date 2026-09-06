@@ -3,17 +3,13 @@ import { SettingSeries } from "./SettingSeries";
 import { SettingFrame } from "./SettingFrame";
 import { SettingClassificationAxes } from "./SettingClassificationAxes";
 import { SettingClientFields } from "./SettingClientFields";
-import { AgentsPanel } from "./AgentsPanel";
 import { useAdminMode } from "./AdminModeContext";
 
 const ADMIN_ONLY_TABS = ["タスク", "フレーム", "分類ルール", "項目名"];
-const ALL_TABS = [...ADMIN_ONLY_TABS, "エージェント"];
 
 export function SettingsPage({ seriesList, frameList, onRefresh }) {
   const { adminMode } = useAdminMode();
-  const tabs = adminMode
-    ? ALL_TABS
-    : ALL_TABS.filter((tab) => !ADMIN_ONLY_TABS.includes(tab));
+  const tabs = adminMode ? ADMIN_ONLY_TABS : [];
   const [activeTab, setActiveTab] = useState(tabs[0]);
 
   useEffect(() => {
@@ -45,7 +41,6 @@ export function SettingsPage({ seriesList, frameList, onRefresh }) {
       )}
       {adminMode && activeTab === "分類ルール" && <SettingClassificationAxes />}
       {adminMode && activeTab === "項目名" && <SettingClientFields />}
-      {activeTab === "エージェント" && <AgentsPanel scope="all" />}
     </>
   );
 }

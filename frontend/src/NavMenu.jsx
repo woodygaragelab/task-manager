@@ -1,16 +1,19 @@
 const ITEMS = [
-  { value: "設定", label: "設定" },
-  { value: "データ照会", label: "データ照会" },
+  { value: "設定", label: "設定", adminOnly: true },
+  { value: "エージェント", label: "エージェント" },
+  { value: "データ照会", label: "データ照会", adminOnly: true },
 ];
 
-export function NavMenu({ open, currentView, onSelect, onClose }) {
+export function NavMenu({ open, currentView, adminMode, onSelect, onClose }) {
   if (!open) return null;
+
+  const items = ITEMS.filter((item) => !item.adminOnly || adminMode);
 
   return (
     <>
       <div className="nav-menu__backdrop" onClick={onClose} />
       <nav className="nav-menu">
-        {ITEMS.map((item) => (
+        {items.map((item) => (
           <button
             key={item.value}
             type="button"

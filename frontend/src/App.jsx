@@ -5,6 +5,7 @@ import { NavMenu } from "./NavMenu";
 import { useAdminMode } from "./AdminModeContext";
 import { ClientListPage } from "./ClientListPage";
 import { SettingsPage } from "./SettingsPage";
+import { AgentsPanel } from "./AgentsPanel";
 import { DataQueryPage } from "./DataQueryPage";
 import { ClientConsolePage } from "./ClientConsolePage";
 import { api } from "./api";
@@ -17,13 +18,19 @@ export default function App() {
   const [frameList, setFrameList] = useState([]);
   const [error, setError] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [currentView, setCurrentView] = useState("クライアント"); // コンソール | クライアント | 設定 | データ照会
+  const [currentView, setCurrentView] = useState("クライアント"); // コンソール | クライアント | 設定 | エージェント | データ照会
   const [consoleClientCode, setConsoleClientCode] = useState(null);
 
   const handleSelectClient = (clientCode) => {
     setConsoleClientCode(clientCode);
     setCurrentView("コンソール");
   };
+
+  useEffect(() => {
+    if (!adminMode && (currentView === "設定" || currentView === "データ照会")) {
+      setCurrentView("クライアント");
+    }
+  }, [adminMode, currentView]);
 
   const refreshMasters = useCallback(async () => {
     try {
@@ -69,6 +76,7 @@ export default function App() {
           <NavMenu
             open={menuOpen}
             currentView={currentView}
+            adminMode={adminMode}
             onSelect={(view) => {
               setCurrentView(view);
               setMenuOpen(false);
@@ -109,6 +117,7 @@ export default function App() {
           onRefresh={refreshMasters}
         />
       )}
+      {currentView === "エージェント" && <AgentsPanel scope="all" />}
       {currentView === "データ照会" && <DataQueryPage />}
 
       {currentView === "コンソール" && (
