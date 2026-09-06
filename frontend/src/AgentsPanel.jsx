@@ -120,9 +120,13 @@ const MARKDOWN_COMPONENTS = {
 // 実行され、receiptFolderId登録済みの関与先ごとに個別ジョブとして起動される
 // (未登録の関与先向けの全体ジョブは無い。scout-schedule/scout-schedule/lambda_archivist/
 // handler.py参照)。
+// progressはProgressWeekdaySchedule(同スタック)と一致させること。archivistの10分後に
+// 実行され、登録済みの全関与先ごとに個別ジョブとして起動される
+// (scout-schedule/scout-schedule/lambda_progress/handler.py参照)。
 const SCHEDULE_INFO = {
   scout: "平日 6:00 / 12:00 / 18:00(JST)に自動実行されます",
   archivist: "平日 6:10 / 12:10 / 18:10(JST)に自動実行されます",
+  progress: "平日 6:20 / 12:20 / 18:20(JST)に自動実行されます",
 };
 
 const PROMPT_BUILDERS = {

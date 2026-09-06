@@ -160,3 +160,63 @@ class ScoutScheduleStack(Stack):
                 input="{}",
             ),
         )
+
+        # --- Lambda: 登録済みの関与先ごとにprogress(progress-update)ジョブを
+        #     起動する薄いトリガー(ScoutInvokeFunctionのprogress版) ---
+        progress_invoke_fn = _lambda.Function(
+            self,
+            "ProgressInvokeFunction",
+            function_name="taskmanager-progress-update-trigger",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            handler="handler.handler",
+            code=_lambda.Code.from_asset("lambda_progress"),
+            timeout=Duration.seconds(60),
+            log_retention=logs.RetentionDays.ONE_MONTH,
+            environment={
+                "AGENT_JOBS_TABLE": AGENT_JOBS_TABLE_NAME,
+                "AGENT_JOB_PROCESSOR_FUNCTION_NAME": AGENT_JOB_PROCESSOR_FUNCTION_NAME,
+                "CLIENTS_TABLE": CLIENTS_TABLE_NAME,
+            },
+        )
+
+        agent_jobs_table.grant_write_data(progress_invoke_fn)
+        agent_job_processor_fn.grant_invoke(progress_invoke_fn)
+        clients_table.grant_read_data(progress_invoke_fn)
+        Tags.of(progress_invoke_fn).add("Component", "progress-trigger")
+
+        progress_scheduler_role = iam.Role(
+            self,
+            "ProgressSchedulerRole",
+            assumed_by=iam.ServicePrincipal("scheduler.amazonaws.com"),
+        )
+        progress_invoke_fn.grant_invoke(progress_scheduler_role)
+        Tags.of(progress_scheduler_role).add("Component", "progress-trigger")
+
+        # --- ArchivistWeekdayScheduleの10分後(平日6:20/12:20/18:20 JST)に実行するスケジュール ---
+        # scout→archivist→progressの順で、履歴に記録された内容をTaskへ反映する
+        # (ユーザー指定:「archivistの10分後」)。
+        scheduler.CfnSchedule(
+            self,
+            "ProgressWeekdaySchedule",
+            name="taskmanager-progress-update-weekdays",
+            description="平日6:20/12:20/18:20時に進捗反映(progress)エージェントを起動",
+            schedule_expression="cron(20 6,12,18 ? * MON-FRI *)",
+            schedule_expression_timezone="Asia/Tokyo",
+            flexible_time_window=scheduler.CfnSchedule.FlexibleTimeWindowProperty(
+                mode="OFF"
+            ),
+            target=scheduler.CfnSchedule.TargetProperty(
+                arn=progress_invoke_fn.function_arn,
+                role_arn=progress_scheduler_role.role_arn,
+                # maximum_retry_attempts=0: handler.py側はジョブ起動を都度新規UUIDで
+                # 行うため冪等ではない。EventBridge Schedulerがリトライすると、既に
+                # 成功した関与先分のジョブまで重複起動してしまう。handler.py側も
+                # 部分失敗で例外を投げないよう修正済みだが、念のためリトライ自体も
+                # 無効化しておく。失敗した関与先は次回のスケジュール実行で拾われる。
+                retry_policy=scheduler.CfnSchedule.RetryPolicyProperty(
+                    maximum_retry_attempts=0,
+                    maximum_event_age_in_seconds=3600,
+                ),
+                input="{}",
+            ),
+        )
