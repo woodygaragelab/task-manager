@@ -163,13 +163,21 @@ export function ClientListPage({ onSelectClient }) {
   const downloadHojinCsv = () =>
     downloadCsv(
       `関与先一覧_法人_${todayStamp()}.csv`,
-      ["関与先番号", "関与先名", "担当者", "関与タイプ", "差出人メールアドレス"],
+      [
+        "関与先番号",
+        "関与先名",
+        "担当者",
+        "関与タイプ",
+        "差出人メールアドレス",
+        ...customFieldHeaders(CUSTOM_FIELD_CODES, 1, fieldLabels),
+      ],
       hojinRows.map((c) => [
         c.clientCode,
         c.clientName,
         c.assignee ?? "",
         c.engagementType ?? "",
         (c.senderEmails ?? []).join(", "),
+        ...CUSTOM_FIELD_CODES.map((code) => c[code] ?? ""),
       ])
     );
 
