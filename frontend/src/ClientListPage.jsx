@@ -50,12 +50,6 @@ function todayStamp() {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
 }
 
-function todayMonthDayStamp() {
-  const d = new Date();
-  const pad = (n) => String(n).padStart(2, "0");
-  return `${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
-}
-
 function customFieldHeaders(codes, offset, fieldLabels) {
   return codes.map((code, i) => fieldLabels[code] || `カスタム項目${i + offset}`);
 }
@@ -111,16 +105,6 @@ export function ClientListPage({ onSelectClient }) {
     const value = e.target.value;
     const target = clients.find((c) => c.clientCode === clientCode);
     if (!target || value === (target[field] ?? "")) return;
-    try {
-      const updated = await api.updateClient(clientCode, { [field]: value });
-      setClients((prev) => prev.map((c) => (c.clientCode === clientCode ? updated : c)));
-    } catch (err) {
-      setError(err.message);
-    }
-  };
-
-  const markDoneField = (clientCode, field) => async () => {
-    const value = `済${todayMonthDayStamp()}`;
     try {
       const updated = await api.updateClient(clientCode, { [field]: value });
       setClients((prev) => prev.map((c) => (c.clientCode === clientCode ? updated : c)));
@@ -467,20 +451,19 @@ export function ClientListPage({ onSelectClient }) {
                       </td>
                       <td>{c.assignee || "—"}</td>
                       {WITHHOLDING_FIELD_CODES.map((code) => {
-                        const value = c[code] || "";
+                        const value = c[code] ?? "";
                         const isFilled = value !== "" && value !== "-";
                         return (
                           <td key={code}>
-                            <button
-                              type="button"
+                            <input
                               className={
-                                "simple-table__status-btn" +
-                                (isFilled ? " simple-table__status-btn--filled" : "")
+                                "simple-table__input simple-table__input--narrow simple-table__input--gantt" +
+                                (isFilled ? " simple-table__input--filled" : "")
                               }
-                              onClick={markDoneField(c.clientCode, code)}
-                            >
-                              {value || "-"}
-                            </button>
+                              defaultValue={value}
+                              key={`${code}-${value}`}
+                              onBlur={commitField(c.clientCode, code)}
+                            />
                           </td>
                         );
                       })}
