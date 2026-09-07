@@ -13,6 +13,16 @@ const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(30, 40);
 const matchesFilter = (value, filter) =>
   !filter || String(value ?? "").toLowerCase().includes(filter.trim().toLowerCase());
 
+function assigneeRowColor(assignee) {
+  if (!assignee) return undefined;
+  let hash = 0;
+  for (let i = 0; i < assignee.length; i++) {
+    hash = (hash * 31 + assignee.charCodeAt(i)) | 0;
+  }
+  const hue = Math.abs(hash) % 360;
+  return `hsl(${hue}, 45%, 90%)`;
+}
+
 function FilterRow({ columns, filters, onChange }) {
   return (
     <tr className="simple-table__filter-row">
@@ -145,7 +155,7 @@ export function ClientListPage({ onSelectClient }) {
                       matchesFilter((c.senderEmails ?? []).join(", "), filters.senderEmails)
                   )
                   .map((c) => (
-                    <tr key={c.clientCode}>
+                    <tr key={c.clientCode} style={{ backgroundColor: assigneeRowColor(c.assignee) }}>
                       <td className="simple-table__code">{c.clientCode}</td>
                       <td>
                         <button
@@ -239,7 +249,7 @@ export function ClientListPage({ onSelectClient }) {
                       CORPORATE_TAX_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
                   )
                   .map((c) => (
-                    <tr key={c.clientCode}>
+                    <tr key={c.clientCode} style={{ backgroundColor: assigneeRowColor(c.assignee) }}>
                       <td className="simple-table__code">{c.clientCode}</td>
                       <td>
                         <button
@@ -317,7 +327,7 @@ export function ClientListPage({ onSelectClient }) {
                       WITHHOLDING_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
                   )
                   .map((c) => (
-                    <tr key={c.clientCode}>
+                    <tr key={c.clientCode} style={{ backgroundColor: assigneeRowColor(c.assignee) }}>
                       <td className="simple-table__code">{c.clientCode}</td>
                       <td>
                         <button
@@ -395,7 +405,7 @@ export function ClientListPage({ onSelectClient }) {
                       YEAR_END_ADJUSTMENT_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
                   )
                   .map((c) => (
-                    <tr key={c.clientCode}>
+                    <tr key={c.clientCode} style={{ backgroundColor: assigneeRowColor(c.assignee) }}>
                       <td className="simple-table__code">{c.clientCode}</td>
                       <td>
                         <button
