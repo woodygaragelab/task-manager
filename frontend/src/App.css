@@ -716,12 +716,34 @@
 }
 
 .simple-table__status-btn {
+  width: 100%;
+  min-width: 60px;
+  height: 28px;
+  padding: 0 14px 0 8px;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 28px;
+  border: 1px solid var(--paper-line);
+  background: var(--paper);
+  color: var(--ink);
   cursor: pointer;
   text-align: center;
+  clip-path: polygon(0% 0%, 80% 0%, 100% 50%, 80% 100%, 0% 100%);
 }
 
 .simple-table__status-btn:hover {
   background: var(--paper-highlight, #f3f1ea);
+}
+
+.simple-table__status-btn--filled {
+  background: #1c2f52;
+  border-color: #1c2f52;
+  color: #fff;
+}
+
+.simple-table__status-btn--filled:hover {
+  background: #24406e;
 }
 
 .simple-table__filter {

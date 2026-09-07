@@ -50,10 +50,10 @@ function todayStamp() {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
 }
 
-function todayMonthYearStamp() {
+function todayMonthDayStamp() {
   const d = new Date();
   const pad = (n) => String(n).padStart(2, "0");
-  return `${pad(d.getMonth() + 1)}/${String(d.getFullYear()).slice(-2)}`;
+  return `${pad(d.getMonth() + 1)}/${pad(d.getDate())}`;
 }
 
 function customFieldHeaders(codes, offset, fieldLabels) {
@@ -120,7 +120,7 @@ export function ClientListPage({ onSelectClient }) {
   };
 
   const markDoneField = (clientCode, field) => async () => {
-    const value = `済${todayMonthYearStamp()}`;
+    const value = `済${todayMonthDayStamp()}`;
     try {
       const updated = await api.updateClient(clientCode, { [field]: value });
       setClients((prev) => prev.map((c) => (c.clientCode === clientCode ? updated : c)));
@@ -466,17 +466,24 @@ export function ClientListPage({ onSelectClient }) {
                         </button>
                       </td>
                       <td>{c.assignee || "—"}</td>
-                      {WITHHOLDING_FIELD_CODES.map((code) => (
-                        <td key={code}>
-                          <button
-                            type="button"
-                            className="simple-table__input simple-table__input--narrow simple-table__status-btn"
-                            onClick={markDoneField(c.clientCode, code)}
-                          >
-                            {c[code] || "—"}
-                          </button>
-                        </td>
-                      ))}
+                      {WITHHOLDING_FIELD_CODES.map((code) => {
+                        const value = c[code] || "";
+                        const isFilled = value !== "" && value !== "-";
+                        return (
+                          <td key={code}>
+                            <button
+                              type="button"
+                              className={
+                                "simple-table__status-btn" +
+                                (isFilled ? " simple-table__status-btn--filled" : "")
+                              }
+                              onClick={markDoneField(c.clientCode, code)}
+                            >
+                              {value || "-"}
+                            </button>
+                          </td>
+                        );
+                      })}
                     </tr>
                   ))}
               </tbody>
