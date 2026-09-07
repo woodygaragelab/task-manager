@@ -14,11 +14,11 @@ const matchesFilter = (value, filter) =>
   !filter || String(value ?? "").toLowerCase().includes(filter.trim().toLowerCase());
 
 const ASSIGNEE_COLORS = {
-  佐藤: "hsl(0, 35%, 95%)",
-  蛭川: "hsl(210, 35%, 95%)",
-  松田: "hsl(120, 35%, 95%)",
+  佐藤: "hsl(0, 35%, 80%)",
+  蛭川: "hsl(210, 35%, 80%)",
+  松田: "hsl(120, 35%, 80%)",
 };
-const DEFAULT_ASSIGNEE_COLOR = "hsl(50, 35%, 95%)";
+const DEFAULT_ASSIGNEE_COLOR = "hsl(50, 35%, 80%)";
 
 function assigneeRowColor(assignee) {
   if (!assignee) return undefined;
