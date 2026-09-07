@@ -14,7 +14,7 @@ const matchesFilter = (value, filter) =>
   !filter || String(value ?? "").toLowerCase().includes(filter.trim().toLowerCase());
 
 const ASSIGNEE_COLORS = {
-  佐藤: "hsl(0, 35%, 80%)",
+  佐藤: "hsl(30, 70%, 75%)",
   蛭川: "hsl(210, 35%, 80%)",
   松田: "hsl(120, 35%, 80%)",
 };
