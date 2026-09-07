@@ -13,14 +13,16 @@ const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(30, 40);
 const matchesFilter = (value, filter) =>
   !filter || String(value ?? "").toLowerCase().includes(filter.trim().toLowerCase());
 
+const ASSIGNEE_COLORS = {
+  佐藤: "hsl(0, 35%, 90%)",
+  蛭川: "hsl(210, 35%, 90%)",
+  松田: "hsl(120, 35%, 90%)",
+};
+const DEFAULT_ASSIGNEE_COLOR = "hsl(50, 35%, 90%)";
+
 function assigneeRowColor(assignee) {
   if (!assignee) return undefined;
-  let hash = 0;
-  for (let i = 0; i < assignee.length; i++) {
-    hash = (hash * 31 + assignee.charCodeAt(i)) | 0;
-  }
-  const hue = Math.abs(hash) % 360;
-  return `hsl(${hue}, 45%, 90%)`;
+  return ASSIGNEE_COLORS[assignee] ?? DEFAULT_ASSIGNEE_COLOR;
 }
 
 function escapeCsvCell(value) {
