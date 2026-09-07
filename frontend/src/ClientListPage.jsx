@@ -10,6 +10,26 @@ const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
 const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(30, 40);
 
+const matchesFilter = (value, filter) =>
+  !filter || String(value ?? "").toLowerCase().includes(filter.trim().toLowerCase());
+
+function FilterRow({ columns, filters, onChange }) {
+  return (
+    <tr className="simple-table__filter-row">
+      {columns.map(({ key, width }) => (
+        <th key={key} style={width ? { width } : undefined}>
+          <input
+            className="simple-table__filter"
+            value={filters[key] ?? ""}
+            onChange={(e) => onChange(key, e.target.value)}
+            placeholder="絞り込み"
+          />
+        </th>
+      ))}
+    </tr>
+  );
+}
+
 export function ClientListPage({ onSelectClient }) {
   const [activeTab, setActiveTab] = useState(TABS[0]);
   const [clients, setClients] = useState([]);
@@ -19,6 +39,10 @@ export function ClientListPage({ onSelectClient }) {
   const [newName, setNewName] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [tabComments, setTabComments] = useState({});
+  const [filters, setFilters] = useState({});
+
+  const setFilter = (key, value) =>
+    setFilters((prev) => ({ ...prev, [key]: value }));
 
   useEffect(() => {
     api.listClients().then(setClients).catch((e) => setError(e.message));
@@ -98,25 +122,45 @@ export function ClientListPage({ onSelectClient }) {
                   <th>関与タイプ</th>
                   <th>差出人メールアドレス</th>
                 </tr>
+                <FilterRow
+                  columns={[
+                    { key: "clientCode" },
+                    { key: "clientName" },
+                    { key: "assignee" },
+                    { key: "engagementType" },
+                    { key: "senderEmails" },
+                  ]}
+                  filters={filters}
+                  onChange={setFilter}
+                />
               </thead>
               <tbody>
-                {clients.map((c) => (
-                  <tr key={c.clientCode}>
-                    <td className="simple-table__code">{c.clientCode}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="simple-table__link"
-                        onClick={() => onSelectClient(c.clientCode)}
-                      >
-                        {c.clientName}
-                      </button>
-                    </td>
-                    <td>{c.assignee || "—"}</td>
-                    <td>{c.engagementType || "—"}</td>
-                    <td>{(c.senderEmails ?? []).join(", ") || "—"}</td>
-                  </tr>
-                ))}
+                {clients
+                  .filter(
+                    (c) =>
+                      matchesFilter(c.clientCode, filters.clientCode) &&
+                      matchesFilter(c.clientName, filters.clientName) &&
+                      matchesFilter(c.assignee, filters.assignee) &&
+                      matchesFilter(c.engagementType, filters.engagementType) &&
+                      matchesFilter((c.senderEmails ?? []).join(", "), filters.senderEmails)
+                  )
+                  .map((c) => (
+                    <tr key={c.clientCode}>
+                      <td className="simple-table__code">{c.clientCode}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="simple-table__link"
+                          onClick={() => onSelectClient(c.clientCode)}
+                        >
+                          {c.clientName}
+                        </button>
+                      </td>
+                      <td>{c.assignee || "—"}</td>
+                      <td>{c.engagementType || "—"}</td>
+                      <td>{(c.senderEmails ?? []).join(", ") || "—"}</td>
+                    </tr>
+                  ))}
               </tbody>
             </table>
           )}
@@ -174,33 +218,51 @@ export function ClientListPage({ onSelectClient }) {
                     </th>
                   ))}
                 </tr>
+                <FilterRow
+                  columns={[
+                    { key: "clientCode" },
+                    { key: "clientName" },
+                    { key: "assignee" },
+                    ...CORPORATE_TAX_FIELD_CODES.map((code) => ({ key: code, width: "7.8%" })),
+                  ]}
+                  filters={filters}
+                  onChange={setFilter}
+                />
               </thead>
               <tbody>
-                {clients.map((c) => (
-                  <tr key={c.clientCode}>
-                    <td className="simple-table__code">{c.clientCode}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="simple-table__link"
-                        onClick={() => onSelectClient(c.clientCode)}
-                      >
-                        {c.clientName}
-                      </button>
-                    </td>
-                    <td>{c.assignee || "—"}</td>
-                    {CORPORATE_TAX_FIELD_CODES.map((code) => (
-                      <td key={code}>
-                        <input
-                          className="simple-table__input simple-table__input--narrow"
-                          defaultValue={c[code] ?? ""}
-                          key={`${code}-${c[code] ?? ""}`}
-                          onBlur={commitField(c.clientCode, code)}
-                        />
+                {clients
+                  .filter(
+                    (c) =>
+                      matchesFilter(c.clientCode, filters.clientCode) &&
+                      matchesFilter(c.clientName, filters.clientName) &&
+                      matchesFilter(c.assignee, filters.assignee) &&
+                      CORPORATE_TAX_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
+                  )
+                  .map((c) => (
+                    <tr key={c.clientCode}>
+                      <td className="simple-table__code">{c.clientCode}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="simple-table__link"
+                          onClick={() => onSelectClient(c.clientCode)}
+                        >
+                          {c.clientName}
+                        </button>
                       </td>
-                    ))}
-                  </tr>
-                ))}
+                      <td>{c.assignee || "—"}</td>
+                      {CORPORATE_TAX_FIELD_CODES.map((code) => (
+                        <td key={code}>
+                          <input
+                            className="simple-table__input simple-table__input--narrow"
+                            defaultValue={c[code] ?? ""}
+                            key={`${code}-${c[code] ?? ""}`}
+                            onBlur={commitField(c.clientCode, code)}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
               </tbody>
             </table>
           )}
@@ -234,33 +296,51 @@ export function ClientListPage({ onSelectClient }) {
                     </th>
                   ))}
                 </tr>
+                <FilterRow
+                  columns={[
+                    { key: "clientCode" },
+                    { key: "clientName" },
+                    { key: "assignee" },
+                    ...WITHHOLDING_FIELD_CODES.map((code) => ({ key: code, width: "7.8%" })),
+                  ]}
+                  filters={filters}
+                  onChange={setFilter}
+                />
               </thead>
               <tbody>
-                {clients.map((c) => (
-                  <tr key={c.clientCode}>
-                    <td className="simple-table__code">{c.clientCode}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="simple-table__link"
-                        onClick={() => onSelectClient(c.clientCode)}
-                      >
-                        {c.clientName}
-                      </button>
-                    </td>
-                    <td>{c.assignee || "—"}</td>
-                    {WITHHOLDING_FIELD_CODES.map((code) => (
-                      <td key={code}>
-                        <input
-                          className="simple-table__input simple-table__input--narrow"
-                          defaultValue={c[code] ?? ""}
-                          key={`${code}-${c[code] ?? ""}`}
-                          onBlur={commitField(c.clientCode, code)}
-                        />
+                {clients
+                  .filter(
+                    (c) =>
+                      matchesFilter(c.clientCode, filters.clientCode) &&
+                      matchesFilter(c.clientName, filters.clientName) &&
+                      matchesFilter(c.assignee, filters.assignee) &&
+                      WITHHOLDING_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
+                  )
+                  .map((c) => (
+                    <tr key={c.clientCode}>
+                      <td className="simple-table__code">{c.clientCode}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="simple-table__link"
+                          onClick={() => onSelectClient(c.clientCode)}
+                        >
+                          {c.clientName}
+                        </button>
                       </td>
-                    ))}
-                  </tr>
-                ))}
+                      <td>{c.assignee || "—"}</td>
+                      {WITHHOLDING_FIELD_CODES.map((code) => (
+                        <td key={code}>
+                          <input
+                            className="simple-table__input simple-table__input--narrow"
+                            defaultValue={c[code] ?? ""}
+                            key={`${code}-${c[code] ?? ""}`}
+                            onBlur={commitField(c.clientCode, code)}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
               </tbody>
             </table>
           )}
@@ -294,33 +374,51 @@ export function ClientListPage({ onSelectClient }) {
                     </th>
                   ))}
                 </tr>
+                <FilterRow
+                  columns={[
+                    { key: "clientCode" },
+                    { key: "clientName" },
+                    { key: "assignee" },
+                    ...YEAR_END_ADJUSTMENT_FIELD_CODES.map((code) => ({ key: code, width: "7.8%" })),
+                  ]}
+                  filters={filters}
+                  onChange={setFilter}
+                />
               </thead>
               <tbody>
-                {clients.map((c) => (
-                  <tr key={c.clientCode}>
-                    <td className="simple-table__code">{c.clientCode}</td>
-                    <td>
-                      <button
-                        type="button"
-                        className="simple-table__link"
-                        onClick={() => onSelectClient(c.clientCode)}
-                      >
-                        {c.clientName}
-                      </button>
-                    </td>
-                    <td>{c.assignee || "—"}</td>
-                    {YEAR_END_ADJUSTMENT_FIELD_CODES.map((code) => (
-                      <td key={code}>
-                        <input
-                          className="simple-table__input simple-table__input--narrow"
-                          defaultValue={c[code] ?? ""}
-                          key={`${code}-${c[code] ?? ""}`}
-                          onBlur={commitField(c.clientCode, code)}
-                        />
+                {clients
+                  .filter(
+                    (c) =>
+                      matchesFilter(c.clientCode, filters.clientCode) &&
+                      matchesFilter(c.clientName, filters.clientName) &&
+                      matchesFilter(c.assignee, filters.assignee) &&
+                      YEAR_END_ADJUSTMENT_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
+                  )
+                  .map((c) => (
+                    <tr key={c.clientCode}>
+                      <td className="simple-table__code">{c.clientCode}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="simple-table__link"
+                          onClick={() => onSelectClient(c.clientCode)}
+                        >
+                          {c.clientName}
+                        </button>
                       </td>
-                    ))}
-                  </tr>
-                ))}
+                      <td>{c.assignee || "—"}</td>
+                      {YEAR_END_ADJUSTMENT_FIELD_CODES.map((code) => (
+                        <td key={code}>
+                          <input
+                            className="simple-table__input simple-table__input--narrow"
+                            defaultValue={c[code] ?? ""}
+                            key={`${code}-${c[code] ?? ""}`}
+                            onBlur={commitField(c.clientCode, code)}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
               </tbody>
             </table>
           )}

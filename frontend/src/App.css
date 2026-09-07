@@ -715,6 +715,21 @@
   min-width: 44px;
 }
 
+.simple-table__filter {
+  width: 100%;
+  min-width: 60px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 400;
+  letter-spacing: normal;
+  text-transform: none;
+  padding: 4px 6px;
+  border: 1px solid var(--paper-line);
+  border-radius: 4px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
 .simple-table--fixed {
   table-layout: fixed;
 }
