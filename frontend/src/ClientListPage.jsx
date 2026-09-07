@@ -23,6 +23,35 @@ function assigneeRowColor(assignee) {
   return `hsl(${hue}, 45%, 90%)`;
 }
 
+function escapeCsvCell(value) {
+  const str = String(value ?? "");
+  return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str;
+}
+
+function downloadCsv(filename, headers, rows) {
+  const csvBody = [headers, ...rows].map((row) => row.map(escapeCsvCell).join(",")).join("\r\n");
+  const csv = String.fromCharCode(0xfeff) + csvBody;
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function todayStamp() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
+}
+
+function customFieldHeaders(codes, offset, fieldLabels) {
+  return codes.map((code, i) => fieldLabels[code] || `カスタム項目${i + offset}`);
+}
+
 function FilterRow({ columns, filters, onChange }) {
   return (
     <tr className="simple-table__filter-row">
@@ -99,6 +128,85 @@ export function ClientListPage({ onSelectClient }) {
     }
   };
 
+  const hojinRows = clients.filter(
+    (c) =>
+      matchesFilter(c.clientCode, filters.clientCode) &&
+      matchesFilter(c.clientName, filters.clientName) &&
+      matchesFilter(c.assignee, filters.assignee) &&
+      matchesFilter(c.engagementType, filters.engagementType) &&
+      matchesFilter((c.senderEmails ?? []).join(", "), filters.senderEmails)
+  );
+  const corporateTaxRows = clients.filter(
+    (c) =>
+      matchesFilter(c.clientCode, filters.clientCode) &&
+      matchesFilter(c.clientName, filters.clientName) &&
+      matchesFilter(c.assignee, filters.assignee) &&
+      CORPORATE_TAX_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
+  );
+  const withholdingRows = clients.filter(
+    (c) =>
+      matchesFilter(c.clientCode, filters.clientCode) &&
+      matchesFilter(c.clientName, filters.clientName) &&
+      matchesFilter(c.assignee, filters.assignee) &&
+      WITHHOLDING_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
+  );
+  const yearEndRows = clients.filter(
+    (c) =>
+      matchesFilter(c.clientCode, filters.clientCode) &&
+      matchesFilter(c.clientName, filters.clientName) &&
+      matchesFilter(c.assignee, filters.assignee) &&
+      YEAR_END_ADJUSTMENT_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
+  );
+
+  const downloadHojinCsv = () =>
+    downloadCsv(
+      `関与先一覧_法人_${todayStamp()}.csv`,
+      ["関与先番号", "関与先名", "担当者", "関与タイプ", "差出人メールアドレス"],
+      hojinRows.map((c) => [
+        c.clientCode,
+        c.clientName,
+        c.assignee ?? "",
+        c.engagementType ?? "",
+        (c.senderEmails ?? []).join(", "),
+      ])
+    );
+
+  const downloadCorporateTaxCsv = () =>
+    downloadCsv(
+      `関与先一覧_法人税_${todayStamp()}.csv`,
+      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(CORPORATE_TAX_FIELD_CODES, 11, fieldLabels)],
+      corporateTaxRows.map((c) => [
+        c.clientCode,
+        c.clientName,
+        c.assignee ?? "",
+        ...CORPORATE_TAX_FIELD_CODES.map((code) => c[code] ?? ""),
+      ])
+    );
+
+  const downloadWithholdingCsv = () =>
+    downloadCsv(
+      `関与先一覧_源泉R8上期_${todayStamp()}.csv`,
+      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(WITHHOLDING_FIELD_CODES, 21, fieldLabels)],
+      withholdingRows.map((c) => [
+        c.clientCode,
+        c.clientName,
+        c.assignee ?? "",
+        ...WITHHOLDING_FIELD_CODES.map((code) => c[code] ?? ""),
+      ])
+    );
+
+  const downloadYearEndCsv = () =>
+    downloadCsv(
+      `関与先一覧_年調R7_${todayStamp()}.csv`,
+      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(YEAR_END_ADJUSTMENT_FIELD_CODES, 31, fieldLabels)],
+      yearEndRows.map((c) => [
+        c.clientCode,
+        c.clientName,
+        c.assignee ?? "",
+        ...YEAR_END_ADJUSTMENT_FIELD_CODES.map((code) => c[code] ?? ""),
+      ])
+    );
+
   return (
     <section className="panel">
       <div className="tabs">
@@ -117,6 +225,12 @@ export function ClientListPage({ onSelectClient }) {
       {activeTab === "法人" && (
         <>
           {error && <div className="error-banner">{error}</div>}
+
+          <div className="list-toolbar">
+            <button type="button" className="btn btn--ghost" onClick={downloadHojinCsv}>
+              CSVダウンロード
+            </button>
+          </div>
 
           {clients.length === 0 ? (
             <div className="empty">
@@ -145,16 +259,7 @@ export function ClientListPage({ onSelectClient }) {
                 />
               </thead>
               <tbody>
-                {clients
-                  .filter(
-                    (c) =>
-                      matchesFilter(c.clientCode, filters.clientCode) &&
-                      matchesFilter(c.clientName, filters.clientName) &&
-                      matchesFilter(c.assignee, filters.assignee) &&
-                      matchesFilter(c.engagementType, filters.engagementType) &&
-                      matchesFilter((c.senderEmails ?? []).join(", "), filters.senderEmails)
-                  )
-                  .map((c) => (
+                {hojinRows.map((c) => (
                     <tr key={c.clientCode} style={{ backgroundColor: assigneeRowColor(c.assignee) }}>
                       <td className="simple-table__code">{c.clientCode}</td>
                       <td>
@@ -211,6 +316,12 @@ export function ClientListPage({ onSelectClient }) {
         <>
           {error && <div className="error-banner">{error}</div>}
 
+          <div className="list-toolbar">
+            <button type="button" className="btn btn--ghost" onClick={downloadCorporateTaxCsv}>
+              CSVダウンロード
+            </button>
+          </div>
+
           {clients.length === 0 ? (
             <div className="empty">
               <div className="empty__title">クライアントがありません</div>
@@ -240,15 +351,7 @@ export function ClientListPage({ onSelectClient }) {
                 />
               </thead>
               <tbody>
-                {clients
-                  .filter(
-                    (c) =>
-                      matchesFilter(c.clientCode, filters.clientCode) &&
-                      matchesFilter(c.clientName, filters.clientName) &&
-                      matchesFilter(c.assignee, filters.assignee) &&
-                      CORPORATE_TAX_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
-                  )
-                  .map((c) => (
+                {corporateTaxRows.map((c) => (
                     <tr key={c.clientCode} style={{ backgroundColor: assigneeRowColor(c.assignee) }}>
                       <td className="simple-table__code">{c.clientCode}</td>
                       <td>
@@ -289,6 +392,12 @@ export function ClientListPage({ onSelectClient }) {
         <>
           {error && <div className="error-banner">{error}</div>}
 
+          <div className="list-toolbar">
+            <button type="button" className="btn btn--ghost" onClick={downloadWithholdingCsv}>
+              CSVダウンロード
+            </button>
+          </div>
+
           {clients.length === 0 ? (
             <div className="empty">
               <div className="empty__title">クライアントがありません</div>
@@ -318,15 +427,7 @@ export function ClientListPage({ onSelectClient }) {
                 />
               </thead>
               <tbody>
-                {clients
-                  .filter(
-                    (c) =>
-                      matchesFilter(c.clientCode, filters.clientCode) &&
-                      matchesFilter(c.clientName, filters.clientName) &&
-                      matchesFilter(c.assignee, filters.assignee) &&
-                      WITHHOLDING_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
-                  )
-                  .map((c) => (
+                {withholdingRows.map((c) => (
                     <tr key={c.clientCode} style={{ backgroundColor: assigneeRowColor(c.assignee) }}>
                       <td className="simple-table__code">{c.clientCode}</td>
                       <td>
@@ -367,6 +468,12 @@ export function ClientListPage({ onSelectClient }) {
         <>
           {error && <div className="error-banner">{error}</div>}
 
+          <div className="list-toolbar">
+            <button type="button" className="btn btn--ghost" onClick={downloadYearEndCsv}>
+              CSVダウンロード
+            </button>
+          </div>
+
           {clients.length === 0 ? (
             <div className="empty">
               <div className="empty__title">クライアントがありません</div>
@@ -396,15 +503,7 @@ export function ClientListPage({ onSelectClient }) {
                 />
               </thead>
               <tbody>
-                {clients
-                  .filter(
-                    (c) =>
-                      matchesFilter(c.clientCode, filters.clientCode) &&
-                      matchesFilter(c.clientName, filters.clientName) &&
-                      matchesFilter(c.assignee, filters.assignee) &&
-                      YEAR_END_ADJUSTMENT_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
-                  )
-                  .map((c) => (
+                {yearEndRows.map((c) => (
                     <tr key={c.clientCode} style={{ backgroundColor: assigneeRowColor(c.assignee) }}>
                       <td className="simple-table__code">{c.clientCode}</td>
                       <td>

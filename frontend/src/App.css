@@ -734,6 +734,12 @@
   table-layout: fixed;
 }
 
+.list-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 10px;
+}
+
 /* ---------- Client profile page ---------- */
 .profile-back {
   display: inline-block;
