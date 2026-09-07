@@ -68,7 +68,12 @@ def _start_job(client_code, prompt):
         FunctionName=AGENT_JOB_PROCESSOR_FUNCTION_NAME,
         InvocationType="Event",
         Payload=json.dumps(
-            {"clientCode": client_code, "jobId": job_id, "prompt": prompt}
+            {
+                "clientCode": client_code,
+                "jobId": job_id,
+                "prompt": prompt,
+                "agentId": AGENT_ID,
+            }
         ).encode(),
     )
     return job_id

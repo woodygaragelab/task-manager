@@ -35,6 +35,11 @@ def handler(event, context):
     client_code = event["clientCode"]
     job_id = event["jobId"]
     prompt = event["prompt"]
+    # コスト管理用。トリガー元(scout/archivist/progress/Web UI)がTaskAgentJobsに
+    # 書き込んだagentIdをそのまま転送し、task_agent.py側でエージェント別の
+    # LLM呼び出しコストをログに残せるようにする(古いイベント形式との互換のため
+    # 未指定時は"unknown"にフォールバックする)。
+    agent_id = event.get("agentId", "unknown")
 
     # Lambdaの非同期(Event)呼び出しはエラー・タイムアウト時に既定でLambda全体を
     # 再試行するため、対策なしではAgentCore呼び出し(とDrive側の副作用)が同じ
@@ -44,7 +49,14 @@ def handler(event, context):
         return
 
     try:
-        payload = json.dumps({"prompt": prompt}).encode()
+        payload = json.dumps(
+            {
+                "prompt": prompt,
+                "agentId": agent_id,
+                "clientCode": client_code,
+                "jobId": job_id,
+            }
+        ).encode()
         result = agent_core_client.invoke_agent_runtime(
             agentRuntimeArn=AGENT_RUNTIME_ARN,
             runtimeSessionId=job_id,

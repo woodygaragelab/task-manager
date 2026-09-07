@@ -319,6 +319,7 @@ def handler(event, context):
                         "clientCode": client_code,
                         "jobId": item["jobId"],
                         "prompt": item["prompt"],
+                        "agentId": item["agentId"],
                     }
                 ).encode(),
             )

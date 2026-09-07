@@ -58,6 +58,7 @@ from bedrock_agentcore.runtime import BedrockAgentCoreApp
 from claude_agent_sdk import (
     AssistantMessage,
     ClaudeAgentOptions,
+    ResultMessage,
     TextBlock,
     create_sdk_mcp_server,
     query,
@@ -686,7 +687,16 @@ task_manager_server = create_sdk_mcp_server(
 
 
 def build_agent_options() -> ClaudeAgentOptions:
-    """Single place where the agent's tool/skill configuration is defined."""
+    """Single place where the agent's tool/skill configuration is defined.
+
+    Per-agent cost attribution (scout/archivist/progress/manual caller id)
+    is NOT threaded through here: ClaudeAgentOptions.user is not a free-form
+    metadata field but an OS username the SDK passes to subprocess.Popen(...,
+    user=...) to setuid the Claude Code CLI process, so passing an agentId
+    like "unknown" breaks subprocess launch with
+    `getpwnam(): name not found`. See agent_invocation()'s
+    "agent_invocation_cost" log line for the actual per-agent cost tracking.
+    """
     return ClaudeAgentOptions(
         cwd=PROJECT_ROOT,
         # Default is 1MB; the Read tool embeds base64 image/PDF-page data in
@@ -737,23 +747,65 @@ async def agent_invocation(payload: dict, context) -> dict:
     """AgentCore Runtime entrypoint.
 
     payload example:
-        {"prompt": "IKKの受領フォルダに新しい領収書があるか確認して"}
+        {
+            "prompt": "IKKの受領フォルダに新しい領収書があるか確認して",
+            "agentId": "archivist",
+            "clientCode": "IKK",
+            "jobId": "...",
+        }
+    agentId/clientCode/jobId are set by agent_job_src/app.py (forwarded from
+    TaskAgentJobs) purely for the cost-attribution log line below; their
+    absence (e.g. ad-hoc local invocations) must not block processing.
     """
     prompt = payload.get("prompt", "")
     if not prompt:
         return {"result": "promptが空です。処理する内容を指定してください。"}
+    agent_id = payload.get("agentId", "unknown")
+    client_code = payload.get("clientCode", "")
+    job_id = payload.get("jobId", "")
 
-    logger.info("agent_invocation BEGIN prompt=%r", prompt)
+    logger.info("agent_invocation BEGIN agentId=%s prompt=%r", agent_id, prompt)
     options = build_agent_options()
 
     result_text = []
+    result_message: ResultMessage | None = None
     async for message in query(prompt=prompt, options=options):
         if isinstance(message, AssistantMessage):
             for block in message.content:
                 if isinstance(block, TextBlock):
                     result_text.append(block.text)
+        elif isinstance(message, ResultMessage):
+            result_message = message
 
-    logger.info("agent_invocation END prompt=%r", prompt)
+    # コスト管理用ログ。AgentCore Runtime自体はscout/archivist/progressの
+    # どのエージェントから呼ばれても単一リソース(Component=task-agent)としてしか
+    # AWSコスト配分タグで区別できないため、実際のLLM呼び出しコスト(total_cost_usd)は
+    # ここでagentId付きの構造化ログとして残し、CloudWatch Logs Insightsで
+    # エージェント別に集計する
+    # (例: filter metric="agent_invocation_cost" | stats sum(totalCostUsd) by agentId)。
+    logger.info(
+        json.dumps(
+            {
+                "metric": "agent_invocation_cost",
+                "agentId": agent_id,
+                "clientCode": client_code,
+                "jobId": job_id,
+                "sessionId": result_message.session_id if result_message else None,
+                "totalCostUsd": result_message.total_cost_usd if result_message else None,
+                "usage": result_message.usage if result_message else None,
+                "modelUsage": result_message.model_usage if result_message else None,
+                "durationMs": result_message.duration_ms if result_message else None,
+                "durationApiMs": result_message.duration_api_ms if result_message else None,
+                "numTurns": result_message.num_turns if result_message else None,
+            },
+            # model_usageの値(ModelUsage)はdataclassでdefault serializerでは
+            # 非対応なため、json.dumps自体が失敗して(処理は成功しているのに)
+            # ログ出力だけでagent_invocation全体がエラー扱いになるのを避ける。
+            default=str,
+        )
+    )
+
+    logger.info("agent_invocation END agentId=%s prompt=%r", agent_id, prompt)
     return {"result": "".join(result_text)}
 
 
