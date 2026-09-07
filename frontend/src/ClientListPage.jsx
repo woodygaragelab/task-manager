@@ -167,6 +167,7 @@ export function ClientListPage({ onSelectClient }) {
                 <tr>
                   <th>関与先番号</th>
                   <th>関与先名</th>
+                  <th>担当者</th>
                   {CORPORATE_TAX_FIELD_CODES.map((code, i) => (
                     <th key={code} style={{ width: "7.8%" }}>
                       {fieldLabels[code] || `カスタム項目${i + 11}`}
@@ -187,6 +188,7 @@ export function ClientListPage({ onSelectClient }) {
                         {c.clientName}
                       </button>
                     </td>
+                    <td>{c.assignee || "—"}</td>
                     {CORPORATE_TAX_FIELD_CODES.map((code) => (
                       <td key={code}>
                         <input
@@ -225,6 +227,7 @@ export function ClientListPage({ onSelectClient }) {
                 <tr>
                   <th>関与先番号</th>
                   <th>関与先名</th>
+                  <th>担当者</th>
                   {WITHHOLDING_FIELD_CODES.map((code, i) => (
                     <th key={code} style={{ width: "7.8%" }}>
                       {fieldLabels[code] || `カスタム項目${i + 21}`}
@@ -245,6 +248,7 @@ export function ClientListPage({ onSelectClient }) {
                         {c.clientName}
                       </button>
                     </td>
+                    <td>{c.assignee || "—"}</td>
                     {WITHHOLDING_FIELD_CODES.map((code) => (
                       <td key={code}>
                         <input
@@ -283,6 +287,7 @@ export function ClientListPage({ onSelectClient }) {
                 <tr>
                   <th>関与先番号</th>
                   <th>関与先名</th>
+                  <th>担当者</th>
                   {YEAR_END_ADJUSTMENT_FIELD_CODES.map((code, i) => (
                     <th key={code} style={{ width: "7.8%" }}>
                       {fieldLabels[code] || `カスタム項目${i + 31}`}
@@ -303,6 +308,7 @@ export function ClientListPage({ onSelectClient }) {
                         {c.clientName}
                       </button>
                     </td>
+                    <td>{c.assignee || "—"}</td>
                     {YEAR_END_ADJUSTMENT_FIELD_CODES.map((code) => (
                       <td key={code}>
                         <input
