@@ -715,6 +715,15 @@
   min-width: 44px;
 }
 
+.simple-table__status-btn {
+  cursor: pointer;
+  text-align: center;
+}
+
+.simple-table__status-btn:hover {
+  background: var(--paper-highlight, #f3f1ea);
+}
+
 .simple-table__filter {
   width: 100%;
   min-width: 60px;

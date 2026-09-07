@@ -50,6 +50,12 @@ function todayStamp() {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
 }
 
+function todayMonthYearStamp() {
+  const d = new Date();
+  const pad = (n) => String(n).padStart(2, "0");
+  return `${pad(d.getMonth() + 1)}/${String(d.getFullYear()).slice(-2)}`;
+}
+
 function customFieldHeaders(codes, offset, fieldLabels) {
   return codes.map((code, i) => fieldLabels[code] || `カスタム項目${i + offset}`);
 }
@@ -105,6 +111,16 @@ export function ClientListPage({ onSelectClient }) {
     const value = e.target.value;
     const target = clients.find((c) => c.clientCode === clientCode);
     if (!target || value === (target[field] ?? "")) return;
+    try {
+      const updated = await api.updateClient(clientCode, { [field]: value });
+      setClients((prev) => prev.map((c) => (c.clientCode === clientCode ? updated : c)));
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  const markDoneField = (clientCode, field) => async () => {
+    const value = `済${todayMonthYearStamp()}`;
     try {
       const updated = await api.updateClient(clientCode, { [field]: value });
       setClients((prev) => prev.map((c) => (c.clientCode === clientCode ? updated : c)));
@@ -452,12 +468,13 @@ export function ClientListPage({ onSelectClient }) {
                       <td>{c.assignee || "—"}</td>
                       {WITHHOLDING_FIELD_CODES.map((code) => (
                         <td key={code}>
-                          <input
-                            className="simple-table__input simple-table__input--narrow"
-                            defaultValue={c[code] ?? ""}
-                            key={`${code}-${c[code] ?? ""}`}
-                            onBlur={commitField(c.clientCode, code)}
-                          />
+                          <button
+                            type="button"
+                            className="simple-table__input simple-table__input--narrow simple-table__status-btn"
+                            onClick={markDoneField(c.clientCode, code)}
+                          >
+                            {c[code] || "—"}
+                          </button>
                         </td>
                       ))}
                     </tr>
