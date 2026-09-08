@@ -760,7 +760,9 @@ async def agent_invocation(payload: dict, context) -> dict:
     prompt = payload.get("prompt", "")
     if not prompt:
         return {"result": "promptが空です。処理する内容を指定してください。"}
-    agent_id = payload.get("agentId", "unknown")
+    # agentId未指定(ad-hocなローカル実行等)の場合、ログ上で"unknown"が並んで
+    # どの呼び出しか区別できなくなるのを避けるため、prompt先頭10文字を代わりに使う。
+    agent_id = payload.get("agentId") or prompt[:10]
     client_code = payload.get("clientCode", "")
     job_id = payload.get("jobId", "")
 

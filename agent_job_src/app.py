@@ -38,8 +38,9 @@ def handler(event, context):
     # コスト管理用。トリガー元(scout/archivist/progress/Web UI)がTaskAgentJobsに
     # 書き込んだagentIdをそのまま転送し、task_agent.py側でエージェント別の
     # LLM呼び出しコストをログに残せるようにする(古いイベント形式との互換のため
-    # 未指定時は"unknown"にフォールバックする)。
-    agent_id = event.get("agentId", "unknown")
+    # 未指定時はprompt先頭10文字にフォールバックする。"unknown"で固定すると
+    # ログ上でどの呼び出しか区別できなくなるため)。
+    agent_id = event.get("agentId") or prompt[:10]
 
     # Lambdaの非同期(Event)呼び出しはエラー・タイムアウト時に既定でLambda全体を
     # 再試行するため、対策なしではAgentCore呼び出し(とDrive側の副作用)が同じ
