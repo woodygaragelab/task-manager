@@ -9,6 +9,7 @@ const TAB_COMMENT_KEYS = Object.fromEntries(TABS.map((tab) => [tab, `一覧:${ta
 const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
 const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(30, 40);
+const PERSONAL_FIELD_CODES = CUSTOM_FIELD_CODES.slice(50, 59);
 
 const matchesFilter = (value, filter) =>
   !filter || String(value ?? "").toLowerCase().includes(filter.trim().toLowerCase());
@@ -159,6 +160,13 @@ export function ClientListPage({ onSelectClient }) {
       matchesFilter(c.assignee, filters.assignee) &&
       YEAR_END_ADJUSTMENT_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
   );
+  const personalRows = clients.filter(
+    (c) =>
+      matchesFilter(c.clientCode, filters.clientCode) &&
+      matchesFilter(c.clientName, filters.clientName) &&
+      matchesFilter(c.assignee, filters.assignee) &&
+      PERSONAL_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
+  );
 
   const downloadHojinCsv = () =>
     downloadCsv(
@@ -214,6 +222,18 @@ export function ClientListPage({ onSelectClient }) {
         c.clientName,
         c.assignee ?? "",
         ...YEAR_END_ADJUSTMENT_FIELD_CODES.map((code) => c[code] ?? ""),
+      ])
+    );
+
+  const downloadPersonalCsv = () =>
+    downloadCsv(
+      `関与先一覧_個人_${todayStamp()}.csv`,
+      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(PERSONAL_FIELD_CODES, 51, fieldLabels)],
+      personalRows.map((c) => [
+        c.clientCode,
+        c.clientName,
+        c.assignee ?? "",
+        ...PERSONAL_FIELD_CODES.map((code) => c[code] ?? ""),
       ])
     );
 
@@ -566,9 +586,71 @@ export function ClientListPage({ onSelectClient }) {
 
       {activeTab === "個人" && (
         <>
-          <div className="empty">
-            <div className="empty__title">工事中</div>
+          {error && <div className="error-banner">{error}</div>}
+
+          <div className="list-toolbar">
+            <button type="button" className="btn btn--ghost" onClick={downloadPersonalCsv}>
+              CSVダウンロード
+            </button>
           </div>
+
+          {clients.length === 0 ? (
+            <div className="empty">
+              <div className="empty__title">クライアントがありません</div>
+            </div>
+          ) : (
+            <table className="simple-table simple-table--fixed">
+              <thead>
+                <tr>
+                  <th>関与先番号</th>
+                  <th>関与先名</th>
+                  <th>担当者</th>
+                  {PERSONAL_FIELD_CODES.map((code, i) => (
+                    <th key={code} style={{ width: "7.8%" }}>
+                      {fieldLabels[code] || `カスタム項目${i + 51}`}
+                    </th>
+                  ))}
+                </tr>
+                <FilterRow
+                  columns={[
+                    { key: "clientCode" },
+                    { key: "clientName" },
+                    { key: "assignee" },
+                    ...PERSONAL_FIELD_CODES.map((code) => ({ key: code, width: "7.8%" })),
+                  ]}
+                  filters={filters}
+                  onChange={setFilter}
+                />
+              </thead>
+              <tbody>
+                {personalRows.map((c) => (
+                    <tr key={c.clientCode} style={{ backgroundColor: assigneeRowColor(c.assignee) }}>
+                      <td className="simple-table__code">{c.clientCode}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="simple-table__link"
+                          onClick={() => onSelectClient(c.clientCode)}
+                        >
+                          {c.clientName}
+                        </button>
+                      </td>
+                      <td>{c.assignee || "—"}</td>
+                      {PERSONAL_FIELD_CODES.map((code) => (
+                        <td key={code}>
+                          <input
+                            className="simple-table__input simple-table__input--narrow"
+                            defaultValue={c[code] ?? ""}
+                            key={`${code}-${c[code] ?? ""}`}
+                            onBlur={commitField(c.clientCode, code)}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          )}
 
           <TabCommentBox
             tabKey={TAB_COMMENT_KEYS["個人"]}
