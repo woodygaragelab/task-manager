@@ -3,13 +3,14 @@ import { api } from "./api";
 import { CUSTOM_FIELD_CODES } from "./ClientProfileTab";
 import { TabCommentBox } from "./ClientConsolePage";
 
-const TABS = ["法人", "法人税", "源泉R8上期", "年調R7", "個人"];
+const TABS = ["法人", "法人税", "源泉R8上期", "年調R7", "個人", "個人確定申告"];
 // 関与先コンソール画面の同名タブとコメントが混ざらないよう、一覧画面専用のキーを使う
 const TAB_COMMENT_KEYS = Object.fromEntries(TABS.map((tab) => [tab, `一覧:${tab}`]));
 const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
 const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(30, 40);
 const PERSONAL_FIELD_CODES = CUSTOM_FIELD_CODES.slice(50, 59);
+const PERSONAL_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(60, 80);
 
 const matchesFilter = (value, filter) =>
   !filter || String(value ?? "").toLowerCase().includes(filter.trim().toLowerCase());
@@ -172,6 +173,14 @@ export function ClientListPage({ onSelectClient }) {
       matchesFilter(c.assignee, filters.assignee) &&
       PERSONAL_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
   );
+  const personalTaxRows = clients.filter(
+    (c) =>
+      c.clientCode.startsWith("P") &&
+      matchesFilter(c.clientCode, filters.clientCode) &&
+      matchesFilter(c.clientName, filters.clientName) &&
+      matchesFilter(c.assignee, filters.assignee) &&
+      PERSONAL_TAX_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
+  );
 
   const downloadHojinCsv = () =>
     downloadCsv(
@@ -239,6 +248,18 @@ export function ClientListPage({ onSelectClient }) {
         c.clientName,
         c.assignee ?? "",
         ...PERSONAL_FIELD_CODES.map((code) => c[code] ?? ""),
+      ])
+    );
+
+  const downloadPersonalTaxCsv = () =>
+    downloadCsv(
+      `関与先一覧_個人確定申告_${todayStamp()}.csv`,
+      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(PERSONAL_TAX_FIELD_CODES, 61, fieldLabels)],
+      personalTaxRows.map((c) => [
+        c.clientCode,
+        c.clientName,
+        c.assignee ?? "",
+        ...PERSONAL_TAX_FIELD_CODES.map((code) => c[code] ?? ""),
       ])
     );
 
@@ -660,6 +681,82 @@ export function ClientListPage({ onSelectClient }) {
           <TabCommentBox
             tabKey={TAB_COMMENT_KEYS["個人"]}
             comment={tabComments[TAB_COMMENT_KEYS["個人"]] ?? ""}
+            onCommit={commitTabComment}
+          />
+        </>
+      )}
+
+      {activeTab === "個人確定申告" && (
+        <>
+          {error && <div className="error-banner">{error}</div>}
+
+          <div className="list-toolbar">
+            <button type="button" className="btn btn--ghost" onClick={downloadPersonalTaxCsv}>
+              CSVダウンロード
+            </button>
+          </div>
+
+          {clients.length === 0 ? (
+            <div className="empty">
+              <div className="empty__title">クライアントがありません</div>
+            </div>
+          ) : (
+            <div style={{ overflowX: "auto" }}>
+              <table className="simple-table">
+                <thead>
+                  <tr>
+                    <th>関与先番号</th>
+                    <th>関与先名</th>
+                    <th>担当者</th>
+                    {PERSONAL_TAX_FIELD_CODES.map((code, i) => (
+                      <th key={code}>{fieldLabels[code] || `カスタム項目${i + 61}`}</th>
+                    ))}
+                  </tr>
+                  <FilterRow
+                    columns={[
+                      { key: "clientCode" },
+                      { key: "clientName" },
+                      { key: "assignee" },
+                      ...PERSONAL_TAX_FIELD_CODES.map((code) => ({ key: code })),
+                    ]}
+                    filters={filters}
+                    onChange={setFilter}
+                  />
+                </thead>
+                <tbody>
+                  {personalTaxRows.map((c) => (
+                      <tr key={c.clientCode} style={{ backgroundColor: assigneeRowColor(c.assignee) }}>
+                        <td className="simple-table__code">{c.clientCode}</td>
+                        <td>
+                          <button
+                            type="button"
+                            className="simple-table__link"
+                            onClick={() => onSelectClient(c.clientCode)}
+                          >
+                            {c.clientName}
+                          </button>
+                        </td>
+                        <td>{c.assignee || "—"}</td>
+                        {PERSONAL_TAX_FIELD_CODES.map((code) => (
+                          <td key={code}>
+                            <input
+                              className="simple-table__input simple-table__input--narrow"
+                              defaultValue={c[code] ?? ""}
+                              key={`${code}-${c[code] ?? ""}`}
+                              onBlur={commitField(c.clientCode, code)}
+                            />
+                          </td>
+                        ))}
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+
+          <TabCommentBox
+            tabKey={TAB_COMMENT_KEYS["個人確定申告"]}
+            comment={tabComments[TAB_COMMENT_KEYS["個人確定申告"]] ?? ""}
             onCommit={commitTabComment}
           />
         </>
