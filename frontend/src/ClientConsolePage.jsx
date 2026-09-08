@@ -9,6 +9,9 @@ import { api } from "./api";
 
 const POLL_INTERVAL_MS = 4000;
 const ADMIN_ONLY_TABS = ["法人税", "源泉R8上期", "年調R7"];
+// 「資料」タブ:タスク(Series)のseriesNameが「資料受領」のものだけに絞った進捗表
+const DOCUMENTS_TAB = "資料";
+const DOCUMENTS_SERIES_NAME = "資料受領";
 // 「資料進捗」タブ(taskGroup別の進捗表)を3タブに分割したもの。
 // groups: nullは全taskGroupを対象、配列を指定するとそのtaskGroupのみに絞り込む(変更しやすいようここに集約)。
 const PROGRESS_TABS = [
@@ -22,6 +25,7 @@ const ALL_TABS = [
   "基本情報",
   "法人税",
   "源泉R8上期",
+  DOCUMENTS_TAB,
   "年調R7",
   ...PROGRESS_TABS.map((p) => p.tab),
   "履歴",
@@ -318,6 +322,24 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                   onCommitField={commitClientField}
                 />
               )}
+
+              {activeTab === DOCUMENTS_TAB &&
+                (loading ? (
+                  <div className="status-line">読み込み中…</div>
+                ) : (
+                  <ProgressTab
+                    tasks={tasks.filter(
+                      (t) => seriesNameByCode[t.seriesCode] === DOCUMENTS_SERIES_NAME
+                    )}
+                    seriesNameByCode={seriesNameByCode}
+                    frameNameByCode={frameNameByCode}
+                    seriesGroupByCode={seriesGroupByCode}
+                    selectedTaskKey={selectedTaskCombinedKey}
+                    onSelect={selectTask}
+                    renamedFolderId={client.renamedFolderId}
+                    showSeriesName={false}
+                  />
+                ))}
 
               {PROGRESS_TABS.map(
                 ({ tab, groups }) =>

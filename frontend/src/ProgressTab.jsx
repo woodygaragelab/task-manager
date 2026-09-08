@@ -19,6 +19,7 @@ export function ProgressTab({
   selectedTaskKey,
   onSelect,
   renamedFolderId,
+  showSeriesName = true,
 }) {
   const [groupFilter, setGroupFilter] = useState("all");
   const organizedFolderUrl = driveUrl(renamedFolderId);
@@ -71,7 +72,7 @@ export function ProgressTab({
                 ))}
               </select>
             </th>
-            <th>タスク名</th>
+            {showSeriesName && <th>タスク名</th>}
             <th>整理済フォルダ</th>
             {frameCodes.map((frameCode) => (
               <th key={frameCode}>{frameNameByCode[frameCode] ?? frameCode}</th>
@@ -84,9 +85,11 @@ export function ProgressTab({
               <td className="progress__group">
                 {seriesGroupByCode[seriesCode] || "—"}
               </td>
-              <td className="progress__series">
-                {seriesNameByCode[seriesCode] ?? seriesCode}
-              </td>
+              {showSeriesName && (
+                <td className="progress__series">
+                  {seriesNameByCode[seriesCode] ?? seriesCode}
+                </td>
+              )}
               <td className="progress__folder">
                 {organizedFolderUrl ? (
                   <a href={organizedFolderUrl} target="_blank" rel="noreferrer">
