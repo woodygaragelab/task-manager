@@ -24,13 +24,15 @@ import boto3
 from boto3.dynamodb.conditions import Key
 
 dynamodb = boto3.resource("dynamodb")
-tasks_table = dynamodb.Table(os.environ["TASKS_TABLE"])
-clients_table = dynamodb.Table(os.environ["CLIENTS_TABLE"])
-series_table = dynamodb.Table(os.environ["SERIES_TABLE"])
-frames_table = dynamodb.Table(os.environ["FRAMES_TABLE"])
-history_table = dynamodb.Table(os.environ["HISTORY_TABLE"])
-agent_jobs_table = dynamodb.Table(os.environ["AGENT_JOBS_TABLE"])
-classification_rules_table = dynamodb.Table(os.environ["CLASSIFICATION_RULES_TABLE"])
+tasks_table = dynamodb.Table(os.environ.get("TASKS_TABLE", "Tasks"))
+clients_table = dynamodb.Table(os.environ.get("CLIENTS_TABLE", "TaskClients"))
+series_table = dynamodb.Table(os.environ.get("SERIES_TABLE", "TaskSeries"))
+frames_table = dynamodb.Table(os.environ.get("FRAMES_TABLE", "TaskFrames"))
+history_table = dynamodb.Table(os.environ.get("HISTORY_TABLE", "TaskHistory"))
+agent_jobs_table = dynamodb.Table(os.environ.get("AGENT_JOBS_TABLE", "TaskAgentJobs"))
+classification_rules_table = dynamodb.Table(
+    os.environ.get("CLASSIFICATION_RULES_TABLE", "TaskClassificationRules")
+)
 
 CLIENT_BUCKET = "CLIENT"
 SERIES_BUCKET = "SERIES"
@@ -49,9 +51,9 @@ TAB_KEYS = [
     "一覧:法人", "一覧:法人税", "一覧:源泉R8上期", "一覧:年調R7", "一覧:個人",
 ]
 
-# 関与先プロフィール画面の汎用カスタム項目(col01-col40、すべて文字列)。
+# 関与先プロフィール画面の汎用カスタム項目(col01-col99、すべて文字列)。
 # 表示名は設定ページ(TaskClassificationRulesTableを流用したCLIENT_FIELD_LABELSバケット)で管理する。
-CUSTOM_FIELD_CODES = [f"col{i:02d}" for i in range(1, 41)]
+CUSTOM_FIELD_CODES = [f"col{i:02d}" for i in range(1, 100)]
 
 
 class TaskNotFoundError(Exception):
@@ -215,6 +217,65 @@ def create_client(
     col38: Optional[str] = None,
     col39: Optional[str] = None,
     col40: Optional[str] = None,
+    col41: Optional[str] = None,
+    col42: Optional[str] = None,
+    col43: Optional[str] = None,
+    col44: Optional[str] = None,
+    col45: Optional[str] = None,
+    col46: Optional[str] = None,
+    col47: Optional[str] = None,
+    col48: Optional[str] = None,
+    col49: Optional[str] = None,
+    col50: Optional[str] = None,
+    col51: Optional[str] = None,
+    col52: Optional[str] = None,
+    col53: Optional[str] = None,
+    col54: Optional[str] = None,
+    col55: Optional[str] = None,
+    col56: Optional[str] = None,
+    col57: Optional[str] = None,
+    col58: Optional[str] = None,
+    col59: Optional[str] = None,
+    col60: Optional[str] = None,
+    col61: Optional[str] = None,
+    col62: Optional[str] = None,
+    col63: Optional[str] = None,
+    col64: Optional[str] = None,
+    col65: Optional[str] = None,
+    col66: Optional[str] = None,
+    col67: Optional[str] = None,
+    col68: Optional[str] = None,
+    col69: Optional[str] = None,
+    col70: Optional[str] = None,
+    col71: Optional[str] = None,
+    col72: Optional[str] = None,
+    col73: Optional[str] = None,
+    col74: Optional[str] = None,
+    col75: Optional[str] = None,
+    col76: Optional[str] = None,
+    col77: Optional[str] = None,
+    col78: Optional[str] = None,
+    col79: Optional[str] = None,
+    col80: Optional[str] = None,
+    col81: Optional[str] = None,
+    col82: Optional[str] = None,
+    col83: Optional[str] = None,
+    col84: Optional[str] = None,
+    col85: Optional[str] = None,
+    col86: Optional[str] = None,
+    col87: Optional[str] = None,
+    col88: Optional[str] = None,
+    col89: Optional[str] = None,
+    col90: Optional[str] = None,
+    col91: Optional[str] = None,
+    col92: Optional[str] = None,
+    col93: Optional[str] = None,
+    col94: Optional[str] = None,
+    col95: Optional[str] = None,
+    col96: Optional[str] = None,
+    col97: Optional[str] = None,
+    col98: Optional[str] = None,
+    col99: Optional[str] = None,
 ) -> dict:
     """クライアントを新規登録する(ドロップダウンの「新規作成」操作専用)。
 
@@ -233,7 +294,7 @@ def create_client(
     関与先に複数登録できる想定で、同じアドレスが別の関与先に登録されることは無い
     前提(重複チェックはアプリ側では行わない)。いずれも省略時は属性ごと書き込まない。
 
-    col01-col40 は関与先プロフィール画面の汎用カスタム項目(すべて文字列、用途自由)。
+    col01-col99 は関与先プロフィール画面の汎用カスタム項目(すべて文字列、用途自由)。
     表示名は get_client_field_labels/update_client_field_labels で別管理する。
     """
     custom_fields = {code: locals()[code] for code in CUSTOM_FIELD_CODES}
@@ -332,8 +393,67 @@ def update_client(
     col38: Optional[str] = None,
     col39: Optional[str] = None,
     col40: Optional[str] = None,
+    col41: Optional[str] = None,
+    col42: Optional[str] = None,
+    col43: Optional[str] = None,
+    col44: Optional[str] = None,
+    col45: Optional[str] = None,
+    col46: Optional[str] = None,
+    col47: Optional[str] = None,
+    col48: Optional[str] = None,
+    col49: Optional[str] = None,
+    col50: Optional[str] = None,
+    col51: Optional[str] = None,
+    col52: Optional[str] = None,
+    col53: Optional[str] = None,
+    col54: Optional[str] = None,
+    col55: Optional[str] = None,
+    col56: Optional[str] = None,
+    col57: Optional[str] = None,
+    col58: Optional[str] = None,
+    col59: Optional[str] = None,
+    col60: Optional[str] = None,
+    col61: Optional[str] = None,
+    col62: Optional[str] = None,
+    col63: Optional[str] = None,
+    col64: Optional[str] = None,
+    col65: Optional[str] = None,
+    col66: Optional[str] = None,
+    col67: Optional[str] = None,
+    col68: Optional[str] = None,
+    col69: Optional[str] = None,
+    col70: Optional[str] = None,
+    col71: Optional[str] = None,
+    col72: Optional[str] = None,
+    col73: Optional[str] = None,
+    col74: Optional[str] = None,
+    col75: Optional[str] = None,
+    col76: Optional[str] = None,
+    col77: Optional[str] = None,
+    col78: Optional[str] = None,
+    col79: Optional[str] = None,
+    col80: Optional[str] = None,
+    col81: Optional[str] = None,
+    col82: Optional[str] = None,
+    col83: Optional[str] = None,
+    col84: Optional[str] = None,
+    col85: Optional[str] = None,
+    col86: Optional[str] = None,
+    col87: Optional[str] = None,
+    col88: Optional[str] = None,
+    col89: Optional[str] = None,
+    col90: Optional[str] = None,
+    col91: Optional[str] = None,
+    col92: Optional[str] = None,
+    col93: Optional[str] = None,
+    col94: Optional[str] = None,
+    col95: Optional[str] = None,
+    col96: Optional[str] = None,
+    col97: Optional[str] = None,
+    col98: Optional[str] = None,
+    col99: Optional[str] = None,
 ) -> dict:
-    """既存クライアントのクライアント名・Driveフォルダ設定・担当者・決算月・3か月後月・中間月・9か月後月・差出人メールアドレス・受領フォルダ・関与タイプ・納付方式・col01-col40カスタム項目を更新する(指定した項目のみ変更)。"""
+    """既存クライアントのクライアント名・Driveフォルダ設定・担当者・決算月・3か月後月・中間月・9か月後月・差出人メールアドレス・受領フォルダ・関与タイプ・納付方式・col01-col99カスタム項目を更新する(指定した項目のみ変更)。"""
     custom_fields = {code: locals()[code] for code in CUSTOM_FIELD_CODES}
 
     key = {"lookupBucket": CLIENT_BUCKET, "clientCode": client_code}
@@ -399,7 +519,7 @@ def update_client(
 
 
 def get_client_field_labels() -> dict:
-    """関与先プロフィール画面のcol01-col40カスタム項目に設定された表示名を取得する(未設定の項目は空文字)。"""
+    """関与先プロフィール画面のcol01-col99カスタム項目に設定された表示名を取得する(未設定の項目は空文字)。"""
     resp = classification_rules_table.get_item(
         Key={"lookupBucket": CLIENT_FIELD_LABEL_BUCKET, "sortKey": CLIENT_FIELD_LABEL_KEY}
     )
@@ -408,7 +528,7 @@ def get_client_field_labels() -> dict:
 
 
 def update_client_field_labels(labels: dict) -> dict:
-    """col01-col40カスタム項目の表示名を更新する(設定ページ専用、指定されたキーのみ変更)。"""
+    """col01-col99カスタム項目の表示名を更新する(設定ページ専用、指定されたキーのみ変更)。"""
     unknown_fields = set(labels) - set(CUSTOM_FIELD_CODES)
     if unknown_fields:
         raise ValueError(f"不明なカスタム項目です: {sorted(unknown_fields)}")

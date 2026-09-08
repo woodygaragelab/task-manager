@@ -27,10 +27,13 @@ Local run:
     export ANTHROPIC_MODEL=global.anthropic.claude-sonnet-4-6
     export AWS_REGION=ap-northeast-1
     export GOOGLE_SA_SECRET_NAME=receipt-agent/google-drive-sa
-    export TASKS_TABLE=Tasks CLIENTS_TABLE=TaskClients SERIES_TABLE=TaskSeries \
-           FRAMES_TABLE=TaskFrames HISTORY_TABLE=TaskHistory AGENT_JOBS_TABLE=TaskAgentJobs \
-           CLASSIFICATION_RULES_TABLE=TaskClassificationRules
     python task_agent.py
+
+    (DynamoDB table names default to Tasks/TaskClients/TaskSeries/TaskFrames/
+    TaskHistory/TaskAgentJobs/TaskClassificationRules in task_repository.py;
+    override with TASKS_TABLE/CLIENTS_TABLE/SERIES_TABLE/FRAMES_TABLE/
+    HISTORY_TABLE/AGENT_JOBS_TABLE/CLASSIFICATION_RULES_TABLE only if pointing
+    at different tables.)
 
 Deploy:
     agentcore configure --entrypoint task_agent.py --region ap-northeast-1

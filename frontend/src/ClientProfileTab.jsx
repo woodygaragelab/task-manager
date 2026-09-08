@@ -3,7 +3,7 @@ import { api } from "./api";
 
 const ENGAGEMENT_TYPE_OPTIONS = ["年一", "自計化", "反自計化"];
 export const CUSTOM_FIELD_CODES = Array.from(
-  { length: 40 },
+  { length: 99 },
   (_, i) => `col${String(i + 1).padStart(2, "0")}`
 );
 
