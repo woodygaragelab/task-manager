@@ -80,11 +80,28 @@ def next_seq(ws, col_idx):
     return max_no + 1
 
 
+def compact_blank_rows(ws):
+    """全列が空の行を削除する。Googleスプレッドシート等で一度開いて保存し直された
+    xlsxは、実データの行数に関わらずシートの「使用範囲」だけが大きく広がって
+    保存されることがある。その状態でws.max_row(使用範囲の最終行を返す)を追記位置の
+    起点に使うと、次の追記が実データよりはるか下の行から始まり、大量の空白行が
+    放置されたまま気づかれにくくなる。ここで実際に値の無い行を都度削除しておくことで、
+    ws.max_rowが常に実データの最終行と一致するようにする。"""
+    blank_rows = [
+        row[0].row
+        for row in ws.iter_rows(min_row=2, max_row=ws.max_row)
+        if all(c.value is None for c in row)
+    ]
+    for r in reversed(blank_rows):
+        ws.delete_rows(r, 1)
+
+
 def main():
     entries_path, filelist_path = sys.argv[1], sys.argv[2]
     entries = json.load(open(entries_path, encoding="utf-8"))
 
     wb, ws = open_or_create(filelist_path)
+    compact_blank_rows(ws)
     header_row = [c.value for c in ws[1]]
     col = {h: i + 1 for i, h in enumerate(header_row) if h}
     no = next_seq(ws, col["No."])
