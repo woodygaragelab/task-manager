@@ -133,6 +133,7 @@ export function ClientListPage({ onSelectClient }) {
 
   const hojinRows = clients.filter(
     (c) =>
+      !c.clientCode.startsWith("P") &&
       matchesFilter(c.clientCode, filters.clientCode) &&
       matchesFilter(c.clientName, filters.clientName) &&
       matchesFilter(c.assignee, filters.assignee) &&
@@ -141,6 +142,7 @@ export function ClientListPage({ onSelectClient }) {
   );
   const corporateTaxRows = clients.filter(
     (c) =>
+      !c.clientCode.startsWith("P") &&
       matchesFilter(c.clientCode, filters.clientCode) &&
       matchesFilter(c.clientName, filters.clientName) &&
       matchesFilter(c.assignee, filters.assignee) &&
@@ -148,6 +150,7 @@ export function ClientListPage({ onSelectClient }) {
   );
   const withholdingRows = clients.filter(
     (c) =>
+      !c.clientCode.startsWith("P") &&
       matchesFilter(c.clientCode, filters.clientCode) &&
       matchesFilter(c.clientName, filters.clientName) &&
       matchesFilter(c.assignee, filters.assignee) &&
@@ -155,6 +158,7 @@ export function ClientListPage({ onSelectClient }) {
   );
   const yearEndRows = clients.filter(
     (c) =>
+      !c.clientCode.startsWith("P") &&
       matchesFilter(c.clientCode, filters.clientCode) &&
       matchesFilter(c.clientName, filters.clientName) &&
       matchesFilter(c.assignee, filters.assignee) &&
@@ -162,6 +166,7 @@ export function ClientListPage({ onSelectClient }) {
   );
   const personalRows = clients.filter(
     (c) =>
+      c.clientCode.startsWith("P") &&
       matchesFilter(c.clientCode, filters.clientCode) &&
       matchesFilter(c.clientName, filters.clientName) &&
       matchesFilter(c.assignee, filters.assignee) &&
