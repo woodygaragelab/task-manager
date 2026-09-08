@@ -96,7 +96,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
   const [error, setError] = useState(null);
   const [lastSynced, setLastSynced] = useState(null);
   const [selectedTaskKey, setSelectedTaskKey] = useState(null); // {seriesCode, frameCode} | null
-  const [activeTab, setActiveTab] = useState(PROGRESS_TABS[0].tab);
+  const [activeTab, setActiveTab] = useState(DOCUMENTS_TAB);
   const [fieldLabels, setFieldLabels] = useState({});
   const [tabComments, setTabComments] = useState({});
 
