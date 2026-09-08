@@ -339,6 +339,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                       seriesGroupByCode={seriesGroupByCode}
                       selectedTaskKey={selectedTaskCombinedKey}
                       onSelect={selectTask}
+                      renamedFolderId={client.renamedFolderId}
                     />
                   ))
               )}

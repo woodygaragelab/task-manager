@@ -8,6 +8,9 @@ const STATUS_ABBR = {
   完了: "完",
 };
 
+const driveUrl = (folderId) =>
+  folderId ? `https://drive.google.com/drive/folders/${folderId}?usp=drive_link` : null;
+
 export function ProgressTab({
   tasks,
   seriesNameByCode,
@@ -15,8 +18,10 @@ export function ProgressTab({
   seriesGroupByCode,
   selectedTaskKey,
   onSelect,
+  renamedFolderId,
 }) {
   const [groupFilter, setGroupFilter] = useState("all");
+  const organizedFolderUrl = driveUrl(renamedFolderId);
 
   const groups = useMemo(
     () =>
@@ -67,6 +72,7 @@ export function ProgressTab({
               </select>
             </th>
             <th>タスク名</th>
+            <th>整理済フォルダ</th>
             {frameCodes.map((frameCode) => (
               <th key={frameCode}>{frameNameByCode[frameCode] ?? frameCode}</th>
             ))}
@@ -80,6 +86,15 @@ export function ProgressTab({
               </td>
               <td className="progress__series">
                 {seriesNameByCode[seriesCode] ?? seriesCode}
+              </td>
+              <td className="progress__folder">
+                {organizedFolderUrl ? (
+                  <a href={organizedFolderUrl} target="_blank" rel="noreferrer">
+                    /整理済
+                  </a>
+                ) : (
+                  <span className="progress__none">/整理済</span>
+                )}
               </td>
               {frameCodes.map((frameCode) => {
                 const key = `${seriesCode}#${frameCode}`;
