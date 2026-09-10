@@ -664,23 +664,16 @@ export function ClientListPage({ onSelectClient }) {
                         </button>
                       </td>
                       <td>{c.assignee || "—"}</td>
-                      {PERSONAL_FIELD_CODES.map((code) => {
-                        const value = c[code] ?? "";
-                        const isFilled = value !== "" && value !== "-";
-                        return (
-                          <td key={code}>
-                            <input
-                              className={
-                                "simple-table__input simple-table__input--narrow simple-table__input--gantt" +
-                                (isFilled ? " simple-table__input--filled" : "")
-                              }
-                              defaultValue={value}
-                              key={`${code}-${value}`}
-                              onBlur={commitField(c.clientCode, code)}
-                            />
-                          </td>
-                        );
-                      })}
+                      {PERSONAL_FIELD_CODES.map((code) => (
+                        <td key={code}>
+                          <input
+                            className="simple-table__input simple-table__input--narrow"
+                            defaultValue={c[code] ?? ""}
+                            key={`${code}-${c[code] ?? ""}`}
+                            onBlur={commitField(c.clientCode, code)}
+                          />
+                        </td>
+                      ))}
                     </tr>
                   ))}
               </tbody>
