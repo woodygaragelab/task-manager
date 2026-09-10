@@ -739,15 +739,17 @@ export function ClientListPage({ onSelectClient }) {
                           </button>
                         </td>
                         <td>{c.assignee || "—"}</td>
-                        {PERSONAL_TAX_FIELD_CODES.map((code) => {
+                        {PERSONAL_TAX_FIELD_CODES.map((code, i) => {
                           const value = c[code] ?? "";
                           const isFilled = value !== "" && value !== "-";
+                          const isGantt = i > 0;
                           return (
                             <td key={code}>
                               <input
                                 className={
-                                  "simple-table__input simple-table__input--narrow simple-table__input--gantt" +
-                                  (isFilled ? " simple-table__input--filled" : "")
+                                  "simple-table__input simple-table__input--narrow" +
+                                  (isGantt ? " simple-table__input--gantt" : "") +
+                                  (isGantt && isFilled ? " simple-table__input--filled" : "")
                                 }
                                 defaultValue={value}
                                 key={`${code}-${value}`}
