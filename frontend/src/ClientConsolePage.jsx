@@ -31,6 +31,8 @@ const ALL_TABS = [
   "履歴",
   "エージェント",
 ];
+// タブタイトルのフォント色を薄いグレーにするタブ(法人税資料/源泉資料/年調資料/履歴/エージェント)
+const MUTED_TABS = new Set([...PROGRESS_TABS.map((p) => p.tab), "履歴", "エージェント"]);
 const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
 const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
 const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
@@ -285,7 +287,9 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                     key={tab}
                     type="button"
                     className={
-                      "tabs__tab" + (activeTab === tab ? " tabs__tab--active" : "")
+                      "tabs__tab" +
+                      (activeTab === tab ? " tabs__tab--active" : "") +
+                      (MUTED_TABS.has(tab) ? " tabs__tab--muted" : "")
                     }
                     onClick={() => setActiveTab(tab)}
                   >

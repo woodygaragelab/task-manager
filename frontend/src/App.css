@@ -449,6 +449,18 @@
   border-bottom-color: var(--seal-green);
 }
 
+.tabs__tab--muted {
+  color: #b0b0b0;
+}
+
+.tabs__tab--muted:hover {
+  color: #888;
+}
+
+.tabs__tab--muted.tabs__tab--active {
+  color: var(--seal-green);
+}
+
 .btn {
   font-family: var(--font-body);
   font-size: 14px;
