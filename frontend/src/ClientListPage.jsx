@@ -149,6 +149,7 @@ export function ClientListPage({ onSelectClient }) {
     }
   };
 
+  const hojinFields = fieldsForTab(fieldConfig, "法人");
   const corporateTaxFields = fieldsForTab(fieldConfig, "法人税");
   const withholdingFields = fieldsForTab(fieldConfig, "源泉R8上期");
   const yearEndFields = fieldsForTab(fieldConfig, "年調R7");
@@ -162,7 +163,8 @@ export function ClientListPage({ onSelectClient }) {
       matchesFilter(c.clientName, filters.clientName) &&
       matchesFilter(c.assignee, filters.assignee) &&
       matchesFilter(c.engagementType, filters.engagementType) &&
-      matchesFilter((c.senderEmails ?? []).join(", "), filters.senderEmails)
+      matchesFilter((c.senderEmails ?? []).join(", "), filters.senderEmails) &&
+      hojinFields.every((code) => matchesFilter(c[code], filters[code]))
   );
   const corporateTaxRows = clients.filter(
     (c) =>
@@ -316,7 +318,7 @@ export function ClientListPage({ onSelectClient }) {
               <div className="empty__title">クライアントがありません</div>
             </div>
           ) : (
-            <table className="simple-table">
+            <table className="simple-table simple-table--fixed">
               <thead>
                 <tr>
                   <th>関与先番号</th>
@@ -324,6 +326,14 @@ export function ClientListPage({ onSelectClient }) {
                   <th>担当者</th>
                   <th>関与タイプ</th>
                   <th>差出人メールアドレス</th>
+                  {hojinFields.map((code) => (
+                    <th
+                      key={code}
+                      style={fieldWidth(fieldConfig, code) ? { width: fieldWidth(fieldConfig, code) } : undefined}
+                    >
+                      {fieldLabel(fieldConfig, code)}
+                    </th>
+                  ))}
                 </tr>
                 <FilterRow
                   columns={[
@@ -332,6 +342,7 @@ export function ClientListPage({ onSelectClient }) {
                     { key: "assignee" },
                     { key: "engagementType" },
                     { key: "senderEmails" },
+                    ...hojinFields.map((code) => ({ key: code, width: fieldWidth(fieldConfig, code) })),
                   ]}
                   filters={filters}
                   onChange={setFilter}
@@ -353,6 +364,16 @@ export function ClientListPage({ onSelectClient }) {
                       <td>{c.assignee || "—"}</td>
                       <td>{c.engagementType || "—"}</td>
                       <td>{(c.senderEmails ?? []).join(", ") || "—"}</td>
+                      {hojinFields.map((code) => (
+                        <td key={code}>
+                          <input
+                            className={customFieldCellClassName(fieldConfig, code, c[code] ?? "")}
+                            defaultValue={c[code] ?? ""}
+                            key={`${code}-${c[code] ?? ""}`}
+                            onBlur={commitField(c.clientCode, code)}
+                          />
+                        </td>
+                      ))}
                     </tr>
                   ))}
               </tbody>
