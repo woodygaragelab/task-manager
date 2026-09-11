@@ -54,10 +54,10 @@ export const api = {
   createClientDriveFolder: (clientCode) =>
     request(`/clients/${encodeURIComponent(clientCode)}/drive-folder`, { method: "POST" }),
 
-  getClientFieldLabels: () => request(`/client-field-labels`),
+  getClientFields: () => request(`/client-fields`),
 
-  updateClientFieldLabels: (patch) =>
-    request(`/client-field-labels`, { method: "PATCH", body: patch }),
+  updateClientFields: (patch) =>
+    request(`/client-fields`, { method: "PATCH", body: patch }),
 
   getTabComments: () => request(`/tab-comments`),
 

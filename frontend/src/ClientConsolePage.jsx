@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { ClientProfileTab, CUSTOM_FIELD_CODES } from "./ClientProfileTab";
+import { ClientProfileTab } from "./ClientProfileTab";
 import { ProgressTab } from "./ProgressTab";
 import { TaskDetailPanel } from "./TaskDetailPanel";
 import { HistoryTab } from "./HistoryTab";
@@ -8,7 +8,7 @@ import { useAdminMode } from "./AdminModeContext";
 import { api } from "./api";
 
 const POLL_INTERVAL_MS = 4000;
-const ADMIN_ONLY_TABS = ["法人税", "源泉R8上期", "年調R7"];
+const ADMIN_ONLY_TABS = ["履歴", "エージェント"];
 // 「資料」タブ:タスク(Series)のseriesNameが「資料受領」のものだけに絞った進捗表
 const DOCUMENTS_TAB = "資料";
 const DOCUMENTS_SERIES_NAME = "資料受領";
@@ -19,20 +19,14 @@ const PROGRESS_TABS = [];
 const INIT_TASK_GROUPS = ["売上", "支払", "給与", "銀行通帳"];
 const ALL_TABS = [
   "基本情報",
-  "法人税",
-  "源泉R8上期",
   DOCUMENTS_TAB,
-  "年調R7",
   ...PROGRESS_TABS.map((p) => p.tab),
   "履歴",
   "エージェント",
 ];
-// タブタイトルのフォント色を薄いグレーにするタブ(法人税資料/源泉資料/年調資料/履歴/エージェント)
+// タブタイトルのフォント色を薄いグレーにするタブ(履歴/エージェント)
 const MUTED_TABS = new Set([...PROGRESS_TABS.map((p) => p.tab), "履歴", "エージェント"]);
 const DEFAULT_CLIENT = { clientCode: "MM", clientName: "MM株式会社" };
-const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
-const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
-const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(30, 40);
 
 export function TabCommentBox({ tabKey, comment, onCommit }) {
   return (
@@ -47,34 +41,6 @@ export function TabCommentBox({ tabKey, comment, onCommit }) {
         onBlur={(e) => onCommit(tabKey, e.target.value)}
       />
     </div>
-  );
-}
-
-function ClientFieldsTab({ client, fieldLabels, codes, labelOffset, onCommitField }) {
-  return (
-    <table className="simple-table">
-      <thead>
-        <tr>
-          <th>項目名</th>
-          <th>値</th>
-        </tr>
-      </thead>
-      <tbody>
-        {codes.map((code, i) => (
-          <tr key={code}>
-            <td>{fieldLabels[code] || `カスタム項目${i + labelOffset}`}</td>
-            <td>
-              <input
-                className="simple-table__input"
-                defaultValue={client[code] ?? ""}
-                key={`${code}-${client.clientCode}-${client[code] ?? ""}`}
-                onBlur={(e) => onCommitField(code, e.target.value)}
-              />
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
   );
 }
 
@@ -95,11 +61,9 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
   const [lastSynced, setLastSynced] = useState(null);
   const [selectedTaskKey, setSelectedTaskKey] = useState(null); // {seriesCode, frameCode} | null
   const [activeTab, setActiveTab] = useState(DOCUMENTS_TAB);
-  const [fieldLabels, setFieldLabels] = useState({});
   const [tabComments, setTabComments] = useState({});
 
   useEffect(() => {
-    api.getClientFieldLabels().then(setFieldLabels).catch(() => {});
     api.getTabComments().then(setTabComments).catch(() => {});
   }, []);
 
@@ -109,16 +73,6 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminMode]);
-
-  const commitClientField = async (field, value) => {
-    if (!client || value === (client[field] ?? "")) return;
-    try {
-      const updated = await api.updateClient(client.clientCode, { [field]: value });
-      setClient(updated);
-    } catch (e) {
-      setError(e.message);
-    }
-  };
 
   const commitTabComment = async (tabKey, value) => {
     if (value === (tabComments[tabKey] ?? "")) return;
@@ -303,26 +257,6 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                 />
               )}
 
-              {adminMode && activeTab === "法人税" && (
-                <ClientFieldsTab
-                  client={client}
-                  fieldLabels={fieldLabels}
-                  codes={CORPORATE_TAX_FIELD_CODES}
-                  labelOffset={11}
-                  onCommitField={commitClientField}
-                />
-              )}
-
-              {adminMode && activeTab === "源泉R8上期" && (
-                <ClientFieldsTab
-                  client={client}
-                  fieldLabels={fieldLabels}
-                  codes={WITHHOLDING_FIELD_CODES}
-                  labelOffset={21}
-                  onCommitField={commitClientField}
-                />
-              )}
-
               {activeTab === DOCUMENTS_TAB &&
                 (loading ? (
                   <div className="status-line">読み込み中…</div>
@@ -378,16 +312,6 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
               )}
 
               {activeTab === "エージェント" && <AgentsPanel client={client} />}
-
-              {adminMode && activeTab === "年調R7" && (
-                <ClientFieldsTab
-                  client={client}
-                  fieldLabels={fieldLabels}
-                  codes={YEAR_END_ADJUSTMENT_FIELD_CODES}
-                  labelOffset={31}
-                  onCommitField={commitClientField}
-                />
-              )}
 
               <TabCommentBox
                 tabKey={activeTab}

@@ -125,13 +125,13 @@ def handler(event, context):
             )
             return _response(201, updated_client)
 
-        # ---- GET /client-field-labels ----
-        if route_key == "GET /client-field-labels":
-            return _response(200, repo.get_client_field_labels())
+        # ---- GET /client-fields ----
+        if route_key == "GET /client-fields":
+            return _response(200, repo.get_client_fields())
 
-        # ---- PATCH /client-field-labels ----
-        if route_key == "PATCH /client-field-labels":
-            return _response(200, repo.update_client_field_labels(body))
+        # ---- PATCH /client-fields ----
+        if route_key == "PATCH /client-fields":
+            return _response(200, repo.update_client_fields(body))
 
         # ---- GET /tab-comments ----
         if route_key == "GET /tab-comments":

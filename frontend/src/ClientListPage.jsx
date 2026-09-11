@@ -6,11 +6,6 @@ import { TabCommentBox } from "./ClientConsolePage";
 const TABS = ["法人", "法人税", "源泉R8上期", "年調R7", "個人", "個人確定申告"];
 // 関与先コンソール画面の同名タブとコメントが混ざらないよう、一覧画面専用のキーを使う
 const TAB_COMMENT_KEYS = Object.fromEntries(TABS.map((tab) => [tab, `一覧:${tab}`]));
-const CORPORATE_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(10, 20);
-const WITHHOLDING_FIELD_CODES = CUSTOM_FIELD_CODES.slice(20, 30);
-const YEAR_END_ADJUSTMENT_FIELD_CODES = CUSTOM_FIELD_CODES.slice(30, 40);
-const PERSONAL_FIELD_CODES = CUSTOM_FIELD_CODES.slice(50, 59);
-const PERSONAL_TAX_FIELD_CODES = CUSTOM_FIELD_CODES.slice(60, 80);
 
 const matchesFilter = (value, filter) =>
   !filter || String(value ?? "").toLowerCase().includes(filter.trim().toLowerCase());
@@ -52,8 +47,30 @@ function todayStamp() {
   return `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}`;
 }
 
-function customFieldHeaders(codes, offset, fieldLabels) {
-  return codes.map((code, i) => fieldLabels[code] || `カスタム項目${i + offset}`);
+// col01→1、col11→11のように項目番号をそのまま使う。SettingClientFields.jsxで
+// 表示ラベルが未設定の項目はこの名前でフォールバックする。
+const fallbackLabel = (code) => `カスタム項目${Number(code.slice(3))}`;
+const fieldLabel = (fieldConfig, code) => fieldConfig[code]?.label || fallbackLabel(code);
+const fieldWidth = (fieldConfig, code) => fieldConfig[code]?.width || undefined;
+const fieldStyle = (fieldConfig, code) => fieldConfig[code]?.style ?? "text";
+// SettingClientFields.jsxで指定された表示タブ名がtabと一致する項目だけを、col番号の
+// 昇順で抜き出す(以前はCUSTOM_FIELD_CODES.slice()でタブごとの範囲をハードコードしていた)。
+const fieldsForTab = (fieldConfig, tab) =>
+  CUSTOM_FIELD_CODES.filter((code) => (fieldConfig[code]?.tab || "") === tab);
+
+function customFieldHeaders(codes, fieldConfig) {
+  return codes.map((code) => fieldLabel(fieldConfig, code));
+}
+
+// 表示スタイルが「ガント風」の項目だけ、値が入っているセルを矢印形の濃色chipにする。
+function customFieldCellClassName(fieldConfig, code, value) {
+  const isGantt = fieldStyle(fieldConfig, code) === "gantt";
+  const isFilled = isGantt && value !== "" && value !== "-";
+  return (
+    "simple-table__input simple-table__input--narrow" +
+    (isGantt ? " simple-table__input--gantt" : "") +
+    (isFilled ? " simple-table__input--filled" : "")
+  );
 }
 
 function FilterRow({ columns, filters, onChange }) {
@@ -76,7 +93,7 @@ function FilterRow({ columns, filters, onChange }) {
 export function ClientListPage({ onSelectClient }) {
   const [activeTab, setActiveTab] = useState(TABS[0]);
   const [clients, setClients] = useState([]);
-  const [fieldLabels, setFieldLabels] = useState({});
+  const [fieldConfig, setFieldConfig] = useState({});
   const [error, setError] = useState(null);
   const [newCode, setNewCode] = useState("");
   const [newName, setNewName] = useState("");
@@ -89,7 +106,7 @@ export function ClientListPage({ onSelectClient }) {
 
   useEffect(() => {
     api.listClients().then(setClients).catch((e) => setError(e.message));
-    api.getClientFieldLabels().then(setFieldLabels).catch((e) => setError(e.message));
+    api.getClientFields().then(setFieldConfig).catch((e) => setError(e.message));
     api.getTabComments().then(setTabComments).catch(() => {});
   }, []);
 
@@ -132,6 +149,12 @@ export function ClientListPage({ onSelectClient }) {
     }
   };
 
+  const corporateTaxFields = fieldsForTab(fieldConfig, "法人税");
+  const withholdingFields = fieldsForTab(fieldConfig, "源泉R8上期");
+  const yearEndFields = fieldsForTab(fieldConfig, "年調R7");
+  const personalFields = fieldsForTab(fieldConfig, "個人");
+  const personalTaxFields = fieldsForTab(fieldConfig, "個人確定申告");
+
   const hojinRows = clients.filter(
     (c) =>
       !c.clientCode.startsWith("P") &&
@@ -147,7 +170,7 @@ export function ClientListPage({ onSelectClient }) {
       matchesFilter(c.clientCode, filters.clientCode) &&
       matchesFilter(c.clientName, filters.clientName) &&
       matchesFilter(c.assignee, filters.assignee) &&
-      CORPORATE_TAX_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
+      corporateTaxFields.every((code) => matchesFilter(c[code], filters[code]))
   );
   const withholdingRows = clients.filter(
     (c) =>
@@ -155,7 +178,7 @@ export function ClientListPage({ onSelectClient }) {
       matchesFilter(c.clientCode, filters.clientCode) &&
       matchesFilter(c.clientName, filters.clientName) &&
       matchesFilter(c.assignee, filters.assignee) &&
-      WITHHOLDING_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
+      withholdingFields.every((code) => matchesFilter(c[code], filters[code]))
   );
   const yearEndRows = clients.filter(
     (c) =>
@@ -163,7 +186,7 @@ export function ClientListPage({ onSelectClient }) {
       matchesFilter(c.clientCode, filters.clientCode) &&
       matchesFilter(c.clientName, filters.clientName) &&
       matchesFilter(c.assignee, filters.assignee) &&
-      YEAR_END_ADJUSTMENT_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
+      yearEndFields.every((code) => matchesFilter(c[code], filters[code]))
   );
   const personalRows = clients.filter(
     (c) =>
@@ -171,7 +194,7 @@ export function ClientListPage({ onSelectClient }) {
       matchesFilter(c.clientCode, filters.clientCode) &&
       matchesFilter(c.clientName, filters.clientName) &&
       matchesFilter(c.assignee, filters.assignee) &&
-      PERSONAL_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
+      personalFields.every((code) => matchesFilter(c[code], filters[code]))
   );
   const personalTaxRows = clients.filter(
     (c) =>
@@ -179,7 +202,7 @@ export function ClientListPage({ onSelectClient }) {
       matchesFilter(c.clientCode, filters.clientCode) &&
       matchesFilter(c.clientName, filters.clientName) &&
       matchesFilter(c.assignee, filters.assignee) &&
-      PERSONAL_TAX_FIELD_CODES.every((code) => matchesFilter(c[code], filters[code]))
+      personalTaxFields.every((code) => matchesFilter(c[code], filters[code]))
   );
 
   const downloadHojinCsv = () =>
@@ -191,7 +214,7 @@ export function ClientListPage({ onSelectClient }) {
         "担当者",
         "関与タイプ",
         "差出人メールアドレス",
-        ...customFieldHeaders(CUSTOM_FIELD_CODES, 1, fieldLabels),
+        ...customFieldHeaders(CUSTOM_FIELD_CODES, fieldConfig),
       ],
       hojinRows.map((c) => [
         c.clientCode,
@@ -206,60 +229,60 @@ export function ClientListPage({ onSelectClient }) {
   const downloadCorporateTaxCsv = () =>
     downloadCsv(
       `関与先一覧_法人税_${todayStamp()}.csv`,
-      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(CORPORATE_TAX_FIELD_CODES, 11, fieldLabels)],
+      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(corporateTaxFields, fieldConfig)],
       corporateTaxRows.map((c) => [
         c.clientCode,
         c.clientName,
         c.assignee ?? "",
-        ...CORPORATE_TAX_FIELD_CODES.map((code) => c[code] ?? ""),
+        ...corporateTaxFields.map((code) => c[code] ?? ""),
       ])
     );
 
   const downloadWithholdingCsv = () =>
     downloadCsv(
       `関与先一覧_源泉R8上期_${todayStamp()}.csv`,
-      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(WITHHOLDING_FIELD_CODES, 21, fieldLabels)],
+      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(withholdingFields, fieldConfig)],
       withholdingRows.map((c) => [
         c.clientCode,
         c.clientName,
         c.assignee ?? "",
-        ...WITHHOLDING_FIELD_CODES.map((code) => c[code] ?? ""),
+        ...withholdingFields.map((code) => c[code] ?? ""),
       ])
     );
 
   const downloadYearEndCsv = () =>
     downloadCsv(
       `関与先一覧_年調R7_${todayStamp()}.csv`,
-      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(YEAR_END_ADJUSTMENT_FIELD_CODES, 31, fieldLabels)],
+      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(yearEndFields, fieldConfig)],
       yearEndRows.map((c) => [
         c.clientCode,
         c.clientName,
         c.assignee ?? "",
-        ...YEAR_END_ADJUSTMENT_FIELD_CODES.map((code) => c[code] ?? ""),
+        ...yearEndFields.map((code) => c[code] ?? ""),
       ])
     );
 
   const downloadPersonalCsv = () =>
     downloadCsv(
       `関与先一覧_個人_${todayStamp()}.csv`,
-      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(PERSONAL_FIELD_CODES, 51, fieldLabels)],
+      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(personalFields, fieldConfig)],
       personalRows.map((c) => [
         c.clientCode,
         c.clientName,
         c.assignee ?? "",
-        ...PERSONAL_FIELD_CODES.map((code) => c[code] ?? ""),
+        ...personalFields.map((code) => c[code] ?? ""),
       ])
     );
 
   const downloadPersonalTaxCsv = () =>
     downloadCsv(
       `関与先一覧_個人確定申告_${todayStamp()}.csv`,
-      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(PERSONAL_TAX_FIELD_CODES, 61, fieldLabels)],
+      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(personalTaxFields, fieldConfig)],
       personalTaxRows.map((c) => [
         c.clientCode,
         c.clientName,
         c.assignee ?? "",
-        ...PERSONAL_TAX_FIELD_CODES.map((code) => c[code] ?? ""),
+        ...personalTaxFields.map((code) => c[code] ?? ""),
       ])
     );
 
@@ -389,9 +412,12 @@ export function ClientListPage({ onSelectClient }) {
                   <th>関与先番号</th>
                   <th>関与先名</th>
                   <th>担当者</th>
-                  {CORPORATE_TAX_FIELD_CODES.map((code, i) => (
-                    <th key={code} style={{ width: "7.8%" }}>
-                      {fieldLabels[code] || `カスタム項目${i + 11}`}
+                  {corporateTaxFields.map((code) => (
+                    <th
+                      key={code}
+                      style={fieldWidth(fieldConfig, code) ? { width: fieldWidth(fieldConfig, code) } : undefined}
+                    >
+                      {fieldLabel(fieldConfig, code)}
                     </th>
                   ))}
                 </tr>
@@ -400,7 +426,7 @@ export function ClientListPage({ onSelectClient }) {
                     { key: "clientCode" },
                     { key: "clientName" },
                     { key: "assignee" },
-                    ...CORPORATE_TAX_FIELD_CODES.map((code) => ({ key: code, width: "7.8%" })),
+                    ...corporateTaxFields.map((code) => ({ key: code, width: fieldWidth(fieldConfig, code) })),
                   ]}
                   filters={filters}
                   onChange={setFilter}
@@ -420,10 +446,10 @@ export function ClientListPage({ onSelectClient }) {
                         </button>
                       </td>
                       <td>{c.assignee || "—"}</td>
-                      {CORPORATE_TAX_FIELD_CODES.map((code) => (
+                      {corporateTaxFields.map((code) => (
                         <td key={code}>
                           <input
-                            className="simple-table__input simple-table__input--narrow"
+                            className={customFieldCellClassName(fieldConfig, code, c[code] ?? "")}
                             defaultValue={c[code] ?? ""}
                             key={`${code}-${c[code] ?? ""}`}
                             onBlur={commitField(c.clientCode, code)}
@@ -465,9 +491,12 @@ export function ClientListPage({ onSelectClient }) {
                   <th>関与先番号</th>
                   <th>関与先名</th>
                   <th>担当者</th>
-                  {WITHHOLDING_FIELD_CODES.map((code, i) => (
-                    <th key={code} style={{ width: "7.8%" }}>
-                      {fieldLabels[code] || `カスタム項目${i + 21}`}
+                  {withholdingFields.map((code) => (
+                    <th
+                      key={code}
+                      style={fieldWidth(fieldConfig, code) ? { width: fieldWidth(fieldConfig, code) } : undefined}
+                    >
+                      {fieldLabel(fieldConfig, code)}
                     </th>
                   ))}
                 </tr>
@@ -476,7 +505,7 @@ export function ClientListPage({ onSelectClient }) {
                     { key: "clientCode" },
                     { key: "clientName" },
                     { key: "assignee" },
-                    ...WITHHOLDING_FIELD_CODES.map((code) => ({ key: code, width: "7.8%" })),
+                    ...withholdingFields.map((code) => ({ key: code, width: fieldWidth(fieldConfig, code) })),
                   ]}
                   filters={filters}
                   onChange={setFilter}
@@ -496,23 +525,16 @@ export function ClientListPage({ onSelectClient }) {
                         </button>
                       </td>
                       <td>{c.assignee || "—"}</td>
-                      {WITHHOLDING_FIELD_CODES.map((code) => {
-                        const value = c[code] ?? "";
-                        const isFilled = value !== "" && value !== "-";
-                        return (
-                          <td key={code}>
-                            <input
-                              className={
-                                "simple-table__input simple-table__input--narrow simple-table__input--gantt" +
-                                (isFilled ? " simple-table__input--filled" : "")
-                              }
-                              defaultValue={value}
-                              key={`${code}-${value}`}
-                              onBlur={commitField(c.clientCode, code)}
-                            />
-                          </td>
-                        );
-                      })}
+                      {withholdingFields.map((code) => (
+                        <td key={code}>
+                          <input
+                            className={customFieldCellClassName(fieldConfig, code, c[code] ?? "")}
+                            defaultValue={c[code] ?? ""}
+                            key={`${code}-${c[code] ?? ""}`}
+                            onBlur={commitField(c.clientCode, code)}
+                          />
+                        </td>
+                      ))}
                     </tr>
                   ))}
               </tbody>
@@ -548,9 +570,12 @@ export function ClientListPage({ onSelectClient }) {
                   <th>関与先番号</th>
                   <th>関与先名</th>
                   <th>担当者</th>
-                  {YEAR_END_ADJUSTMENT_FIELD_CODES.map((code, i) => (
-                    <th key={code} style={{ width: "7.8%" }}>
-                      {fieldLabels[code] || `カスタム項目${i + 31}`}
+                  {yearEndFields.map((code) => (
+                    <th
+                      key={code}
+                      style={fieldWidth(fieldConfig, code) ? { width: fieldWidth(fieldConfig, code) } : undefined}
+                    >
+                      {fieldLabel(fieldConfig, code)}
                     </th>
                   ))}
                 </tr>
@@ -559,7 +584,7 @@ export function ClientListPage({ onSelectClient }) {
                     { key: "clientCode" },
                     { key: "clientName" },
                     { key: "assignee" },
-                    ...YEAR_END_ADJUSTMENT_FIELD_CODES.map((code) => ({ key: code, width: "7.8%" })),
+                    ...yearEndFields.map((code) => ({ key: code, width: fieldWidth(fieldConfig, code) })),
                   ]}
                   filters={filters}
                   onChange={setFilter}
@@ -579,25 +604,16 @@ export function ClientListPage({ onSelectClient }) {
                         </button>
                       </td>
                       <td>{c.assignee || "—"}</td>
-                      {YEAR_END_ADJUSTMENT_FIELD_CODES.map((code, i) => {
-                        const value = c[code] ?? "";
-                        const isFilled = value !== "" && value !== "-";
-                        const isGantt = i > 0;
-                        return (
-                          <td key={code}>
-                            <input
-                              className={
-                                "simple-table__input simple-table__input--narrow" +
-                                (isGantt ? " simple-table__input--gantt" : "") +
-                                (isGantt && isFilled ? " simple-table__input--filled" : "")
-                              }
-                              defaultValue={value}
-                              key={`${code}-${value}`}
-                              onBlur={commitField(c.clientCode, code)}
-                            />
-                          </td>
-                        );
-                      })}
+                      {yearEndFields.map((code) => (
+                        <td key={code}>
+                          <input
+                            className={customFieldCellClassName(fieldConfig, code, c[code] ?? "")}
+                            defaultValue={c[code] ?? ""}
+                            key={`${code}-${c[code] ?? ""}`}
+                            onBlur={commitField(c.clientCode, code)}
+                          />
+                        </td>
+                      ))}
                     </tr>
                   ))}
               </tbody>
@@ -633,9 +649,12 @@ export function ClientListPage({ onSelectClient }) {
                   <th>関与先番号</th>
                   <th>関与先名</th>
                   <th>担当者</th>
-                  {PERSONAL_FIELD_CODES.map((code, i) => (
-                    <th key={code} style={{ width: "7.8%" }}>
-                      {fieldLabels[code] || `カスタム項目${i + 51}`}
+                  {personalFields.map((code) => (
+                    <th
+                      key={code}
+                      style={fieldWidth(fieldConfig, code) ? { width: fieldWidth(fieldConfig, code) } : undefined}
+                    >
+                      {fieldLabel(fieldConfig, code)}
                     </th>
                   ))}
                 </tr>
@@ -644,7 +663,7 @@ export function ClientListPage({ onSelectClient }) {
                     { key: "clientCode" },
                     { key: "clientName" },
                     { key: "assignee" },
-                    ...PERSONAL_FIELD_CODES.map((code) => ({ key: code, width: "7.8%" })),
+                    ...personalFields.map((code) => ({ key: code, width: fieldWidth(fieldConfig, code) })),
                   ]}
                   filters={filters}
                   onChange={setFilter}
@@ -664,10 +683,10 @@ export function ClientListPage({ onSelectClient }) {
                         </button>
                       </td>
                       <td>{c.assignee || "—"}</td>
-                      {PERSONAL_FIELD_CODES.map((code) => (
+                      {personalFields.map((code) => (
                         <td key={code}>
                           <input
-                            className="simple-table__input simple-table__input--narrow"
+                            className={customFieldCellClassName(fieldConfig, code, c[code] ?? "")}
                             defaultValue={c[code] ?? ""}
                             key={`${code}-${c[code] ?? ""}`}
                             onBlur={commitField(c.clientCode, code)}
@@ -710,8 +729,13 @@ export function ClientListPage({ onSelectClient }) {
                     <th>関与先番号</th>
                     <th>関与先名</th>
                     <th>担当者</th>
-                    {PERSONAL_TAX_FIELD_CODES.map((code, i) => (
-                      <th key={code}>{fieldLabels[code] || `カスタム項目${i + 61}`}</th>
+                    {personalTaxFields.map((code) => (
+                      <th
+                        key={code}
+                        style={fieldWidth(fieldConfig, code) ? { width: fieldWidth(fieldConfig, code) } : undefined}
+                      >
+                        {fieldLabel(fieldConfig, code)}
+                      </th>
                     ))}
                   </tr>
                   <FilterRow
@@ -719,7 +743,7 @@ export function ClientListPage({ onSelectClient }) {
                       { key: "clientCode" },
                       { key: "clientName" },
                       { key: "assignee" },
-                      ...PERSONAL_TAX_FIELD_CODES.map((code) => ({ key: code })),
+                      ...personalTaxFields.map((code) => ({ key: code, width: fieldWidth(fieldConfig, code) })),
                     ]}
                     filters={filters}
                     onChange={setFilter}
@@ -739,25 +763,16 @@ export function ClientListPage({ onSelectClient }) {
                           </button>
                         </td>
                         <td>{c.assignee || "—"}</td>
-                        {PERSONAL_TAX_FIELD_CODES.map((code, i) => {
-                          const value = c[code] ?? "";
-                          const isFilled = value !== "" && value !== "-";
-                          const isGantt = i > 0;
-                          return (
-                            <td key={code}>
-                              <input
-                                className={
-                                  "simple-table__input simple-table__input--narrow" +
-                                  (isGantt ? " simple-table__input--gantt" : "") +
-                                  (isGantt && isFilled ? " simple-table__input--filled" : "")
-                                }
-                                defaultValue={value}
-                                key={`${code}-${value}`}
-                                onBlur={commitField(c.clientCode, code)}
-                              />
-                            </td>
-                          );
-                        })}
+                        {personalTaxFields.map((code) => (
+                          <td key={code}>
+                            <input
+                              className={customFieldCellClassName(fieldConfig, code, c[code] ?? "")}
+                              defaultValue={c[code] ?? ""}
+                              key={`${code}-${c[code] ?? ""}`}
+                              onBlur={commitField(c.clientCode, code)}
+                            />
+                          </td>
+                        ))}
                       </tr>
                     ))}
                 </tbody>

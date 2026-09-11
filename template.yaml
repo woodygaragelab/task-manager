@@ -225,17 +225,17 @@ Resources:
             ApiId: !Ref HttpApi
             Path: /clients/{clientCode}/drive-folder
             Method: post
-        GetClientFieldLabels:
+        GetClientFields:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
-            Path: /client-field-labels
+            Path: /client-fields
             Method: get
-        UpdateClientFieldLabels:
+        UpdateClientFields:
           Type: HttpApi
           Properties:
             ApiId: !Ref HttpApi
-            Path: /client-field-labels
+            Path: /client-fields
             Method: patch
         GetTabComments:
           Type: HttpApi

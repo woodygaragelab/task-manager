@@ -52,8 +52,28 @@ TAB_KEYS = [
 ]
 
 # 関与先プロフィール画面の汎用カスタム項目(col01-col99、すべて文字列)。
-# 表示名は設定ページ(TaskClassificationRulesTableを流用したCLIENT_FIELD_LABELSバケット)で管理する。
+# 表示設定(ラベル/表示タブ名/列幅/表示スタイル)は設定ページ
+# (TaskClassificationRulesTableを流用したCLIENT_FIELD_LABELSバケット)で管理する。
 CUSTOM_FIELD_CODES = [f"col{i:02d}" for i in range(1, 100)]
+
+# 項目の値をどう見せるか(SettingClientFields.jsxで選択): 通常テキスト / ガント風(矢印chip)。
+CUSTOM_FIELD_STYLES = ["text", "gantt"]
+EMPTY_FIELD_CONFIG = {"tab": "", "width": "", "style": "text"}
+
+# 表示タブ名/列幅/表示スタイルを項目ごとに個別管理する前は、ClientListPage.jsx/
+# ClientConsolePage.jsxにこの割り当てがハードコードされていた。設定ページでまだ
+# 明示的に設定されていない項目に対してはこの初期値を使い、既存画面の見た目を
+# そのまま引き継ぐ(明示的に設定された項目はこの初期値を上書きする)。
+DEFAULT_FIELD_CONFIG = {
+    **{f"col{i:02d}": {"tab": "法人税", "width": "7.8%", "style": "text"} for i in range(11, 21)},
+    **{f"col{i:02d}": {"tab": "源泉R8上期", "width": "7.8%", "style": "gantt"} for i in range(21, 31)},
+    "col31": {"tab": "年調R7", "width": "7.8%", "style": "text"},
+    **{f"col{i:02d}": {"tab": "年調R7", "width": "7.8%", "style": "gantt"} for i in range(32, 41)},
+    **{f"col{i:02d}": {"tab": "個人", "width": "7.8%", "style": "text"} for i in range(51, 60)},
+    # 個人確定申告タブは元々列幅を固定していなかった(横スクロールのテーブル)ためwidthは空のまま
+    "col61": {"tab": "個人確定申告", "width": "", "style": "text"},
+    **{f"col{i:02d}": {"tab": "個人確定申告", "width": "", "style": "gantt"} for i in range(62, 81)},
+}
 
 
 class TaskNotFoundError(Exception):
@@ -295,7 +315,7 @@ def create_client(
     前提(重複チェックはアプリ側では行わない)。いずれも省略時は属性ごと書き込まない。
 
     col01-col99 は関与先プロフィール画面の汎用カスタム項目(すべて文字列、用途自由)。
-    表示名は get_client_field_labels/update_client_field_labels で別管理する。
+    表示設定(ラベル/表示タブ名/列幅/表示スタイル)は get_client_fields/update_client_fields で別管理する。
     """
     custom_fields = {code: locals()[code] for code in CUSTOM_FIELD_CODES}
     item = {
@@ -518,28 +538,55 @@ def update_client(
     return resp["Attributes"]
 
 
-def get_client_field_labels() -> dict:
-    """関与先プロフィール画面のcol01-col99カスタム項目に設定された表示名を取得する(未設定の項目は空文字)。"""
+def _normalize_field_config(code: str, raw) -> dict:
+    """DynamoDBの生値をUI向けの{label,tab,width,style}に正規化する。
+
+    旧形式(値がラベル文字列そのもの)・未設定(raw=None)・新形式(値がdict)の
+    いずれであっても、この関数を通せば同じ形で扱える。
+    """
+    base = {"label": "", **DEFAULT_FIELD_CONFIG.get(code, EMPTY_FIELD_CONFIG)}
+    if raw is None:
+        return base
+    if isinstance(raw, str):
+        return {**base, "label": raw}
+    return {**base, **raw}
+
+
+def get_client_fields() -> dict:
+    """関与先プロフィール画面のcol01-col99カスタム項目の表示設定を取得する(未設定の項目も既定値で返す)。"""
     resp = classification_rules_table.get_item(
         Key={"lookupBucket": CLIENT_FIELD_LABEL_BUCKET, "sortKey": CLIENT_FIELD_LABEL_KEY}
     )
     item = resp.get("Item") or {}
-    return {code: item.get(code, "") for code in CUSTOM_FIELD_CODES}
+    return {code: _normalize_field_config(code, item.get(code)) for code in CUSTOM_FIELD_CODES}
 
 
-def update_client_field_labels(labels: dict) -> dict:
-    """col01-col99カスタム項目の表示名を更新する(設定ページ専用、指定されたキーのみ変更)。"""
-    unknown_fields = set(labels) - set(CUSTOM_FIELD_CODES)
+def update_client_fields(patch: dict) -> dict:
+    """col01-col99カスタム項目の表示設定(label/tab/width/style)を更新する(設定ページ専用、指定項目のみ変更)。
+
+    項目ごとに{label, tab, width, style}のうち変更したいキーだけを渡せばよく、
+    残りは現在の設定値(未設定なら既定値)を引き継いで完全な形でDBへ書き戻す。
+    """
+    unknown_fields = set(patch) - set(CUSTOM_FIELD_CODES)
     if unknown_fields:
         raise ValueError(f"不明なカスタム項目です: {sorted(unknown_fields)}")
 
+    resp = classification_rules_table.get_item(
+        Key={"lookupBucket": CLIENT_FIELD_LABEL_BUCKET, "sortKey": CLIENT_FIELD_LABEL_KEY}
+    )
+    item = resp.get("Item") or {}
+
     update_expr = []
     expr_values = {}
-    for code in CUSTOM_FIELD_CODES:
-        if code in labels:
-            placeholder = f":{code}"
-            update_expr.append(f"{code} = {placeholder}")
-            expr_values[placeholder] = labels[code] or ""
+    for code, values in patch.items():
+        if not isinstance(values, dict):
+            raise ValueError(f"{code}の値はオブジェクトで指定してください")
+        merged = {**_normalize_field_config(code, item.get(code)), **values}
+        if merged["style"] not in CUSTOM_FIELD_STYLES:
+            raise ValueError(f"styleは{CUSTOM_FIELD_STYLES}のいずれかを指定してください: {merged['style']}")
+        placeholder = f":{code}"
+        update_expr.append(f"{code} = {placeholder}")
+        expr_values[placeholder] = merged
 
     if update_expr:
         classification_rules_table.update_item(
@@ -547,7 +594,7 @@ def update_client_field_labels(labels: dict) -> dict:
             UpdateExpression="SET " + ", ".join(update_expr),
             ExpressionAttributeValues=expr_values,
         )
-    return get_client_field_labels()
+    return get_client_fields()
 
 
 def get_tab_comments() -> dict:
