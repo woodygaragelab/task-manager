@@ -11,8 +11,6 @@ const KNOWN_TABS = ["法人", "法人税", "源泉R8上期", "年調R7", "個人
 const EMPTY_FIELD = { label: "", tab: "", width: "", style: "text" };
 const TAB_OPTIONS_ID = "client-field-tab-options";
 
-const fallbackLabel = (code) => `カスタム項目${Number(code.slice(3))}`;
-
 // 「項目設定」タブ: 関与先プロフィール画面のcol01-col99カスタム項目について、
 // 表示ラベル・表示タブ名(関与先一覧のどのタブに列として出すか)・列幅・表示スタイル
 // (通常テキスト/ガント風)を設定する。型は全て文字列固定・使用方法は自由なため、
@@ -54,8 +52,8 @@ export function SettingClientFields() {
   return (
     <section className="panel">
       <h2 className="panel__title">
-        <span className="panel__title-eyebrow">設定</span>
-        関与先プロフィールの項目設定
+        <span className="panel__title-eyebrow">一覧</span>
+        項目設定
       </h2>
 
       {error && <div className="error-banner">{error}</div>}
@@ -80,16 +78,13 @@ export function SettingClientFields() {
               const rowKey = `${code}-${field.label}-${field.tab}-${field.width}-${field.style}`;
               return (
                 <tr key={code}>
-                  <td className="simple-table__code">
-                    {code}
-                    <br />({fallbackLabel(code)})
-                  </td>
+                  <td className="simple-table__code">{code}</td>
                   <td>
                     <input
                       className="simple-table__input"
                       key={`label-${rowKey}`}
                       defaultValue={field.label}
-                      placeholder="未設定(空欄の場合は上記フォールバック名で表示)"
+                      placeholder="未設定(空欄の場合は「カスタム項目n」と表示されます)"
                       onBlur={commitField(code, (value) => ({ label: value }))}
                     />
                   </td>
