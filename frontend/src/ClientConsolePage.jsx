@@ -14,11 +14,7 @@ const DOCUMENTS_TAB = "資料";
 const DOCUMENTS_SERIES_NAME = "資料受領";
 // 「資料進捗」タブ(taskGroup別の進捗表)を3タブに分割したもの。
 // groups: nullは全taskGroupを対象、配列を指定するとそのtaskGroupのみに絞り込む(変更しやすいようここに集約)。
-const PROGRESS_TABS = [
-  { tab: "法人税資料", groups: null },
-  { tab: "源泉資料", groups: ["給与"] },
-  { tab: "年調資料", groups: ["給与"] },
-];
+const PROGRESS_TABS = [];
 // 「このクライアントを初期化」で追加するSeriesのtaskGroup(変更しやすいようここに集約)。
 const INIT_TASK_GROUPS = ["売上", "支払", "給与", "銀行通帳"];
 const ALL_TABS = [
@@ -109,7 +105,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
 
   useEffect(() => {
     if (!TABS.includes(activeTab)) {
-      setActiveTab(PROGRESS_TABS[0].tab);
+      setActiveTab(DOCUMENTS_TAB);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [adminMode]);
@@ -341,6 +337,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                     selectedTaskKey={selectedTaskCombinedKey}
                     onSelect={selectTask}
                     renamedFolderId={client.renamedFolderId}
+                    uketoriFolderId={client.uketoriFolderId}
                     showSeriesName={false}
                   />
                 ))}
@@ -366,6 +363,7 @@ export function ClientConsolePage({ seriesList, frameList, initialClientCode, on
                       selectedTaskKey={selectedTaskCombinedKey}
                       onSelect={selectTask}
                       renamedFolderId={client.renamedFolderId}
+                      uketoriFolderId={client.uketoriFolderId}
                     />
                   ))
               )}

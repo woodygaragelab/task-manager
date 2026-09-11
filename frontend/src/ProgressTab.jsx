@@ -19,10 +19,12 @@ export function ProgressTab({
   selectedTaskKey,
   onSelect,
   renamedFolderId,
+  uketoriFolderId,
   showSeriesName = true,
 }) {
   const [groupFilter, setGroupFilter] = useState("all");
   const organizedFolderUrl = driveUrl(renamedFolderId);
+  const uketoriFolderUrl = driveUrl(uketoriFolderId);
 
   const groups = useMemo(
     () =>
@@ -73,6 +75,7 @@ export function ProgressTab({
               </select>
             </th>
             {showSeriesName && <th>タスク名</th>}
+            <th>受領フォルダ</th>
             <th>整理済フォルダ</th>
             {frameCodes.map((frameCode) => (
               <th key={frameCode}>{frameNameByCode[frameCode] ?? frameCode}</th>
@@ -90,6 +93,15 @@ export function ProgressTab({
                   {seriesNameByCode[seriesCode] ?? seriesCode}
                 </td>
               )}
+              <td className="progress__folder">
+                {uketoriFolderUrl ? (
+                  <a href={uketoriFolderUrl} target="_blank" rel="noreferrer">
+                    /受領
+                  </a>
+                ) : (
+                  <span className="progress__none">/受領</span>
+                )}
+              </td>
               <td className="progress__folder">
                 {organizedFolderUrl ? (
                   <a href={organizedFolderUrl} target="_blank" rel="noreferrer">
