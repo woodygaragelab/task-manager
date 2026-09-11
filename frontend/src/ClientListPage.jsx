@@ -90,7 +90,7 @@ function FilterRow({ columns, filters, onChange }) {
   );
 }
 
-export function ClientListPage({ onSelectClient }) {
+export function ClientListPage({ onSelectClient, onNavigateToFieldSettings }) {
   const [activeTab, setActiveTab] = useState(TABS[0]);
   const [clients, setClients] = useState([]);
   const [fieldConfig, setFieldConfig] = useState({});
@@ -311,6 +311,9 @@ export function ClientListPage({ onSelectClient }) {
             <button type="button" className="btn btn--ghost" onClick={downloadHojinCsv}>
               CSVダウンロード
             </button>
+            <button type="button" className="btn btn--ghost" onClick={onNavigateToFieldSettings}>
+              項目設定
+            </button>
           </div>
 
           {clients.length === 0 ? (
@@ -420,6 +423,9 @@ export function ClientListPage({ onSelectClient }) {
             <button type="button" className="btn btn--ghost" onClick={downloadCorporateTaxCsv}>
               CSVダウンロード
             </button>
+            <button type="button" className="btn btn--ghost" onClick={onNavigateToFieldSettings}>
+              項目設定
+            </button>
           </div>
 
           {clients.length === 0 ? (
@@ -498,6 +504,9 @@ export function ClientListPage({ onSelectClient }) {
           <div className="list-toolbar">
             <button type="button" className="btn btn--ghost" onClick={downloadWithholdingCsv}>
               CSVダウンロード
+            </button>
+            <button type="button" className="btn btn--ghost" onClick={onNavigateToFieldSettings}>
+              項目設定
             </button>
           </div>
 
@@ -578,6 +587,9 @@ export function ClientListPage({ onSelectClient }) {
             <button type="button" className="btn btn--ghost" onClick={downloadYearEndCsv}>
               CSVダウンロード
             </button>
+            <button type="button" className="btn btn--ghost" onClick={onNavigateToFieldSettings}>
+              項目設定
+            </button>
           </div>
 
           {clients.length === 0 ? (
@@ -657,6 +669,9 @@ export function ClientListPage({ onSelectClient }) {
             <button type="button" className="btn btn--ghost" onClick={downloadPersonalCsv}>
               CSVダウンロード
             </button>
+            <button type="button" className="btn btn--ghost" onClick={onNavigateToFieldSettings}>
+              項目設定
+            </button>
           </div>
 
           {clients.length === 0 ? (
@@ -735,6 +750,9 @@ export function ClientListPage({ onSelectClient }) {
           <div className="list-toolbar">
             <button type="button" className="btn btn--ghost" onClick={downloadPersonalTaxCsv}>
               CSVダウンロード
+            </button>
+            <button type="button" className="btn btn--ghost" onClick={onNavigateToFieldSettings}>
+              項目設定
             </button>
           </div>
 

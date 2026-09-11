@@ -5,6 +5,7 @@ import { NavMenu } from "./NavMenu";
 import { useAdminMode } from "./AdminModeContext";
 import { ClientListPage } from "./ClientListPage";
 import { SettingsPage } from "./SettingsPage";
+import { SettingClientFields } from "./SettingClientFields";
 import { AgentsPanel } from "./AgentsPanel";
 import { DataQueryPage } from "./DataQueryPage";
 import { ClientConsolePage } from "./ClientConsolePage";
@@ -18,7 +19,7 @@ export default function App() {
   const [frameList, setFrameList] = useState([]);
   const [error, setError] = useState(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [currentView, setCurrentView] = useState("クライアント"); // コンソール | クライアント | 設定 | エージェント | データ照会
+  const [currentView, setCurrentView] = useState("クライアント"); // コンソール | クライアント | 設定 | エージェント | データ照会 | 項目設定
   const [consoleClientCode, setConsoleClientCode] = useState(null);
 
   const handleSelectClient = (clientCode) => {
@@ -108,8 +109,12 @@ export default function App() {
       {error && <div className="error-banner">{error}</div>}
 
       {currentView === "クライアント" && (
-        <ClientListPage onSelectClient={handleSelectClient} />
+        <ClientListPage
+          onSelectClient={handleSelectClient}
+          onNavigateToFieldSettings={() => setCurrentView("項目設定")}
+        />
       )}
+      {currentView === "項目設定" && <SettingClientFields />}
       {currentView === "設定" && (
         <SettingsPage
           seriesList={seriesList}
