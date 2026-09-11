@@ -807,6 +807,10 @@ async def agent_invocation(payload: dict, context) -> dict:
             # 非対応なため、json.dumps自体が失敗して(処理は成功しているのに)
             # ログ出力だけでagent_invocation全体がエラー扱いになるのを避ける。
             default=str,
+            # agentId(agentId未指定時はprompt先頭10文字)に日本語が含まれる場合、
+            # デフォルトのensure_ascii=Trueだと\uXXXXエスケープになり、CloudWatch Logs
+            # Insights等のログビューアでデコードされず文字化けして見えるため無効化する。
+            ensure_ascii=False,
         )
     )
 
