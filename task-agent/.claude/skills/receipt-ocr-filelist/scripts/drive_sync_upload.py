@@ -69,7 +69,9 @@ def get_organized_root_id(timing: Timing, receipt_folder_id: str, organized_fold
     if organized_folder_id:
         return organized_folder_id
     service = get_drive_service()
-    meta = execute_with_retry(service.files().get(fileId=receipt_folder_id, fields="parents"))
+    meta = execute_with_retry(
+        service.files().get(fileId=receipt_folder_id, fields="parents", supportsAllDrives=True)
+    )
     parents = meta.get("parents") or []
     if not parents:
         raise RuntimeError(f"receipt_folder_id={receipt_folder_id!r} に親フォルダがありません")
@@ -220,7 +222,11 @@ def upload_filelist(timing: Timing, receipt_dir: str, receipt_folder_id: str, ol
         with timing.phase("trash_old_filelist"):
             service = get_drive_service()
             execute_with_retry(
-                service.files().update(fileId=old_filelist_file_id, body={"trashed": True})
+                service.files().update(
+                    fileId=old_filelist_file_id,
+                    body={"trashed": True},
+                    supportsAllDrives=True,
+                )
             )
         result["replaced"] = True
     log(f"[upload_filelist] file_id={result['file_id']} replaced={result['replaced']}")

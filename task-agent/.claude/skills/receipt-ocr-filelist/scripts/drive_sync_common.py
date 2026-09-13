@@ -213,7 +213,13 @@ def search_or_create_folder(parent_id: str, name: str, timing: Timing = None) ->
                 f"and mimeType = '{FOLDER_MIME_TYPE}' and trashed = false"
             )
             resp = execute_with_retry(
-                service.files().list(q=query, fields="files(id, name)", pageSize=10)
+                service.files().list(
+                    q=query,
+                    fields="files(id, name)",
+                    pageSize=10,
+                    supportsAllDrives=True,
+                    includeItemsFromAllDrives=True,
+                )
             )
             files = resp.get("files", [])
             if files:
@@ -227,6 +233,7 @@ def search_or_create_folder(parent_id: str, name: str, timing: Timing = None) ->
                             "mimeType": FOLDER_MIME_TYPE,
                         },
                         fields="id",
+                        supportsAllDrives=True,
                     )
                 )
                 folder_id = created["id"]
@@ -244,7 +251,13 @@ def find_file_by_name(parent_id: str, name: str):
         f"and mimeType != '{FOLDER_MIME_TYPE}' and trashed = false"
     )
     resp = execute_with_retry(
-        service.files().list(q=query, fields="files(id, name)", pageSize=10)
+        service.files().list(
+            q=query,
+            fields="files(id, name)",
+            pageSize=10,
+            supportsAllDrives=True,
+            includeItemsFromAllDrives=True,
+        )
     )
     files = resp.get("files", [])
     return files[0]["id"] if files else None
@@ -264,11 +277,18 @@ def upload_file_replacing(local_path: str, parent_id: str, name: str) -> dict:
     media = MediaFileUpload(local_path, mimetype=mime_type, resumable=False)
     created = execute_with_retry(
         service.files().create(
-            body={"name": name, "parents": [parent_id]}, media_body=media, fields="id"
+            body={"name": name, "parents": [parent_id]},
+            media_body=media,
+            fields="id",
+            supportsAllDrives=True,
         )
     )
     if existing_id:
-        execute_with_retry(service.files().update(fileId=existing_id, body={"trashed": True}))
+        execute_with_retry(
+            service.files().update(
+                fileId=existing_id, body={"trashed": True}, supportsAllDrives=True
+            )
+        )
     return {"file_id": created["id"], "replaced": existing_id is not None}
 
 

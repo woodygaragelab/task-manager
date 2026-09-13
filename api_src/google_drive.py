@@ -55,8 +55,10 @@ def _get_access_token() -> str:
 def _drive_request(
     method: str, access_token: str, query: dict = None, body: dict = None, url: str = DRIVE_FILES_URL
 ) -> dict:
-    if query:
-        url += "?" + urllib.parse.urlencode(query)
+    # 共有ドライブ(Shared Drive)配下のフォルダ・ファイルも扱えるようにする
+    # (無いとマイドライブ上のIDしか見えず、共有ドライブ上のIDは404 File not foundになる)。
+    query = {**(query or {}), "supportsAllDrives": "true"}
+    url += "?" + urllib.parse.urlencode(query)
     data = json.dumps(body).encode() if body is not None else None
     req = urllib.request.Request(url, data=data, method=method)
     req.add_header("Authorization", f"Bearer {access_token}")
@@ -80,7 +82,11 @@ def _find_child(name: str, parent_id: str, mime_type: str = None) -> dict | None
     result = _drive_request(
         "GET",
         access_token,
-        query={"q": " and ".join(clauses), "fields": "files(id,name,webViewLink)"},
+        query={
+            "q": " and ".join(clauses),
+            "fields": "files(id,name,webViewLink)",
+            "includeItemsFromAllDrives": "true",
+        },
     )
     files = result.get("files", [])
     return files[0] if files else None
@@ -116,7 +122,13 @@ def list_children(parent_id: str) -> list:
     access_token = _get_access_token()
     query_string = f"'{parent_id}' in parents and trashed = false"
     result = _drive_request(
-        "GET", access_token, query={"q": query_string, "fields": "files(id,name,mimeType)"}
+        "GET",
+        access_token,
+        query={
+            "q": query_string,
+            "fields": "files(id,name,mimeType)",
+            "includeItemsFromAllDrives": "true",
+        },
     )
     return result.get("files", [])
 

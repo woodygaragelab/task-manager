@@ -62,6 +62,8 @@ def list_receipt_tree(timing: Timing, root_folder_id: str):
                         fields="nextPageToken, files(id, name, mimeType, size)",
                         pageSize=200,
                         pageToken=page_token,
+                        supportsAllDrives=True,
+                        includeItemsFromAllDrives=True,
                     )
                 )
                 for f in resp.get("files", []):
@@ -82,7 +84,7 @@ def list_receipt_tree(timing: Timing, root_folder_id: str):
 def download_existing_filelist(timing: Timing, filelist_entry: dict, dest_path: str):
     with timing.phase("download_filelist"):
         service = get_drive_service()
-        request = service.files().get_media(fileId=filelist_entry["id"])
+        request = service.files().get_media(fileId=filelist_entry["id"], supportsAllDrives=True)
         os.makedirs(os.path.dirname(dest_path), exist_ok=True)
         with open(dest_path, "wb") as fh:
             downloader = MediaIoBaseDownload(fh, request)
@@ -160,7 +162,7 @@ def download_one(timing: Timing, entry: dict, receipt_dir: str):
     with timing.phase("download_file", {"filename": entry["filename"]}):
         os.makedirs(os.path.dirname(dest), exist_ok=True)
         service = get_drive_service()
-        request = service.files().get_media(fileId=entry["file_id"])
+        request = service.files().get_media(fileId=entry["file_id"], supportsAllDrives=True)
         with open(dest, "wb") as fh:
             downloader = MediaIoBaseDownload(fh, request)
             done = False
