@@ -1,7 +1,7 @@
 """
 receipt_filelist.xlsx に追記した新規領収書ファイルを、勘定科目名ごとのフォルダに
 コピー保存する(Step 4)。ファイル名は
-"<勘定科目名>_<日付YYYYMMDD>_<金額>円_<取引先>.<拡張子>" にリネームされる。
+"<日付YYYYMMDD>_<取引先>_<金額>円_<勘定科目名>.<拡張子>" にリネームされる。
 
 使い方:
     python rename_and_save.py <entries.jsonのパス> <受領フォルダ>
@@ -61,7 +61,7 @@ def main():
 
         dest_dir = os.path.join(renamed_root, account)
         os.makedirs(dest_dir, exist_ok=True)
-        dest_name = f"{account}_{date_str}_{amount_str}_{vendor}{ext}"
+        dest_name = f"{date_str}_{vendor}_{amount_str}_{account}{ext}"
         dest = os.path.join(dest_dir, dest_name)
 
         overwritten = os.path.exists(dest)

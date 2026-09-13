@@ -166,11 +166,11 @@ Resources:
           AGENT_JOB_PROCESSOR_FUNCTION_NAME: !Ref TaskAgentJobProcessorFunction
           # 「このクライアントを初期化」ボタンで関与先フォルダを作成する先の親フォルダ
           # (Drive上の共有フォルダ、フォルダ名=clientCode で直下に作成する)
-          CLIENT_DRIVE_PARENT_FOLDER_ID: "1ezirArdhTVC0TwCZe3bZifYXuZwjBO4W"
+          CLIENT_DRIVE_PARENT_FOLDER_ID: "1oxkXAwibL88De6uilztMgjPciZjiPNrX"
           # 上記の関与先フォルダ作成時に、サブフォルダ構成をコピーする元のテンプレートフォルダ
           # (CLIENT_DRIVE_PARENT_FOLDER_ID直下の"templatefolder"。中身は都度参照するため、
           # テンプレート側の構成変更は次回の初期化からそのまま反映される)
-          CLIENT_FOLDER_TEMPLATE_ID: "1uGTjR4FfP2d_WcHGVrISfkZtyNz_VekR"
+          CLIENT_FOLDER_TEMPLATE_ID: "1dkmyEg2U5q82HzsBkUXL-eDpI48tzZqd"
       Policies:
         - DynamoDBCrudPolicy:
             TableName: Tasks

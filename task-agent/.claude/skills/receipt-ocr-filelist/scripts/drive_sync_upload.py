@@ -93,7 +93,7 @@ def payment_dest_name(entry: dict) -> tuple:
     amount = entry.get("amount")
     amount_str = f"{amount}円" if amount is not None else "金額不明"
     ext = os.path.splitext(entry["filename"])[1].lower()
-    return account, f"{account}_{date_str}_{amount_str}_{vendor}{ext}"
+    return account, f"{date_str}_{vendor}_{amount_str}_{account}{ext}"
 
 
 def upload_payment_files(timing: Timing, renamed_dir: str, organized_root_id: str, concurrency: int, payment_entries: list):
