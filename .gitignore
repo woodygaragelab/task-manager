@@ -26,3 +26,6 @@ Thumbs.db
 
 # MS Office lock files (created while a file is open)
 ~$*
+
+# test data
+testdata/

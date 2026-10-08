@@ -1,6 +1,6 @@
 """
-receipt_filelist.xlsx に追記した新規領収書ファイルを、勘定科目名ごとのフォルダに
-コピー保存する(Step 4)。ファイル名は
+receipt_filelist.xlsx に追記した新規領収書ファイルを、renamed フォルダ直下に
+コピー保存する(Step 4。勘定科目ごとのサブフォルダは作らない)。ファイル名は
 "<日付YYYYMMDD>_<取引先>_<金額>円_<勘定科目名>.<拡張子>" にリネームされる。
 
 使い方:
@@ -10,14 +10,13 @@ entries.json は append_filelist.py と同じ形式(Step 3 で作成したもの
 このスクリプトは新規追加分だけを対象にする(filelist全体の再走査はしない)。
 
 保存先:
-    <受領フォルダの親フォルダ(=関与先フォルダ)>\renamed\<勘定科目名>\
-        <勘定科目名>_<日付>_<金額>円_<取引先>.<拡張子>
-    例: 受領フォルダが ...\Data\MAX\receipt なら、保存先は ...\Data\MAX\renamed\...
+    <受領フォルダの親フォルダ(=関与先フォルダ)>\renamed\
+        <日付>_<取引先>_<金額>円_<勘定科目名>.<拡張子>
+    例: 受領フォルダが ...\Data\MAX\receipt なら、保存先は ...\Data\MAX\renamed\
     (関与先フォルダはどの案件でも共通してこの構造なので、案件コードを別途渡す必要はない)
 
-勘定科目名が null または空の場合は「未分類」フォルダに保存する(Step 2 で科目名の判断が
-つかなかった領収書を後から見つけやすくするため)。取引先が null または空の場合は
-ファイル名に「取引先不明」と入れる。
+勘定科目名が null または空の場合は、ファイル名の科目名部分を「未分類」とする。
+取引先が null または空の場合はファイル名に「取引先不明」と入れる。
 
 同名ファイルが既に存在する場合は上書きする(再実行時に同じ領収書を処理し直しても
 ファイルが増え続けないようにするため)。
@@ -59,7 +58,7 @@ def main():
         amount_str = f"{amount}円" if amount is not None else "金額不明"
         ext = os.path.splitext(filename)[1].lower()
 
-        dest_dir = os.path.join(renamed_root, account)
+        dest_dir = renamed_root
         os.makedirs(dest_dir, exist_ok=True)
         dest_name = f"{date_str}_{vendor}_{amount_str}_{account}{ext}"
         dest = os.path.join(dest_dir, dest_name)

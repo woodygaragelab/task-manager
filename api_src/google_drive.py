@@ -10,9 +10,11 @@ task-agent(Bedrock AgentCore側)が使っているのと同じユーザーOAuth�
 
 import json
 import os
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 
 import boto3
 
@@ -25,6 +27,7 @@ FOLDER_MIME_TYPE = "application/vnd.google-apps.folder"
 
 _secrets_client = boto3.client("secretsmanager", region_name=AWS_REGION)
 _token_info_cache = None
+_access_token_cache = None  # {"token": str, "expires_at": time.monotonic()の値}
 
 
 def _get_token_info() -> dict:
@@ -36,6 +39,15 @@ def _get_token_info() -> dict:
 
 
 def _get_access_token() -> str:
+    """アクセストークンをLambda実行環境内でキャッシュし、期限が切れるまで使い回す。
+    キャッシュしないとDrive APIを呼ぶたびにOAuthトークンのリフレッシュが発生し、
+    フォルダ構成の複製(項目数ぶんDrive APIを呼ぶ)で往復回数が倍増し、API Gateway
+    (HTTP API)の30秒タイムアウトに達しやすくなるため。"""
+    global _access_token_cache
+    now = time.monotonic()
+    if _access_token_cache and _access_token_cache["expires_at"] > now:
+        return _access_token_cache["token"]
+
     info = _get_token_info()
     data = urllib.parse.urlencode(
         {
@@ -49,7 +61,13 @@ def _get_access_token() -> str:
         info.get("token_uri", "https://oauth2.googleapis.com/token"), data=data
     )
     with urllib.request.urlopen(req) as resp:
-        return json.loads(resp.read())["access_token"]
+        token_response = json.loads(resp.read())
+    expires_in = token_response.get("expires_in", 3600)
+    _access_token_cache = {
+        "token": token_response["access_token"],
+        "expires_at": now + expires_in - 60,  # 期限ぎりぎりでの失効を避けるバッファ
+    }
+    return _access_token_cache["token"]
 
 
 def _drive_request(
@@ -152,20 +170,42 @@ def copy_file(source_file_id: str, name: str, dest_parent_id: str) -> dict:
     )
 
 
-def replicate_folder_structure(source_parent_id: str, dest_parent_id: str) -> None:
+def replicate_folder_structure(
+    source_parent_id: str, dest_parent_id: str, concurrency: int = 8
+) -> None:
     """source_parent_id直下の構成(フォルダ・ファイル)をdest_parent_id直下に再帰的に
     複製する(フォルダは再帰、ファイルはコピー)。
 
     テンプレートフォルダの中身を都度参照するため、テンプレート側に追加・変更すれば
     次回の複製にそのまま反映される(構成をコード側に固定しない)。既に同名の子が
     ある場合は作り直し/コピーし直しをせずそれを使うので、繰り返し呼んでも安全(冪等)。
+
+    このAPIはAPI Gateway(HTTP API)の30秒タイムアウト内で完了する必要があるため、
+    同じ階層内の項目(フォルダ作成・ファイルコピー)はスレッドプールで並列に処理する
+    (階層ごとにまとめて処理してから次の階層へ進むBFS方式。深い再帰を1スレッドが
+    待ち続ける実装だとスレッドプールが枯渇しうるため、あえてこの形にしている)。
     """
-    for child in list_children(source_parent_id):
-        if child["mimeType"] == FOLDER_MIME_TYPE:
-            created = create_folder(child["name"], dest_parent_id)
-            replicate_folder_structure(child["id"], created["id"])
-        else:
-            copy_file(child["id"], child["name"], dest_parent_id)
+    with ThreadPoolExecutor(max_workers=concurrency) as pool:
+        level = [(source_parent_id, dest_parent_id)]
+        while level:
+            list_futures = {pool.submit(list_children, src): dest for src, dest in level}
+            create_futures = {}
+            copy_futures = []
+            for future in as_completed(list_futures):
+                dest = list_futures[future]
+                for child in future.result():
+                    if child["mimeType"] == FOLDER_MIME_TYPE:
+                        create_futures[pool.submit(create_folder, child["name"], dest)] = child["id"]
+                    else:
+                        copy_futures.append(pool.submit(copy_file, child["id"], child["name"], dest))
+
+            next_level = []
+            for future in as_completed(create_futures):
+                created = future.result()
+                next_level.append((create_futures[future], created["id"]))
+            for future in as_completed(copy_futures):
+                future.result()
+            level = next_level
 
 
 def initialize_client_folder(client_code: str, parent_id: str, template_folder_id: str) -> dict:
