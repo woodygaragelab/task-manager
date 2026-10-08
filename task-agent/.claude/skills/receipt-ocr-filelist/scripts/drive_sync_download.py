@@ -224,6 +224,11 @@ def main():
     local_filelist_path = os.path.join(receipt_dir, FILELIST_NAME)
     if filelist_entry:
         download_existing_filelist(timing, filelist_entry, local_filelist_path)
+    elif os.path.exists(local_filelist_path):
+        # Drive側に一覧が無いのに前回実行のローカル残骸があると、それを「処理済み」の
+        # 根拠として誤って参照してしまう。Driveを唯一の正とし、残骸は破棄する。
+        os.remove(local_filelist_path)
+        log(f"[stale] Drive上にfilelistが無いため古いローカルコピーを削除: {local_filelist_path}")
 
     new_files = diff_new_files(timing, remote_files, local_filelist_path)
     download_new_files(timing, new_files, receipt_dir, args.concurrency)
