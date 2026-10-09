@@ -12,7 +12,7 @@ trash_fileをファイル数ぶん逐次呼ぶ」方式に代えて、Drive API�
 
 前提(呼び出し前に用意されているもの。SKILL.md Step1/3/4/5相当):
     <work_dir>/receipt/receipt_filelist.xlsx   -- append_filelist.py で更新済み
-    <work_dir>/renamed/<勘定科目名>/<ファイル名>  -- rename_and_save.py の出力(支払のみ)
+    <work_dir>/renamed/<ファイル名>  -- rename_and_save.py の出力(支払のみ)
     <work_dir>/entries.json                    -- 分類結果(支払/売上/給与/銀行通帳)
     <work_dir>/entries_payment.json            -- 支払分のみ(Step5でrename_and_save.pyに
         渡したものと同じ内容。無ければ<work_dir>/entries.jsonのうちclassificationが
@@ -24,7 +24,7 @@ trash_fileをファイル数ぶん逐次呼ぶ」方式に代えて、Drive API�
 
 処理内容(**必ずこの順序で実行する**。receipt_filelist.xlsxは実ファイルのコピーが
 確認できたものだけを反映するため、Driveへの反映は最後に行う):
-    1. <work_dir>/renamed/配下の各ファイル(支払)を 整理済/支払/<勘定科目名>/ へ
+    1. <work_dir>/renamed/配下の各ファイル(支払)を 整理済/ 直下へ
        アップロード(同名ファイルがあれば新規アップロード後に旧ファイルをtrash)
     2. entries.jsonのうちclassificationが売上/給与/銀行通帳のファイルを、元の
        ファイル名のまま 整理済/<分類名>/ へアップロード(同上)
@@ -86,7 +86,7 @@ def load_entries(path):
 
 
 def payment_dest_name(entry: dict) -> tuple:
-    """rename_and_save.pyと同じ命名規則で(勘定科目名フォルダ名, リネーム後ファイル名)を
+    """rename_and_save.pyと同じ命名規則で(勘定科目名, リネーム後ファイル名)を
     再計算する(rename_and_save.py自体は無改造のまま使うため、命名関数だけをimportして
     再利用する)。"""
     account = safe_component(entry.get("account_name"), "未分類")
@@ -102,7 +102,7 @@ def upload_payment_files(timing: Timing, renamed_dir: str, organized_root_id: st
     tasks = []
     for e in payment_entries:
         account, dest_name = payment_dest_name(e)
-        local_path = os.path.join(renamed_dir, account, dest_name)
+        local_path = os.path.join(renamed_dir, dest_name)
         if not os.path.exists(local_path):
             log(f"[skip] renamedファイルが見つかりません: {local_path}")
             continue
@@ -111,10 +111,8 @@ def upload_payment_files(timing: Timing, renamed_dir: str, organized_root_id: st
     results, failures = [], []
 
     def _run(account, filename, local_path, original_filename):
-        payment_root = search_or_create_folder(organized_root_id, "支払", timing)
-        account_folder = search_or_create_folder(payment_root, account, timing)
         with timing.phase("upload_file", {"filename": filename}):
-            r = upload_file_replacing(local_path, account_folder, filename)
+            r = upload_file_replacing(local_path, organized_root_id, filename)
         return {"account": account, "filename": filename, "original_filename": original_filename, **r}
 
     with ThreadPoolExecutor(max_workers=concurrency) as pool:
