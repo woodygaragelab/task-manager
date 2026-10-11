@@ -26,10 +26,11 @@ trash_fileをファイル数ぶん逐次呼ぶ」方式に代えて、Drive API�
 確認できたものだけを反映するため、Driveへの反映は最後に行う):
     1. <work_dir>/renamed/配下の各ファイル(支払)を 整理済/ 直下へ
        アップロード(同名ファイルがあれば新規アップロード後に旧ファイルをtrash)
-    2. entries.jsonのうちclassificationが売上/給与のファイルを、元の
-       ファイル名のまま 整理済/<分類名>/ へアップロード(同上)。
-       銀行通帳は 整理済/ 直下へ「<最終取引日YYYYMMDD>_<銀行名>.<拡張子>」に
-       リネームしてアップロード(entriesの last_transaction_date / bank_name を使用)
+    2. entries.jsonのうちclassificationが売上/給与/銀行通帳のファイルを、サブフォルダを
+       作らず 整理済/ 直下へアップロード(同上)。ファイル名は
+       売上/給与: 「<最終取引日YYYYMMDD>_<元ファイル名(拡張子除く)>.<拡張子>」
+       銀行通帳: 「<最終取引日YYYYMMDD>_<銀行名>.<拡張子>」
+       (entriesの last_transaction_date / bank_name を使用)
     3. receipt_filelist.xlsxを受領フォルダへアップロード → 成功後に旧ファイルをtrash
        (ローカルにreceipt_filelist.xlsxが無ければこのStepはスキップ)。1・2で
        アップロードに失敗したファイルがあれば、それらの行はアップロード前の
@@ -66,7 +67,8 @@ from rename_and_save import safe_component
 FILELIST_NAME = "receipt_filelist.xlsx"
 COPY_AS_IS_CLASSIFICATIONS = {"売上", "給与", "銀行通帳"}
 # 分類名のサブフォルダを作らず、整理済フォルダ直下に保存する分類
-FLAT_CLASSIFICATIONS = {"銀行通帳"}
+# (支払も直下。現在は全分類がフラット)
+FLAT_CLASSIFICATIONS = {"売上", "給与", "銀行通帳"}
 
 
 def get_organized_root_id(timing: Timing, receipt_folder_id: str, organized_folder_id: str) -> str:
@@ -109,6 +111,15 @@ def passbook_dest_name(entry: dict) -> str:
     bank = safe_component(entry.get("bank_name"), "銀行名不明")
     ext = os.path.splitext(entry["filename"])[1].lower()
     return f"{date_str}_{bank}{ext}"
+
+
+def dated_original_dest_name(entry: dict) -> str:
+    """売上・給与のファイル名: <最終取引日YYYYMMDD>_<元ファイル名(拡張子除く)>.<拡張子>。
+    同じ最終取引日でも元ファイル名が違えば別名になる(上書きされない)。"""
+    date_str = (entry.get("last_transaction_date") or "日付不明").replace("-", "")
+    base = os.path.basename(entry["filename"].replace("\\", "/"))
+    stem, ext = os.path.splitext(base)
+    return f"{date_str}_{safe_component(stem, 'ファイル名不明')}{ext.lower()}"
 
 
 def upload_payment_files(timing: Timing, renamed_dir: str, organized_root_id: str, concurrency: int, payment_entries: list):
@@ -162,7 +173,7 @@ def upload_other_files(
         if classification == "銀行通帳":
             dest_name = passbook_dest_name(e)
         else:
-            dest_name = os.path.basename(filename.replace("\\", "/"))
+            dest_name = dated_original_dest_name(e)
         tasks.append((classification, dest_name, src, filename))
 
     results, failures = [], []
