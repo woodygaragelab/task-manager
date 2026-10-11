@@ -707,7 +707,8 @@ def build_agent_options() -> ClaudeAgentOptions:
         # multi-page PDF) easily exceeds that, killing the SDK's message
         # reader with "JSON message exceeded maximum buffer size of
         # 1048576 bytes" (see anthropics/claude-agent-sdk-python#98).
-        max_buffer_size=10 * 1024 * 1024,
+        # 10MB was later exceeded by larger scans too, so it is now 50MB.
+        max_buffer_size=50 * 1024 * 1024,
         allowed_tools=[
             "Read",
             "Write",

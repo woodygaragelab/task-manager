@@ -26,8 +26,10 @@ trash_fileをファイル数ぶん逐次呼ぶ」方式に代えて、Drive API�
 確認できたものだけを反映するため、Driveへの反映は最後に行う):
     1. <work_dir>/renamed/配下の各ファイル(支払)を 整理済/ 直下へ
        アップロード(同名ファイルがあれば新規アップロード後に旧ファイルをtrash)
-    2. entries.jsonのうちclassificationが売上/給与/銀行通帳のファイルを、元の
-       ファイル名のまま 整理済/<分類名>/ へアップロード(同上)
+    2. entries.jsonのうちclassificationが売上/給与のファイルを、元の
+       ファイル名のまま 整理済/<分類名>/ へアップロード(同上)。
+       銀行通帳は 整理済/ 直下へ「<最終取引日YYYYMMDD>_<銀行名>.<拡張子>」に
+       リネームしてアップロード(entriesの last_transaction_date / bank_name を使用)
     3. receipt_filelist.xlsxを受領フォルダへアップロード → 成功後に旧ファイルをtrash
        (ローカルにreceipt_filelist.xlsxが無ければこのStepはスキップ)。1・2で
        アップロードに失敗したファイルがあれば、それらの行はアップロード前の
@@ -63,6 +65,8 @@ from rename_and_save import safe_component
 
 FILELIST_NAME = "receipt_filelist.xlsx"
 COPY_AS_IS_CLASSIFICATIONS = {"売上", "給与", "銀行通帳"}
+# 分類名のサブフォルダを作らず、整理済フォルダ直下に保存する分類
+FLAT_CLASSIFICATIONS = {"銀行通帳"}
 
 
 def get_organized_root_id(timing: Timing, receipt_folder_id: str, organized_folder_id: str) -> str:
@@ -96,6 +100,15 @@ def payment_dest_name(entry: dict) -> tuple:
     amount_str = f"{amount}円" if amount is not None else "金額不明"
     ext = os.path.splitext(entry["filename"])[1].lower()
     return account, f"{date_str}_{vendor}_{amount_str}_{account}{ext}"
+
+
+def passbook_dest_name(entry: dict) -> str:
+    """銀行通帳のファイル名: <最終取引日YYYYMMDD>_<銀行名>.<拡張子>。
+    entryの last_transaction_date(YYYY-MM-DD) と bank_name から作る。"""
+    date_str = (entry.get("last_transaction_date") or "日付不明").replace("-", "")
+    bank = safe_component(entry.get("bank_name"), "銀行名不明")
+    ext = os.path.splitext(entry["filename"])[1].lower()
+    return f"{date_str}_{bank}{ext}"
 
 
 def upload_payment_files(timing: Timing, renamed_dir: str, organized_root_id: str, concurrency: int, payment_entries: list):
@@ -146,13 +159,19 @@ def upload_other_files(
         if not os.path.exists(src):
             log(f"[skip] 元ファイルが見つかりません: {src}")
             continue
-        dest_name = os.path.basename(filename.replace("\\", "/"))
+        if classification == "銀行通帳":
+            dest_name = passbook_dest_name(e)
+        else:
+            dest_name = os.path.basename(filename.replace("\\", "/"))
         tasks.append((classification, dest_name, src, filename))
 
     results, failures = [], []
 
     def _run(classification, dest_name, src, original_filename):
-        dest_folder = search_or_create_folder(organized_root_id, classification, timing)
+        if classification in FLAT_CLASSIFICATIONS:
+            dest_folder = organized_root_id
+        else:
+            dest_folder = search_or_create_folder(organized_root_id, classification, timing)
         with timing.phase("upload_file", {"filename": dest_name}):
             r = upload_file_replacing(src, dest_folder, dest_name)
         return {"classification": classification, "filename": dest_name, "original_filename": original_filename, **r}
