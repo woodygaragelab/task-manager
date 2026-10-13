@@ -562,10 +562,14 @@ def get_client_fields() -> dict:
 
 
 def update_client_fields(patch: dict) -> dict:
-    """col01-col99カスタム項目の表示設定(label/tab/width/style)を更新する(設定ページ専用、指定項目のみ変更)。
+    """col01-col99カスタム項目の表示設定(label/tab/width/style)を更新する(指定項目のみ変更)。
 
+    patchは項目コードをキー、設定を値にしたオブジェクトで指定する。
+    例: {"col11": {"label": "決算確認", "tab": "法人税", "width": "7.8%", "style": "text"}}
     項目ごとに{label, tab, width, style}のうち変更したいキーだけを渡せばよく、
     残りは現在の設定値(未設定なら既定値)を引き継いで完全な形でDBへ書き戻す。
+    styleは"text"(通常テキスト)または"gantt"(矢印chip)のみ指定可能。
+    この設定は全ユーザーのWeb UI(関与先一覧/コンソール画面)の表示に反映される。
     """
     unknown_fields = set(patch) - set(CUSTOM_FIELD_CODES)
     if unknown_fields:
@@ -581,6 +585,12 @@ def update_client_fields(patch: dict) -> dict:
     for code, values in patch.items():
         if not isinstance(values, dict):
             raise ValueError(f"{code}の値はオブジェクトで指定してください")
+        unknown_keys = set(values) - set(EMPTY_FIELD_CONFIG) - {"label"}
+        if unknown_keys:
+            raise ValueError(
+                f"{code}に不明な設定キーがあります: {sorted(unknown_keys)}"
+                "(指定可能: label, tab, width, style)"
+            )
         merged = {**_normalize_field_config(code, item.get(code)), **values}
         if merged["style"] not in CUSTOM_FIELD_STYLES:
             raise ValueError(f"styleは{CUSTOM_FIELD_STYLES}のいずれかを指定してください: {merged['style']}")

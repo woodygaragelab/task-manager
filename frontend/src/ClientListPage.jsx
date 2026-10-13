@@ -3,7 +3,7 @@ import { api } from "./api";
 import { CUSTOM_FIELD_CODES } from "./ClientProfileTab";
 import { TabCommentBox } from "./ClientConsolePage";
 
-const TABS = ["法人", "法人税", "源泉R8上期", "年調R7", "個人", "個人確定申告"];
+const TABS = ["法人", "法人税", "源泉R8上期", "年調R7", "年調R8", "個人", "個人確定申告"];
 // 関与先コンソール画面の同名タブとコメントが混ざらないよう、一覧画面専用のキーを使う
 const TAB_COMMENT_KEYS = Object.fromEntries(TABS.map((tab) => [tab, `一覧:${tab}`]));
 
@@ -153,6 +153,7 @@ export function ClientListPage({ onSelectClient, onNavigateToFieldSettings }) {
   const corporateTaxFields = fieldsForTab(fieldConfig, "法人税");
   const withholdingFields = fieldsForTab(fieldConfig, "源泉R8上期");
   const yearEndFields = fieldsForTab(fieldConfig, "年調R7");
+  const yearEndR8Fields = fieldsForTab(fieldConfig, "年調R8");
   const personalFields = fieldsForTab(fieldConfig, "個人");
   const personalTaxFields = fieldsForTab(fieldConfig, "個人確定申告");
 
@@ -189,6 +190,14 @@ export function ClientListPage({ onSelectClient, onNavigateToFieldSettings }) {
       matchesFilter(c.clientName, filters.clientName) &&
       matchesFilter(c.assignee, filters.assignee) &&
       yearEndFields.every((code) => matchesFilter(c[code], filters[code]))
+  );
+  const yearEndR8Rows = clients.filter(
+    (c) =>
+      !c.clientCode.startsWith("P") &&
+      matchesFilter(c.clientCode, filters.clientCode) &&
+      matchesFilter(c.clientName, filters.clientName) &&
+      matchesFilter(c.assignee, filters.assignee) &&
+      yearEndR8Fields.every((code) => matchesFilter(c[code], filters[code]))
   );
   const personalRows = clients.filter(
     (c) =>
@@ -261,6 +270,18 @@ export function ClientListPage({ onSelectClient, onNavigateToFieldSettings }) {
         c.clientName,
         c.assignee ?? "",
         ...yearEndFields.map((code) => c[code] ?? ""),
+      ])
+    );
+
+  const downloadYearEndR8Csv = () =>
+    downloadCsv(
+      `関与先一覧_年調R8_${todayStamp()}.csv`,
+      ["関与先番号", "関与先名", "担当者", ...customFieldHeaders(yearEndR8Fields, fieldConfig)],
+      yearEndR8Rows.map((c) => [
+        c.clientCode,
+        c.clientName,
+        c.assignee ?? "",
+        ...yearEndR8Fields.map((code) => c[code] ?? ""),
       ])
     );
 
@@ -656,6 +677,88 @@ export function ClientListPage({ onSelectClient, onNavigateToFieldSettings }) {
           <TabCommentBox
             tabKey={TAB_COMMENT_KEYS["年調R7"]}
             comment={tabComments[TAB_COMMENT_KEYS["年調R7"]] ?? ""}
+            onCommit={commitTabComment}
+          />
+        </>
+      )}
+
+      {activeTab === "年調R8" && (
+        <>
+          {error && <div className="error-banner">{error}</div>}
+
+          <div className="list-toolbar">
+            <button type="button" className="btn btn--ghost" onClick={downloadYearEndR8Csv}>
+              CSVダウンロード
+            </button>
+            <button type="button" className="btn btn--ghost" onClick={onNavigateToFieldSettings}>
+              項目設定
+            </button>
+          </div>
+
+          {clients.length === 0 ? (
+            <div className="empty">
+              <div className="empty__title">クライアントがありません</div>
+            </div>
+          ) : (
+            <table className="simple-table simple-table--fixed">
+              <thead>
+                <tr>
+                  <th>関与先番号</th>
+                  <th>関与先名</th>
+                  <th>担当者</th>
+                  {yearEndR8Fields.map((code) => (
+                    <th
+                      key={code}
+                      style={fieldWidth(fieldConfig, code) ? { width: fieldWidth(fieldConfig, code) } : undefined}
+                    >
+                      {fieldLabel(fieldConfig, code)}
+                    </th>
+                  ))}
+                </tr>
+                <FilterRow
+                  columns={[
+                    { key: "clientCode" },
+                    { key: "clientName" },
+                    { key: "assignee" },
+                    ...yearEndR8Fields.map((code) => ({ key: code, width: fieldWidth(fieldConfig, code) })),
+                  ]}
+                  filters={filters}
+                  onChange={setFilter}
+                />
+              </thead>
+              <tbody>
+                {yearEndR8Rows.map((c) => (
+                    <tr key={c.clientCode} style={{ backgroundColor: assigneeRowColor(c.assignee) }}>
+                      <td className="simple-table__code">{c.clientCode}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="simple-table__link"
+                          onClick={() => onSelectClient(c.clientCode)}
+                        >
+                          {c.clientName}
+                        </button>
+                      </td>
+                      <td>{c.assignee || "—"}</td>
+                      {yearEndR8Fields.map((code) => (
+                        <td key={code}>
+                          <input
+                            className={customFieldCellClassName(fieldConfig, code, c[code] ?? "")}
+                            defaultValue={c[code] ?? ""}
+                            key={`${code}-${c[code] ?? ""}`}
+                            onBlur={commitField(c.clientCode, code)}
+                          />
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+              </tbody>
+            </table>
+          )}
+
+          <TabCommentBox
+            tabKey={TAB_COMMENT_KEYS["年調R8"]}
+            comment={tabComments[TAB_COMMENT_KEYS["年調R8"]] ?? ""}
             onCommit={commitTabComment}
           />
         </>

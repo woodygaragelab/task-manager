@@ -7,7 +7,7 @@ const STYLE_OPTIONS = [
   { value: "gantt", label: "ガント風" },
 ];
 // 関与先一覧画面(ClientListPage.jsx)の既存タブ名。自由入力も可能(datalistは候補表示のみ)。
-const KNOWN_TABS = ["法人", "法人税", "源泉R8上期", "年調R7", "個人", "個人確定申告"];
+const KNOWN_TABS = ["法人", "法人税", "源泉R8上期", "年調R7", "年調R8", "個人", "個人確定申告"];
 const EMPTY_FIELD = { label: "", tab: "", width: "", style: "text" };
 const TAB_OPTIONS_ID = "client-field-tab-options";
 

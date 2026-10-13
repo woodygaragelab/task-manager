@@ -31,6 +31,8 @@ TOOL_FUNCTIONS = [
     repo.create_client,
     repo.update_client,
     repo.delete_client,
+    repo.get_client_fields,
+    repo.update_client_fields,
     repo.list_series,
     repo.create_series,
     repo.update_series,
