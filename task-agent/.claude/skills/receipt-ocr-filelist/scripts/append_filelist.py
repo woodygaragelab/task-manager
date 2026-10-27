@@ -23,6 +23,9 @@ OCRを行わないため、classification 以外の内容系フィールド(date
     "category": "領収書",                // "領収書" or "請求書"。支払のみ
     "payment_method": "現金",            // 現金/カード/振込/不明。支払のみ
     "tax_amount": 527,                   // 消費税額の記載(無ければ null)。支払のみ
+    "remarks": "「のコピー」を削除してリネーム(元のファイル名: ...)",
+                                          // 備考(任意)。new_files.json の同名キーをそのまま渡す。
+                                          // receipt_filelist.xlsx の remarks 列に書かれる。
     "account_name": "旅費交通費"          // master/TKCマスタ.xlsx の勘定科目コード表と照合した
                                           // 参考の勘定科目名(借方相当)。判断できなければ null。
                                           // 支払のみ。
@@ -43,7 +46,7 @@ from organized_names import organized_rel_path
 
 HEADERS = ["No.", "受領ファイル名", "受領ファイル作成日", "サイズ(MB)", "種類", "整理済ファイル名",
            "整理済ファイル作成日", "分類", "日付", "金額", "取引先", "内容", "区分", "支払方法",
-           "消費税額", "仕訳No", "勘定科目名"]
+           "消費税額", "仕訳No", "勘定科目名", "remarks"]
 # 旧ヘッダー名 -> 新ヘッダー名(既存ファイルのヘッダー行をその場でリネームする)
 RENAMED_HEADERS = {"ファイル名": "受領ファイル名", "撮影日時": "受領ファイル作成日"}
 # 「種類」の右に挿入する列(旧フォーマットのファイルには無い)
@@ -175,6 +178,8 @@ def main():
             ws.cell(row=r, column=col["消費税額"], value=e["tax_amount"]).number_format = "#,##0"
         if "勘定科目名" in col:
             ws.cell(row=r, column=col["勘定科目名"], value=e.get("account_name"))
+        if "remarks" in col:
+            ws.cell(row=r, column=col["remarks"], value=e.get("remarks"))
         # 「仕訳No」は空欄のまま(receipt-to-journal スキルが後で埋める)
         for cell in ws[r]:
             cell.font = Font(name="Arial")

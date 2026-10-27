@@ -164,6 +164,13 @@ mkdir -p /tmp/{案件コード}/receipt /tmp/{案件コード}/renamed
 python scripts/drive_sync_download.py {案件コード}
 ```
 
+受領フォルダ内のファイル名に「のコピー」が含まれる場合(例: `79976.jpg のコピー`)は、
+スクリプトが列挙直後にDrive上で正しい名前(`79976.jpg`)へリネームしてから新規判定・
+ダウンロードを行う。変換後と同名のファイルが同じフォルダに既にある場合はリネームせず
+スキップする(stderrに`[rename_copy] skip`が出る)。これらの内容は`new_files`の該当要素の
+`remarks`に入る。Step 4で`entries.json`を作る際は、この`remarks`をそのまま各エントリへ
+引き継ぐこと(`receipt_filelist.xlsx`の`remarks`列に記録される)。
+
 標準出力にJSON(`{"client_code", "receipt_folder_id", "old_filelist_file_id",
 "new_files": [...]}`)が返る。`new_files`の各要素は旧来の`scan_new_receipts.py`と
 同じ`filename`/`modified_at`(Drive上の更新日、JST)/`size_mb`/`type`に加え、Drive上の`file_id`を持つ
@@ -450,7 +457,7 @@ python scripts/drive_sync_upload.py {案件コード}
 - `receipt_filelist.xlsx` のヘッダーは: No., 受領ファイル名(サブフォルダ込みの相対パス、例 `旧/xxx.jpg`),
   受領ファイル作成日(受領ファイルのDrive上の更新日、JST), サイズ(MB), 種類,
   整理済ファイル名(サブフォルダ込み), 整理済ファイル作成日(処理実行日時), 分類,
-  日付, 金額, 取引先, 内容, 区分, 支払方法, 消費税額, 仕訳No, 勘定科目名。
+  日付, 金額, 取引先, 内容, 区分, 支払方法, 消費税額, 仕訳No, 勘定科目名, remarks(備考。「のコピー」削除・同名スキップなど)。
   旧フォーマット(「ファイル名」「撮影日時」列、整理済列なし)は`append_filelist.py`が
   自動でリネーム・列挿入する(既存行の整理済列は空欄)。「分類」列に
   `支払`/`売上`/`給与`/`銀行通帳`のいずれかが入る(旧フォーマットのファイルには

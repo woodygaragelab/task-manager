@@ -24,6 +24,7 @@ import argparse
 import datetime
 import json
 import os
+import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -92,6 +93,51 @@ def list_receipt_tree(timing: Timing, root_folder_id: str):
     return files, filelist_entry
 
 
+COPY_SUFFIX_RE = re.compile(r"\s*のコピー(?:\s*\(\d+\))?")
+
+
+def strip_copy_suffix(name: str) -> str:
+    """Driveで複製した際に付く「のコピー」を除いた名前を返す。
+    例: "79976.jpg のコピー" -> "79976.jpg" / "a のコピー.jpg" -> "a.jpg" """
+    return COPY_SUFFIX_RE.sub("", name).strip()
+
+
+def rename_copy_files(timing: Timing, files: list):
+    """名前に「のコピー」を含むファイルをDrive上で正しい名前へリネームし、
+    files(list_receipt_tree()の戻り値)の name/rel_path も更新する。
+    同じフォルダに変換後と同名のファイルが既にある場合は上書き・重複を避けるため
+    リネームせずスキップする(警告ログのみ)。
+    戻り値は {処理後のrel_path: receipt_filelist.xlsxのremarks列に書く文言}。"""
+    remarks = {}
+    with timing.phase("rename_copy"):
+        service = get_drive_service()
+        taken = {f["rel_path"] for f in files}
+        for f in files:
+            if "のコピー" not in f["name"]:
+                continue
+            new_name = strip_copy_suffix(f["name"])
+            if not new_name or new_name == f["name"]:
+                continue
+            new_rel = f["rel_path"][: len(f["rel_path"]) - len(f["name"])] + new_name
+            if new_rel in taken:
+                log(f"[rename_copy] skip (同名ファイルが既に存在): {f['rel_path']!r} -> {new_rel!r}")
+                remarks[f["rel_path"]] = (
+                    f"「のコピー」を削除すると同名ファイル({new_name})が存在するためリネームせず処理"
+                )
+                continue
+            execute_with_retry(
+                service.files().update(
+                    fileId=f["id"], body={"name": new_name}, supportsAllDrives=True
+                )
+            )
+            taken.discard(f["rel_path"])
+            taken.add(new_rel)
+            log(f"[rename_copy] {f['rel_path']!r} -> {new_rel!r}")
+            remarks[new_rel] = f"「のコピー」を削除してリネーム(元のファイル名: {f['name']})"
+            f["name"], f["rel_path"] = new_name, new_rel
+    return remarks
+
+
 def download_existing_filelist(timing: Timing, filelist_entry: dict, dest_path: str):
     with timing.phase("download_filelist"):
         service = get_drive_service()
@@ -125,7 +171,9 @@ def execute_with_retry_downloader(downloader, max_retries: int = 5, base_delay: 
             _time.sleep(delay)
 
 
-def diff_new_files(timing: Timing, remote_files: list, local_filelist_path: str) -> list:
+def diff_new_files(
+    timing: Timing, remote_files: list, local_filelist_path: str, remarks: dict = None
+) -> list:
     """既存receipt_filelist.xlsxの「ファイル名」列と突き合わせ、未記載のものだけ
     新規ファイルとして返す(scan_new_receipts.pyと同じロジック)。"""
     with timing.phase("diff"):
@@ -147,15 +195,16 @@ def diff_new_files(timing: Timing, remote_files: list, local_filelist_path: str)
             if f["rel_path"] in existing:
                 continue
             size_mb = round(int(f.get("size", 0)) / 1024 / 1024, 2)
-            new_files.append(
-                {
-                    "filename": f["rel_path"],
-                    "modified_at": to_jst_iso(f.get("modifiedTime")),
-                    "size_mb": size_mb,
-                    "type": EXT_TYPE[ext],
-                    "file_id": f["id"],
-                }
-            )
+            entry = {
+                "filename": f["rel_path"],
+                "modified_at": to_jst_iso(f.get("modifiedTime")),
+                "size_mb": size_mb,
+                "type": EXT_TYPE[ext],
+                "file_id": f["id"],
+            }
+            if remarks and f["rel_path"] in remarks:
+                entry["remarks"] = remarks[f["rel_path"]]
+            new_files.append(entry)
     log(f"[diff] {len(new_files)} new file(s) out of {len(remote_files)}")
     return new_files
 
@@ -223,6 +272,7 @@ def main():
 
     timing = Timing()
     remote_files, filelist_entry = list_receipt_tree(timing, receipt_folder_id)
+    remarks = rename_copy_files(timing, remote_files)
 
     local_filelist_path = os.path.join(receipt_dir, FILELIST_NAME)
     if filelist_entry:
@@ -233,7 +283,7 @@ def main():
         os.remove(local_filelist_path)
         log(f"[stale] Drive上にfilelistが無いため古いローカルコピーを削除: {local_filelist_path}")
 
-    new_files = diff_new_files(timing, remote_files, local_filelist_path)
+    new_files = diff_new_files(timing, remote_files, local_filelist_path, remarks)
     download_new_files(timing, new_files, receipt_dir, args.concurrency)
 
     total_ms = timing.total()
