@@ -1,5 +1,5 @@
 """
-Step6相当(receipt_filelist.xlsxと整理済ファイルのDriveへの反映)を、判断を伴わない
+Step6相当(filelist.xlsxと整理済ファイルのDriveへの反映)を、判断を伴わない
 機械的な処理として1回のスクリプト実行にまとめたもの。旧来の「Claudeがcreate_file /
 trash_fileをファイル数ぶん逐次呼ぶ」方式に代えて、Drive APIを直接(かつファイルの
 アップロードは並列に)呼び出すことで高速化する。
@@ -11,7 +11,7 @@ trash_fileをファイル数ぶん逐次呼ぶ」方式に代えて、Drive API�
         [--state-file PATH] [--concurrency N]
 
 前提(呼び出し前に用意されているもの。SKILL.md Step1/3/4/5相当):
-    <work_dir>/receipt/receipt_filelist.xlsx   -- append_filelist.py で更新済み
+    <work_dir>/filelist.xlsx   -- append_filelist.py で更新済み
     <work_dir>/renamed/<ファイル名>  -- rename_and_save.py の出力(支払のみ)
     <work_dir>/entries.json                    -- 分類結果(支払/売上/給与/銀行通帳)
     <work_dir>/entries_payment.json            -- 支払分のみ(Step5でrename_and_save.pyに
@@ -22,7 +22,7 @@ trash_fileをファイル数ぶん逐次呼ぶ」方式に代えて、Drive API�
         --receipt-folder-id を明示指定すること。旧filelistが無い=新規作成の
         場合はold_filelist_file_idがnullのままでよい)
 
-処理内容(**必ずこの順序で実行する**。receipt_filelist.xlsxは実ファイルのコピーが
+処理内容(**必ずこの順序で実行する**。filelist.xlsxは実ファイルのコピーが
 確認できたものだけを反映するため、Driveへの反映は最後に行う):
     1. <work_dir>/renamed/配下の各ファイル(支払)を 整理済/ 配下の、受領フォルダと
        同じサブフォルダへアップロード(無ければサブフォルダを作成。同名ファイルが
@@ -32,10 +32,10 @@ trash_fileをファイル数ぶん逐次呼ぶ」方式に代えて、Drive API�
        売上/給与: 「<最終取引日YYYYMMDD>_<元ファイル名(拡張子除く)>.<拡張子>」
        銀行通帳: 「<最終取引日YYYYMMDD>_<銀行名>.<拡張子>」
        (entriesの last_transaction_date / bank_name を使用)
-    3. receipt_filelist.xlsxを受領フォルダへアップロード → 成功後に旧ファイルをtrash
-       (ローカルにreceipt_filelist.xlsxが無ければこのStepはスキップ)。1・2で
+    3. filelist.xlsxをクライアントフォルダ直下(受領フォルダと並列)へアップロード → 成功後に旧ファイルをtrash
+       (ローカルにfilelist.xlsxが無ければこのStepはスキップ)。1・2で
        アップロードに失敗したファイルがあれば、それらの行はアップロード前の
-       receipt_filelist.xlsxから取り除いてから反映する(「ファイル名」列に記載が
+       filelist.xlsxから取り除いてから反映する(「ファイル名」列に記載が
        無い = 未処理」という次回実行時の判定と整合させ、失敗分を確実に再処理
        対象に戻すため)。
     個々のファイルのアップロードに失敗しても処理全体は止めず、失敗分をスキップして
@@ -70,13 +70,11 @@ from organized_names import (
     payment_dest_name,
 )
 
-FILELIST_NAME = "receipt_filelist.xlsx"
+FILELIST_NAME = "filelist.xlsx"
 COPY_AS_IS_CLASSIFICATIONS = {"売上", "給与", "銀行通帳"}
 
 
-def get_organized_root_id(timing: Timing, receipt_folder_id: str, organized_folder_id: str) -> str:
-    if organized_folder_id:
-        return organized_folder_id
+def get_client_folder_id(receipt_folder_id: str) -> str:
     service = get_drive_service()
     meta = execute_with_retry(
         service.files().get(fileId=receipt_folder_id, fields="parents", supportsAllDrives=True)
@@ -84,7 +82,12 @@ def get_organized_root_id(timing: Timing, receipt_folder_id: str, organized_fold
     parents = meta.get("parents") or []
     if not parents:
         raise RuntimeError(f"receipt_folder_id={receipt_folder_id!r} に親フォルダがありません")
-    client_folder_id = parents[0]
+    return parents[0]
+
+
+def get_organized_root_id(timing: Timing, client_folder_id: str, organized_folder_id: str) -> str:
+    if organized_folder_id:
+        return organized_folder_id
     return search_or_create_folder(client_folder_id, "整理済", timing)
 
 
@@ -186,7 +189,7 @@ def upload_other_files(
 
 
 def remove_failed_rows(local_path: str, failed_filenames: set):
-    """アップロードに失敗したファイルの行をreceipt_filelist.xlsxから取り除く
+    """アップロードに失敗したファイルの行をfilelist.xlsxから取り除く
     (「ファイル名」列に記載が無い=未処理、という次回実行時の判定に合わせるため。
     アップロード前のローカルファイルを直接書き換える)。"""
     if not failed_filenames or not os.path.exists(local_path):
@@ -215,14 +218,14 @@ def remove_failed_rows(local_path: str, failed_filenames: set):
         log(f"[remove_failed_rows] {len(rows_to_delete)}行を削除(次回再処理対象に戻す)")
 
 
-def upload_filelist(timing: Timing, receipt_dir: str, receipt_folder_id: str, old_filelist_file_id, failed_filenames: set):
-    local_path = os.path.join(receipt_dir, FILELIST_NAME)
+def upload_filelist(timing: Timing, work_dir: str, client_folder_id: str, old_filelist_file_id, failed_filenames: set):
+    local_path = os.path.join(work_dir, FILELIST_NAME)
     if not os.path.exists(local_path):
-        log("[upload_filelist] ローカルにreceipt_filelist.xlsxが無いためスキップ")
+        log("[upload_filelist] ローカルにfilelist.xlsxが無いためスキップ")
         return {"uploaded": False}
     remove_failed_rows(local_path, failed_filenames)
     with timing.phase("upload_filelist"):
-        result = upload_file_replacing(local_path, receipt_folder_id, FILELIST_NAME)
+        result = upload_file_replacing(local_path, client_folder_id, FILELIST_NAME)
     if result["replaced"] is False and old_filelist_file_id:
         # upload_file_replacingは名前一致で旧ファイルを検索するため通常は
         # 見つかるはずだが、念のためold_filelist_file_idが分かっていれば
@@ -287,16 +290,17 @@ def main():
         payment_entries = [e for e in all_entries if e.get("classification", "支払") == "支払"]
 
     timing = Timing()
-    organized_root_id = get_organized_root_id(timing, receipt_folder_id, args.organized_folder_id)
+    client_folder_id = get_client_folder_id(receipt_folder_id)
+    organized_root_id = get_organized_root_id(timing, client_folder_id, args.organized_folder_id)
 
-    # receipt_filelist.xlsxのDriveへの反映は、実ファイルのコピーが終わってから
+    # filelist.xlsxのDriveへの反映は、実ファイルのコピーが終わってから
     # 最後に行う(失敗した分の行を取り除いてからアップロードするため)。
     payment_result = upload_payment_files(timing, renamed_dir, organized_root_id, args.concurrency, payment_entries)
     other_result = upload_other_files(timing, receipt_dir, organized_root_id, args.concurrency, other_entries)
 
     failures = payment_result.get("failures", []) + other_result.get("failures", [])
     failed_filenames = {f["original_filename"] for f in failures}
-    filelist_result = upload_filelist(timing, receipt_dir, receipt_folder_id, old_filelist_file_id, failed_filenames)
+    filelist_result = upload_filelist(timing, work_dir, client_folder_id, old_filelist_file_id, failed_filenames)
 
     total_ms = timing.total()
 

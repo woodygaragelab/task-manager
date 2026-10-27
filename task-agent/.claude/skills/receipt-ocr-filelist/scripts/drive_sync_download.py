@@ -43,7 +43,7 @@ from drive_sync_common import (
 )
 from scan_new_receipts import EXT_TYPE
 
-FILELIST_NAME = "receipt_filelist.xlsx"
+FILELIST_NAME = "filelist.xlsx"
 JST = datetime.timezone(datetime.timedelta(hours=9))
 
 
@@ -58,12 +58,39 @@ def to_jst_iso(drive_time):
     return dt.astimezone(JST).replace(tzinfo=None, microsecond=0).isoformat()
 
 
+def find_client_folder_id(receipt_folder_id: str) -> str:
+    """受領フォルダの親(=クライアントフォルダ)のIDを返す。"""
+    service = get_drive_service()
+    meta = execute_with_retry(
+        service.files().get(fileId=receipt_folder_id, fields="parents", supportsAllDrives=True)
+    )
+    parents = meta.get("parents") or []
+    if not parents:
+        raise RuntimeError(f"receipt_folder_id={receipt_folder_id!r} に親フォルダがありません")
+    return parents[0]
+
+
+def find_filelist_entry(timing: Timing, client_folder_id: str):
+    """クライアントフォルダ直下(受領フォルダと並列)のfilelist.xlsxを探す(無ければNone)。"""
+    with timing.phase("find_filelist"):
+        service = get_drive_service()
+        resp = execute_with_retry(
+            service.files().list(
+                q=f"'{client_folder_id}' in parents and name = '{FILELIST_NAME}' and trashed = false",
+                fields="files(id, name, mimeType, size, modifiedTime)",
+                pageSize=10,
+                supportsAllDrives=True,
+                includeItemsFromAllDrives=True,
+            )
+        )
+    files = [f for f in resp.get("files", []) if f["mimeType"] != FOLDER_MIME_TYPE]
+    return files[0] if files else None
+
+
 def list_receipt_tree(timing: Timing, root_folder_id: str):
-    """受領フォルダ配下を再帰的に列挙する。戻り値は
-    (ファイル一覧[{id,name,mimeType,size,rel_path}], receipt_filelist.xlsxの
-    メタ情報 or None)。"""
+    """受領フォルダ配下を再帰的に列挙する。戻り値はファイル一覧
+    [{id,name,mimeType,size,rel_path}]。"""
     files = []
-    filelist_entry = None
     with timing.phase("list_files"):
         service = get_drive_service()
         queue = [(root_folder_id, "")]
@@ -85,15 +112,12 @@ def list_receipt_tree(timing: Timing, root_folder_id: str):
                     if f["mimeType"] == FOLDER_MIME_TYPE:
                         queue.append((f["id"], f"{prefix}{f['name']}/"))
                         continue
-                    if prefix == "" and f["name"] == FILELIST_NAME:
-                        filelist_entry = f
-                        continue
                     files.append({**f, "rel_path": f"{prefix}{f['name']}"})
                 page_token = resp.get("nextPageToken")
                 if not page_token:
                     break
-    log(f"[list_files] {len(files)} file(s), filelist={'found' if filelist_entry else 'none'}")
-    return files, filelist_entry
+    log(f"[list_files] {len(files)} file(s)")
+    return files
 
 
 COPY_SUFFIX_RE = re.compile(r"\s*のコピー(?:\s*\(\d+\))?")
@@ -110,7 +134,7 @@ def rename_copy_files(timing: Timing, files: list):
     files(list_receipt_tree()の戻り値)の name/rel_path も更新する。
     同じフォルダに変換後と同名のファイルが既にある場合は上書き・重複を避けるため
     リネームせずスキップする(警告ログのみ)。
-    戻り値は {処理後のrel_path: receipt_filelist.xlsxのremarks列に書く文言}。"""
+    戻り値は {処理後のrel_path: filelist.xlsxのremarks列に書く文言}。"""
     remarks = {}
     with timing.phase("rename_copy"):
         service = get_drive_service()
@@ -177,7 +201,7 @@ def execute_with_retry_downloader(downloader, max_retries: int = 5, base_delay: 
 def diff_new_files(
     timing: Timing, remote_files: list, local_filelist_path: str, remarks: dict = None
 ) -> list:
-    """既存receipt_filelist.xlsxの「ファイル名」列と突き合わせ、未記載のものだけ
+    """既存filelist.xlsxの「ファイル名」列と突き合わせ、未記載のものだけ
     新規ファイルとして返す(scan_new_receipts.pyと同じロジック)。"""
     with timing.phase("diff"):
         existing = set()
@@ -275,10 +299,13 @@ def main():
             sys.exit(1)
 
     timing = Timing()
-    remote_files, filelist_entry = list_receipt_tree(timing, receipt_folder_id)
+    remote_files = list_receipt_tree(timing, receipt_folder_id)
+    client_folder_id = find_client_folder_id(receipt_folder_id)
+    filelist_entry = find_filelist_entry(timing, client_folder_id)
     remarks = rename_copy_files(timing, remote_files)
 
-    local_filelist_path = os.path.join(receipt_dir, FILELIST_NAME)
+    # ローカルでも受領フォルダ(receipt/)とは別に、work_dir直下へ置く
+    local_filelist_path = os.path.join(work_dir, FILELIST_NAME)
     if filelist_entry:
         download_existing_filelist(timing, filelist_entry, local_filelist_path)
     elif os.path.exists(local_filelist_path):
@@ -299,6 +326,7 @@ def main():
     result = {
         "client_code": args.client_code,
         "receipt_folder_id": receipt_folder_id,
+        "client_folder_id": client_folder_id,
         "old_filelist_file_id": filelist_entry["id"] if filelist_entry else None,
         "new_files": new_files,
         "total_new": len(all_new_files),

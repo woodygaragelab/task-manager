@@ -1,9 +1,9 @@
 """
-受領フォルダ(サブフォルダ含む)内の画像ファイルを調べ、receipt_filelist.xlsx に
+受領フォルダ(サブフォルダ含む)内の画像ファイルを調べ、filelist.xlsx に
 まだ載っていない新規ファイルだけを JSON で出力する。
 
 使い方:
-    python scan_new_receipts.py <受領フォルダ> <receipt_filelist.xlsxのパス>
+    python scan_new_receipts.py <受領フォルダ> <filelist.xlsxのパス>
 
 出力 (stdout, JSON):
     [
@@ -14,7 +14,7 @@
       ...
     ]
 "filename" は受領フォルダを起点とした相対パス(サブフォルダ内のファイルは
-"サブフォルダ名\ファイル名" の形式)。receipt_filelist.xlsx の「受領ファイル名」列には
+"サブフォルダ名\ファイル名" の形式)。filelist.xlsx の「受領ファイル名」列には
 この値をそのまま書き込むので、実ファイルを開く際は
 os.path.join(<受領フォルダ>, filename) で絶対パスを組み立てること。
 modified_at はファイルの更新日時(「受領ファイル作成日」列に記録される)。

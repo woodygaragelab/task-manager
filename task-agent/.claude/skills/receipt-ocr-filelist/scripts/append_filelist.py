@@ -1,10 +1,10 @@
 """
-受領フォルダの分類結果(支払・売上・給与・銀行通帳)を receipt_filelist.xlsx に追記する。
+受領フォルダの分類結果(支払・売上・給与・銀行通帳)を filelist.xlsx に追記する。
 ファイルが無ければヘッダー付きで新規作成し、旧フォーマット(分類/区分/支払方法/消費税額/
 仕訳No/勘定科目名列が無い)の場合はヘッダー行に不足列を追加する(既存データ行はそのまま)。
 
 使い方:
-    python append_filelist.py <entries.jsonのパス> <receipt_filelist.xlsxのパス>
+    python append_filelist.py <entries.jsonのパス> <filelist.xlsxのパス>
 
 entries.json は次の形式のリスト(1要素=1ファイル)。支払以外(売上・給与・銀行通帳)は
 OCRを行わないため、classification 以外の内容系フィールド(date/amount/vendor/...)は
@@ -25,7 +25,7 @@ OCRを行わないため、classification 以外の内容系フィールド(date
     "tax_amount": 527,                   // 消費税額の記載(無ければ null)。支払のみ
     "remarks": "「のコピー」を削除してリネーム(元のファイル名: ...)",
                                           // 備考(任意)。new_files.json の同名キーをそのまま渡す。
-                                          // receipt_filelist.xlsx の remarks 列に書かれる。
+                                          // filelist.xlsx の remarks 列に書かれる。
     "account_name": "旅費交通費"          // master/TKCマスタ.xlsx の勘定科目コード表と照合した
                                           // 参考の勘定科目名(借方相当)。判断できなければ null。
                                           // 支払のみ。

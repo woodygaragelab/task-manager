@@ -40,6 +40,18 @@ MAX_ROUNDS = 50
 # 非同期呼び出しのペイロード上限(256KB)対策。累積結果がこれを超えたら古い側を切り詰める。
 MAX_ACCUMULATED_CHARS = 60000
 
+# Bedrock側の一時的な障害(503 "unable to process your request"、529 overloaded、
+# スロットリング等)や応答待ちタイムアウトは、同じラウンドをやり直せば通ることが多い。
+# 処理済みファイルは受領ファイル一覧で判定されるため、やり直しても重複コピーは発生しない。
+# 失敗したラウンドは長時間(数百秒)掛かっていることがあり同じLambda内では再試行できない
+# ため、ラウンドを進めずに自分自身を再起動してやり直す。
+MAX_RETRIES_PER_ROUND = 3
+TRANSIENT_ERROR_RE = re.compile(
+    r"\b(500|502|503|504|529)\b|unable to process your request|overloaded|throttl|"
+    r"ServiceUnavailable|ModelNotReady|Read timeout|timed out|Connection reset",
+    re.IGNORECASE,
+)
+
 lambda_client = boto3.client("lambda", region_name=REGION)
 
 
@@ -57,6 +69,7 @@ def handler(event, context):
     round_no = event.get("round", 1)
     prev_remaining = event.get("prevRemaining")
     accumulated = event.get("accumulated", "")
+    retry_no = event.get("retry", 0)
 
     # Lambdaの非同期(Event)呼び出しはエラー・タイムアウト時に既定でLambda全体を
     # 再試行するため、対策なしではAgentCore呼び出し(とDrive側の副作用)が同じ
@@ -69,7 +82,16 @@ def handler(event, context):
     try:
         # 1ラウンド=新しいruntimeSessionId。round 1 は従来どおり job_id をそのまま使う。
         session_id = job_id if round_no == 1 else f"{job_id}-{round_no}"
-        round_text = _invoke_round(session_id, prompt, agent_id, client_code, job_id)
+        if retry_no:
+            session_id = f"{session_id}-r{retry_no}"
+        try:
+            round_text = _invoke_round(session_id, prompt, agent_id, client_code, job_id)
+        except Exception as e:  # noqa: BLE001
+            if retry_no >= MAX_RETRIES_PER_ROUND or not TRANSIENT_ERROR_RE.search(str(e)):
+                raise
+            print(f"[retry] round={round_no} retry={retry_no + 1}/{MAX_RETRIES_PER_ROUND} error={e}")
+            _reinvoke(context, {**event, "agentId": agent_id, "retry": retry_no + 1})
+            return
         results = accumulated + (round_text if round_no == 1 else f"\n\n--- {round_no}回目 ---\n{round_text}")
         if len(results) > MAX_ACCUMULATED_CHARS:
             results = "(前半省略)\n" + results[-MAX_ACCUMULATED_CHARS:]
@@ -83,18 +105,16 @@ def handler(event, context):
                 stop_reason = f"自動再実行の上限({MAX_ROUNDS}回)に達しました。残り{remaining}件は未処理です。"
         if remaining and not stop_reason:
             repo.update_agent_job_progress(client_code, job_id, round_no, remaining, results)
-            lambda_client.invoke(
-                FunctionName=context.function_name,
-                InvocationType="Event",
-                Payload=json.dumps(
-                    {
-                        **event,
-                        "agentId": agent_id,
-                        "round": round_no + 1,
-                        "prevRemaining": remaining,
-                        "accumulated": results,
-                    }
-                ).encode(),
+            _reinvoke(
+                context,
+                {
+                    **event,
+                    "agentId": agent_id,
+                    "round": round_no + 1,
+                    "retry": 0,
+                    "prevRemaining": remaining,
+                    "accumulated": results,
+                },
             )
             return  # ジョブは「実行中」のまま。最終ラウンドがcomplete/failを記録する。
 
@@ -103,6 +123,14 @@ def handler(event, context):
         repo.complete_agent_job(client_code, job_id, results)
     except Exception as e:  # noqa: BLE001 - 失敗内容をポーリング側に残すため常に記録する
         repo.fail_agent_job(client_code, job_id, str(e))
+
+
+def _reinvoke(context, event):
+    lambda_client.invoke(
+        FunctionName=context.function_name,
+        InvocationType="Event",
+        Payload=json.dumps(event).encode(),
+    )
 
 
 def _invoke_round(session_id, prompt, agent_id, client_code, job_id):
@@ -126,7 +154,11 @@ def _invoke_round(session_id, prompt, agent_id, client_code, job_id):
         agent_result = json.loads(raw_bytes.decode("utf-8"))
         return agent_result.get("result", "")
     except (UnicodeDecodeError, json.JSONDecodeError):
-        return raw_bytes.decode("utf-8", errors="replace")
+        text = raw_bytes.decode("utf-8", errors="replace")
+        # エラー本文がJSON以外でそのまま返ってきた場合、一時的な障害なら呼び出し側で再試行できるよう例外にする。
+        if TRANSIENT_ERROR_RE.search(text):
+            raise RuntimeError(text)
+        return text
 
 
 def _parse_remaining(text):
