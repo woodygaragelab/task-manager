@@ -31,9 +31,9 @@ agent_core_client = boto3.client(
     config=Config(connect_timeout=10, read_timeout=850, retries={"max_attempts": 1}),
 )
 
-# receipt-ocr-filelistは1回の実行で最大10ファイルしか処理せず、残りがあれば報告の
+# receipt-ocr-filelistは1回の実行で最大5ファイルしか処理せず、残りがあれば報告の
 # 最終行に `REMAINING: N` を出す。N>0の間、1ラウンド=1回のLambda起動として、自分自身を
-# 非同期(Event)で再起動し次の10件を新しいセッション(=新しいコンテキスト)で処理する。
+# 非同期(Event)で再起動し次の5件を新しいセッション(=新しいコンテキスト)で処理する。
 # ラウンドごとに別のLambda起動になるので、全体の所要時間はLambdaの900秒に縛られない。
 REMAINING_RE = re.compile(r"^\s*REMAINING:\s*(\d+)\s*$", re.MULTILINE)
 MAX_ROUNDS = 50

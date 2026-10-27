@@ -7,13 +7,13 @@ import { api } from "./api";
 // 他のエージェントは今後の実装予定のダミー表示。
 const LIVE_AGENT_IDS = ["scout", "archivist", "progress"];
 const POLL_INTERVAL_MS = 3000;
-// バックエンド(TaskAgentJobProcessorFunction)は新規ファイルが10件を超えると、10件ずつ
+// バックエンド(TaskAgentJobProcessorFunction)は新規ファイルが5件を超えると、5件ずつ
 // 自分自身を再起動して全件を処理する(agent_job_src/app.py)ため、全体の所要時間は
 // 1回のLambda(900秒)を超え得る。ここでは異常終了(ジョブが"processing"のまま残る)に
 // 備えた安全上限として3時間で諦める。
 const MAX_POLL_ATTEMPTS = 3600;
 // 1ラウンドで処理するファイル数(receipt-ocr-filelistスキルの--limit既定値と揃える)。
-const FILES_PER_ROUND = 10;
+const FILES_PER_ROUND = 5;
 
 // ジョブの進捗(完了ラウンド数・残りファイル数)を表示用の文言にする。進捗が無い
 // (単一ラウンド、または最初のラウンドが未完了)の場合はnull。

@@ -8,7 +8,7 @@ download_file_contentをファイル数ぶん逐次呼ぶ」方式に代えて�
     python drive_sync_download.py <client_code> [--work-dir DIR]
         [--receipt-folder-id ID] [--concurrency N] [--limit N]
 
---limit は1回の実行で処理する新規ファイル数の上限(既定10)。超過分はダウンロード
+--limit は1回の実行で処理する新規ファイル数の上限(既定5)。超過分はダウンロード
 せず、出力の remaining に件数だけ返す(次回実行で再び新規として検出される)。
 
 client_code はtaskmanagerのクライアントマスタ(TaskClients)のclientCode。
@@ -278,7 +278,7 @@ def main():
     parser.add_argument("--work-dir", default=None, help="デフォルト: /tmp/{client_code}")
     parser.add_argument("--receipt-folder-id", default=None)
     parser.add_argument("--concurrency", type=int, default=5)
-    parser.add_argument("--limit", type=int, default=10)
+    parser.add_argument("--limit", type=int, default=5)
     args = parser.parse_args()
 
     work_dir = args.work_dir or os.path.join("/tmp", args.client_code)
