@@ -12,7 +12,7 @@ OCRを行わないため、classification 以外の内容系フィールド(date
 [
   {
     "filename": "IMG_20260611_091550.jpg",
-    "taken_at": "2026-06-11T09:15:50",   // null可。null なら撮影日時セルは空欄
+    "modified_at": "2026-06-11T09:15:50", // 受領ファイルの更新日(JST)。null可。旧キー taken_at も可
     "size_mb": 3.34,
     "type": "JPEG画像",
     "classification": "支払",            // "支払"/"売上"/"給与"/"銀行通帳"。省略時は"支払"扱い
@@ -39,8 +39,16 @@ import sys, os, json, datetime
 from openpyxl import Workbook, load_workbook
 from openpyxl.styles import Font, Alignment
 
-HEADERS = ["No.", "ファイル名", "撮影日時", "サイズ(MB)", "種類", "分類", "日付", "金額", "取引先",
-           "内容", "区分", "支払方法", "消費税額", "仕訳No", "勘定科目名"]
+from organized_names import organized_rel_path
+
+HEADERS = ["No.", "受領ファイル名", "受領ファイル作成日", "サイズ(MB)", "種類", "整理済ファイル名",
+           "整理済ファイル作成日", "分類", "日付", "金額", "取引先", "内容", "区分", "支払方法",
+           "消費税額", "仕訳No", "勘定科目名"]
+# 旧ヘッダー名 -> 新ヘッダー名(既存ファイルのヘッダー行をその場でリネームする)
+RENAMED_HEADERS = {"ファイル名": "受領ファイル名", "撮影日時": "受領ファイル作成日"}
+# 「種類」の右に挿入する列(旧フォーマットのファイルには無い)
+INSERT_AFTER_TYPE = ["整理済ファイル名", "整理済ファイル作成日"]
+JST = datetime.timezone(datetime.timedelta(hours=9))
 # 既存ファイルのヘッダーを補完する際に、このスキルが追加してよい列(「仕訳No」は含めない)。
 # 「仕訳No」列は receipt-to-journal スキル側が、移行時の過去分バックフィルとセットで
 # 追加する責任を持つ。ここで先に追加してしまうと、その移行処理が二度と行われなくなり、
@@ -48,10 +56,40 @@ HEADERS = ["No.", "ファイル名", "撮影日時", "サイズ(MB)", "種類", 
 HEADERS_TO_BACKFILL = [h for h in HEADERS if h != "仕訳No"]
 
 
+def migrate_headers(ws):
+    """旧フォーマットのヘッダーを新フォーマットへ移行する(既存データ行はそのまま)。
+    ①「ファイル名」「撮影日時」を新名称へリネーム ②「整理済ファイル名」
+    「整理済ファイル作成日」が無ければ「種類」の右に列を挿入する(既存行は空欄)。"""
+    for c in ws[1]:
+        if c.value in RENAMED_HEADERS:
+            c.value = RENAMED_HEADERS[c.value]
+    headers = [c.value for c in ws[1]]
+    if "種類" not in headers:
+        return
+    insert_at = headers.index("種類") + 2  # 「種類」の右隣(1始まり)
+    for h in INSERT_AFTER_TYPE:
+        if h in headers:
+            continue
+        ws.insert_cols(insert_at)
+        cell = ws.cell(row=1, column=insert_at, value=h)
+        cell.font = Font(name="Arial", bold=True)
+        cell.alignment = Alignment(horizontal="center")
+        insert_at += 1
+
+
+def parse_dt(value):
+    """ISO文字列をdatetimeにする(tzありはJSTへ変換してnaiveにする。xlsxはtz非対応のため)。"""
+    dt = datetime.datetime.fromisoformat(value)
+    if dt.tzinfo is not None:
+        dt = dt.astimezone(JST).replace(tzinfo=None)
+    return dt
+
+
 def open_or_create(path):
     if os.path.exists(path):
         wb = load_workbook(path)
         ws = wb["receipt"] if "receipt" in wb.sheetnames else wb.active
+        migrate_headers(ws)
         existing_headers = [c.value for c in ws[1] if c.value is not None]
         for h in HEADERS_TO_BACKFILL:
             if h not in existing_headers:
@@ -106,16 +144,23 @@ def main():
     col = {h: i + 1 for i, h in enumerate(header_row) if h}
     no = next_seq(ws, col["No."])
 
+    processed_at = datetime.datetime.now(JST).replace(tzinfo=None, microsecond=0)
+
     for e in entries:
-        taken_at = datetime.datetime.fromisoformat(e["taken_at"]) if e.get("taken_at") else None
+        # modified_at: 受領ファイルの更新日(drive_sync_download.pyが出力)。旧キーtaken_atも読む
+        modified_at_raw = e.get("modified_at") or e.get("taken_at")
+        modified_at = parse_dt(modified_at_raw) if modified_at_raw else None
         r = ws.max_row + 1
         ws.cell(row=r, column=col["No."], value=no)
-        ws.cell(row=r, column=col["ファイル名"], value=e["filename"])
-        if taken_at:
-            c = ws.cell(row=r, column=col["撮影日時"], value=taken_at)
+        ws.cell(row=r, column=col["受領ファイル名"], value=e["filename"])
+        if modified_at:
+            c = ws.cell(row=r, column=col["受領ファイル作成日"], value=modified_at)
             c.number_format = "yyyy-mm-dd hh:mm:ss"
         ws.cell(row=r, column=col["サイズ(MB)"], value=e["size_mb"]).number_format = "0.00"
         ws.cell(row=r, column=col["種類"], value=e["type"])
+        # 整理済ファイル名はサブフォルダ込みの相対パス。作成日は処理実行日時
+        ws.cell(row=r, column=col["整理済ファイル名"], value=organized_rel_path(e))
+        ws.cell(row=r, column=col["整理済ファイル作成日"], value=processed_at).number_format = "yyyy-mm-dd hh:mm:ss"
         ws.cell(row=r, column=col["分類"], value=e.get("classification", "支払"))
         if e.get("date"):
             c = ws.cell(row=r, column=col["日付"], value=datetime.datetime.strptime(e["date"], "%Y-%m-%d"))

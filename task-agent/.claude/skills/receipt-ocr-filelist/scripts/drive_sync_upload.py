@@ -24,10 +24,11 @@ trash_fileをファイル数ぶん逐次呼ぶ」方式に代えて、Drive API�
 
 処理内容(**必ずこの順序で実行する**。receipt_filelist.xlsxは実ファイルのコピーが
 確認できたものだけを反映するため、Driveへの反映は最後に行う):
-    1. <work_dir>/renamed/配下の各ファイル(支払)を 整理済/ 直下へ
-       アップロード(同名ファイルがあれば新規アップロード後に旧ファイルをtrash)
-    2. entries.jsonのうちclassificationが売上/給与/銀行通帳のファイルを、サブフォルダを
-       作らず 整理済/ 直下へアップロード(同上)。ファイル名は
+    1. <work_dir>/renamed/配下の各ファイル(支払)を 整理済/ 配下の、受領フォルダと
+       同じサブフォルダへアップロード(無ければサブフォルダを作成。同名ファイルが
+       あれば新規アップロード後に旧ファイルをtrash)
+    2. entries.jsonのうちclassificationが売上/給与/銀行通帳のファイルを、受領フォルダと
+       同じサブフォルダ構成で 整理済/ 配下へアップロード(同上)。ファイル名は
        売上/給与: 「<最終取引日YYYYMMDD>_<元ファイル名(拡張子除く)>.<拡張子>」
        銀行通帳: 「<最終取引日YYYYMMDD>_<銀行名>.<拡張子>」
        (entriesの last_transaction_date / bank_name を使用)
@@ -62,13 +63,15 @@ from drive_sync_common import (
     search_or_create_folder,
     upload_file_replacing,
 )
-from rename_and_save import safe_component
+from organized_names import (
+    organized_name,
+    organized_rel_path,
+    organized_subdir,
+    payment_dest_name,
+)
 
 FILELIST_NAME = "receipt_filelist.xlsx"
 COPY_AS_IS_CLASSIFICATIONS = {"売上", "給与", "銀行通帳"}
-# 分類名のサブフォルダを作らず、整理済フォルダ直下に保存する分類
-# (支払も直下。現在は全分類がフラット)
-FLAT_CLASSIFICATIONS = {"売上", "給与", "銀行通帳"}
 
 
 def get_organized_root_id(timing: Timing, receipt_folder_id: str, organized_folder_id: str) -> str:
@@ -91,58 +94,39 @@ def load_entries(path):
     return json.load(open(path, encoding="utf-8"))
 
 
-def payment_dest_name(entry: dict) -> tuple:
-    """rename_and_save.pyと同じ命名規則で(勘定科目名, リネーム後ファイル名)を
-    再計算する(rename_and_save.py自体は無改造のまま使うため、命名関数だけをimportして
-    再利用する)。"""
-    account = safe_component(entry.get("account_name"), "未分類")
-    vendor = safe_component(entry.get("vendor"), "取引先不明")
-    date_str = (entry.get("date") or "日付不明").replace("-", "")
-    amount = entry.get("amount")
-    amount_str = f"{amount}円" if amount is not None else "金額不明"
-    ext = os.path.splitext(entry["filename"])[1].lower()
-    return account, f"{date_str}_{vendor}_{amount_str}_{account}{ext}"
-
-
-def passbook_dest_name(entry: dict) -> str:
-    """銀行通帳のファイル名: <最終取引日YYYYMMDD>_<銀行名>.<拡張子>。
-    entryの last_transaction_date(YYYY-MM-DD) と bank_name から作る。"""
-    date_str = (entry.get("last_transaction_date") or "日付不明").replace("-", "")
-    bank = safe_component(entry.get("bank_name"), "銀行名不明")
-    ext = os.path.splitext(entry["filename"])[1].lower()
-    return f"{date_str}_{bank}{ext}"
-
-
-def dated_original_dest_name(entry: dict) -> str:
-    """売上・給与のファイル名: <最終取引日YYYYMMDD>_<元ファイル名(拡張子除く)>.<拡張子>。
-    同じ最終取引日でも元ファイル名が違えば別名になる(上書きされない)。"""
-    date_str = (entry.get("last_transaction_date") or "日付不明").replace("-", "")
-    base = os.path.basename(entry["filename"].replace("\\", "/"))
-    stem, ext = os.path.splitext(base)
-    return f"{date_str}_{safe_component(stem, 'ファイル名不明')}{ext.lower()}"
+def ensure_folder_path(timing: Timing, root_id: str, subdir: str) -> str:
+    """root_id配下に'旧/2026'のようなサブフォルダ階層を(無ければ作成しつつ)たどり、
+    最深のフォルダIDを返す。subdirが空ならroot_idそのもの。"""
+    folder_id = root_id
+    for part in [p for p in subdir.split("/") if p]:
+        folder_id = search_or_create_folder(folder_id, part, timing)
+    return folder_id
 
 
 def upload_payment_files(timing: Timing, renamed_dir: str, organized_root_id: str, concurrency: int, payment_entries: list):
     tasks = []
     for e in payment_entries:
         account, dest_name = payment_dest_name(e)
-        local_path = os.path.join(renamed_dir, dest_name)
+        subdir = organized_subdir(e)
+        # rename_and_save.pyが受領側と同じサブフォルダ構成で書き出したパス
+        local_path = os.path.join(renamed_dir, *organized_rel_path({**e, "classification": "支払"}).split("/"))
         if not os.path.exists(local_path):
             log(f"[skip] renamedファイルが見つかりません: {local_path}")
             continue
-        tasks.append((account, dest_name, local_path, e["filename"]))
+        tasks.append((account, dest_name, local_path, e["filename"], subdir))
 
     results, failures = [], []
 
-    def _run(account, filename, local_path, original_filename):
+    def _run(account, filename, local_path, original_filename, subdir):
+        dest_folder = ensure_folder_path(timing, organized_root_id, subdir)
         with timing.phase("upload_file", {"filename": filename}):
-            r = upload_file_replacing(local_path, organized_root_id, filename)
-        return {"account": account, "filename": filename, "original_filename": original_filename, **r}
+            r = upload_file_replacing(local_path, dest_folder, filename)
+        return {"account": account, "filename": filename, "original_filename": original_filename, "subdir": subdir, **r}
 
     with ThreadPoolExecutor(max_workers=concurrency) as pool:
         future_to_task = {pool.submit(_run, *t): t for t in tasks}
         for future in as_completed(future_to_task):
-            account, filename, _, original_filename = future_to_task[future]
+            account, filename, _, original_filename, _ = future_to_task[future]
             try:
                 results.append(future.result())
             except Exception as e:
@@ -170,27 +154,21 @@ def upload_other_files(
         if not os.path.exists(src):
             log(f"[skip] 元ファイルが見つかりません: {src}")
             continue
-        if classification == "銀行通帳":
-            dest_name = passbook_dest_name(e)
-        else:
-            dest_name = dated_original_dest_name(e)
-        tasks.append((classification, dest_name, src, filename))
+        tasks.append((classification, organized_name(e), src, filename, organized_subdir(e)))
 
     results, failures = [], []
 
-    def _run(classification, dest_name, src, original_filename):
-        if classification in FLAT_CLASSIFICATIONS:
-            dest_folder = organized_root_id
-        else:
-            dest_folder = search_or_create_folder(organized_root_id, classification, timing)
+    def _run(classification, dest_name, src, original_filename, subdir):
+        # 受領フォルダと同じサブフォルダ構成で整理済フォルダへ保存する
+        dest_folder = ensure_folder_path(timing, organized_root_id, subdir)
         with timing.phase("upload_file", {"filename": dest_name}):
             r = upload_file_replacing(src, dest_folder, dest_name)
-        return {"classification": classification, "filename": dest_name, "original_filename": original_filename, **r}
+        return {"classification": classification, "filename": dest_name, "original_filename": original_filename, "subdir": subdir, **r}
 
     with ThreadPoolExecutor(max_workers=concurrency) as pool:
         future_to_task = {pool.submit(_run, *t): t for t in tasks}
         for future in as_completed(future_to_task):
-            classification, dest_name, _, original_filename = future_to_task[future]
+            classification, dest_name, _, original_filename, _ = future_to_task[future]
             try:
                 results.append(future.result())
             except Exception as e:
@@ -219,9 +197,11 @@ def remove_failed_rows(local_path: str, failed_filenames: set):
     wb = load_workbook(local_path)
     ws = wb.active
     header = [c.value for c in ws[1]]
-    try:
-        filename_col = header.index("ファイル名") + 1
-    except ValueError:
+    for name in ("受領ファイル名", "ファイル名"):  # 旧ヘッダー名もフォールバックで探す
+        if name in header:
+            filename_col = header.index(name) + 1
+            break
+    else:
         return
     rows_to_delete = []
     for row in ws.iter_rows(min_row=2):

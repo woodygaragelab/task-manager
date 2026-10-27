@@ -1,4 +1,4 @@
-"""
+r"""
 receipt_filelist.xlsx に追記した新規領収書ファイルを、renamed フォルダ直下に
 コピー保存する(Step 4。勘定科目ごとのサブフォルダは作らない)。ファイル名は
 "<日付YYYYMMDD>_<取引先>_<金額>円_<勘定科目名>.<拡張子>" にリネームされる。
@@ -10,7 +10,7 @@ entries.json は append_filelist.py と同じ形式(Step 3 で作成したもの
 このスクリプトは新規追加分だけを対象にする(filelist全体の再走査はしない)。
 
 保存先:
-    <受領フォルダの親フォルダ(=関与先フォルダ)>\renamed\
+    <受領フォルダの親フォルダ(=関与先フォルダ)>\renamed\ 配下の、受領側と同じサブフォルダ/
         <日付>_<取引先>_<金額>円_<勘定科目名>.<拡張子>
     例: 受領フォルダが ...\Data\MAX\receipt なら、保存先は ...\Data\MAX\renamed\
     (関与先フォルダはどの案件でも共通してこの構造なので、案件コードを別途渡す必要はない)
@@ -23,14 +23,7 @@ entries.json は append_filelist.py と同じ形式(Step 3 で作成したもの
 """
 import sys, os, json, shutil
 
-def safe_component(s, fallback):
-    """フォルダ名・ファイル名に使えない文字を除去する。"""
-    if not s:
-        return fallback
-    s = str(s)
-    for ch in '\\/:*?"<>|':
-        s = s.replace(ch, "")
-    return s.strip() or fallback
+from organized_names import safe_component, organized_rel_path  # noqa: F401 (safe_componentは再エクスポート)
 
 
 def main():
@@ -51,17 +44,10 @@ def main():
             print(f"[skip] 元ファイルが見つかりません: {src}")
             continue
 
-        account = safe_component(e.get("account_name"), "未分類")
-        vendor = safe_component(e.get("vendor"), "取引先不明")
-        date_str = (e.get("date") or "日付不明").replace("-", "")
-        amount = e.get("amount")
-        amount_str = f"{amount}円" if amount is not None else "金額不明"
-        ext = os.path.splitext(filename)[1].lower()
-
-        dest_dir = renamed_root
-        os.makedirs(dest_dir, exist_ok=True)
-        dest_name = f"{date_str}_{vendor}_{amount_str}_{account}{ext}"
-        dest = os.path.join(dest_dir, dest_name)
+        # 受領フォルダと同じサブフォルダ構成で保存する(サブフォルダ違いの同名衝突も避けられる)
+        e = {**e, "classification": "支払"}
+        dest = os.path.join(renamed_root, *organized_rel_path(e).split("/"))
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
 
         overwritten = os.path.exists(dest)
         shutil.copy2(src, dest)

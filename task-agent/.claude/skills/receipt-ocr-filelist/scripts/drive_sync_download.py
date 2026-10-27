@@ -13,7 +13,7 @@ client_code はtaskmanagerのクライアントマスタ(TaskClients)のclientCo
 (DynamoDBの環境変数が無いローカル実行・テスト向け)。
 
 出力(stdout, JSON): scan_new_receipts.pyと同じ"filename/taken_at/size_mb/type"を
-持つ新規ファイルのリストに、file_id(Drive上のID)とreceipt_folder_id/
+持つ新規ファイルのリスト(taken_atの代わりにDriveの更新日をJSTにしたmodified_at)に、file_id(Drive上のID)とreceipt_folder_id/
 old_filelist_file_id(Step5相当のアップロード側で使う)を加えたもの。
 同じ内容を <work_dir>/new_files.json にも書き出す。
 
@@ -21,9 +21,9 @@ old_filelist_file_id(Step5相当のアップロード側で使う)を加えた�
 download_file(extra: filename) / total
 """
 import argparse
+import datetime
 import json
 import os
-import re
 import sys
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
@@ -40,7 +40,18 @@ from drive_sync_common import (
 from scan_new_receipts import EXT_TYPE
 
 FILELIST_NAME = "receipt_filelist.xlsx"
-TAKEN_AT_RE = re.compile(r"IMG_(\d{8})_(\d{6})")
+JST = datetime.timezone(datetime.timedelta(hours=9))
+
+
+def to_jst_iso(drive_time):
+    """Driveのmodifiedtime(RFC3339, UTC)をJSTのISO文字列にする。None/不正値はNone。"""
+    if not drive_time:
+        return None
+    try:
+        dt = datetime.datetime.fromisoformat(drive_time.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    return dt.astimezone(JST).replace(tzinfo=None, microsecond=0).isoformat()
 
 
 def list_receipt_tree(timing: Timing, root_folder_id: str):
@@ -59,7 +70,7 @@ def list_receipt_tree(timing: Timing, root_folder_id: str):
                 resp = execute_with_retry(
                     service.files().list(
                         q=f"'{parent_id}' in parents and trashed = false",
-                        fields="nextPageToken, files(id, name, mimeType, size)",
+                        fields="nextPageToken, files(id, name, mimeType, size, modifiedTime)",
                         pageSize=200,
                         pageToken=page_token,
                         supportsAllDrives=True,
@@ -136,18 +147,10 @@ def diff_new_files(timing: Timing, remote_files: list, local_filelist_path: str)
             if f["rel_path"] in existing:
                 continue
             size_mb = round(int(f.get("size", 0)) / 1024 / 1024, 2)
-            m = TAKEN_AT_RE.match(f["name"])
-            taken_at = None
-            if m:
-                import datetime
-
-                taken_at = datetime.datetime.strptime(
-                    m.group(1) + m.group(2), "%Y%m%d%H%M%S"
-                ).isoformat()
             new_files.append(
                 {
                     "filename": f["rel_path"],
-                    "taken_at": taken_at,
+                    "modified_at": to_jst_iso(f.get("modifiedTime")),
                     "size_mb": size_mb,
                     "type": EXT_TYPE[ext],
                     "file_id": f["id"],

@@ -7,18 +7,17 @@
 
 出力 (stdout, JSON):
     [
-      {"filename": "IMG_20260611_091550.jpg", "taken_at": "2026-06-11T09:15:50",
+      {"filename": "IMG_20260611_091550.jpg", "modified_at": "2026-06-11T09:15:50",
        "size_mb": 3.34, "type": "JPEG画像"},
-      {"filename": "2026年6月\\IMG_20260605_101200.jpg", "taken_at": "2026-06-05T10:12:00",
+      {"filename": "2026年6月\\IMG_20260605_101200.jpg", "modified_at": "2026-06-05T10:12:00",
        "size_mb": 2.10, "type": "JPEG画像"},
       ...
     ]
 "filename" は受領フォルダを起点とした相対パス(サブフォルダ内のファイルは
-"サブフォルダ名\ファイル名" の形式)。receipt_filelist.xlsx の「ファイル名」列には
+"サブフォルダ名\ファイル名" の形式)。receipt_filelist.xlsx の「受領ファイル名」列には
 この値をそのまま書き込むので、実ファイルを開く際は
 os.path.join(<受領フォルダ>, filename) で絶対パスを組み立てること。
-taken_at は IMG_YYYYMMDD_HHMMSS 形式のファイル名(サブフォルダ部分は除く)からのみ
-抽出する。パターンに合わない場合は null になるので、その場合は画像内の日付などから判断する。
+modified_at はファイルの更新日時(「受領ファイル作成日」列に記録される)。
 """
 import sys, os, re, json, datetime
 from openpyxl import load_workbook
@@ -54,15 +53,12 @@ def main():
             if rel_path in existing:
                 continue
             size_mb = round(os.path.getsize(full_path) / 1024 / 1024, 2)
-            m = re.match(r"IMG_(\d{8})_(\d{6})", f)
-            taken_at = None
-            if m:
-                taken_at = datetime.datetime.strptime(
-                    m.group(1) + m.group(2), "%Y%m%d%H%M%S"
-                ).isoformat()
+            modified_at = datetime.datetime.fromtimestamp(
+                os.path.getmtime(full_path)
+            ).replace(microsecond=0).isoformat()
             new_files.append({
                 "filename": rel_path,
-                "taken_at": taken_at,
+                "modified_at": modified_at,
                 "size_mb": size_mb,
                 "type": EXT_TYPE[ext],
             })
