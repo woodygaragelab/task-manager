@@ -82,6 +82,7 @@ def handler(event, context):
             elif round_no >= MAX_ROUNDS:
                 stop_reason = f"自動再実行の上限({MAX_ROUNDS}回)に達しました。残り{remaining}件は未処理です。"
         if remaining and not stop_reason:
+            repo.update_agent_job_progress(client_code, job_id, round_no, remaining, results)
             lambda_client.invoke(
                 FunctionName=context.function_name,
                 InvocationType="Event",

@@ -1267,6 +1267,26 @@ def claim_agent_job(client_code: str, job_id: str) -> bool:
         return False
 
 
+def update_agent_job_progress(
+    client_code: str, job_id: str, rounds_done: int, remaining: int, partial_result: str
+) -> None:
+    """複数ラウンドで実行中のジョブの進捗を記録する(画面のポーリング表示用)。
+
+    statusは"processing"のまま変えない。roundsDone=完了したラウンド数、remaining=未処理の
+    ファイル数、partialResult=ここまでの報告(完了時はresultに置き換わる)。
+    """
+    agent_jobs_table.update_item(
+        Key={"clientCode": client_code, "jobId": job_id},
+        UpdateExpression="SET roundsDone = :r, remaining = :m, partialResult = :p, updatedAt = :now",
+        ExpressionAttributeValues={
+            ":r": rounds_done,
+            ":m": remaining,
+            ":p": partial_result,
+            ":now": _now(),
+        },
+    )
+
+
 def complete_agent_job(client_code: str, job_id: str, result: str) -> None:
     """ジョブの実行結果を記録し、完了状態にする。"""
     agent_jobs_table.update_item(

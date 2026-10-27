@@ -7,9 +7,21 @@ import { api } from "./api";
 // 他のエージェントは今後の実装予定のダミー表示。
 const LIVE_AGENT_IDS = ["scout", "archivist", "progress"];
 const POLL_INTERVAL_MS = 3000;
-// バックエンド(TaskAgentJobProcessorFunction)側のAgentCore呼び出しread_timeoutが850秒
-// (agent_job_src/app.py)のため、それより短い840秒(14分)でフロントエンドも諦める。
-const MAX_POLL_ATTEMPTS = 280;
+// バックエンド(TaskAgentJobProcessorFunction)は新規ファイルが10件を超えると、10件ずつ
+// 自分自身を再起動して全件を処理する(agent_job_src/app.py)ため、全体の所要時間は
+// 1回のLambda(900秒)を超え得る。ここでは異常終了(ジョブが"processing"のまま残る)に
+// 備えた安全上限として3時間で諦める。
+const MAX_POLL_ATTEMPTS = 3600;
+// 1ラウンドで処理するファイル数(receipt-ocr-filelistスキルの--limit既定値と揃える)。
+const FILES_PER_ROUND = 10;
+
+// ジョブの進捗(完了ラウンド数・残りファイル数)を表示用の文言にする。進捗が無い
+// (単一ラウンド、または最初のラウンドが未完了)の場合はnull。
+const formatProgress = (job) => {
+  if (!job || job.roundsDone == null) return null;
+  const roundsLeft = Math.ceil((job.remaining ?? 0) / FILES_PER_ROUND);
+  return `${job.roundsDone}/${job.roundsDone + roundsLeft}回目まで完了(残り${job.remaining ?? 0}件)`;
+};
 
 // 設定ページの「全クライアント」向けエージェントタブは特定の関与先に紐付かないため、
 // ジョブ保存・ポーリングのキーとして専用のダミー関与先コードを使う
@@ -204,6 +216,12 @@ function AgentTicket({ agent, client, ticket, live, global, onStart, expanded, o
               <dt>完了時刻</dt>
               <dd>{ticket.endTime || "—"}</dd>
             </div>
+            {ticket.progress && (
+              <div className="agent-ticket__field">
+                <dt>進捗</dt>
+                <dd>{ticket.progress}</dd>
+              </div>
+            )}
             {ticket.result && (
               <div className="agent-ticket__field agent-ticket__field--result">
                 <dt>実行結果</dt>
@@ -267,7 +285,7 @@ const initialTickets = () =>
   Object.fromEntries(
     AGENTS.map((a) => [
       a.id,
-      { status: "queued", prompt: null, startTime: null, endTime: null, result: null },
+      { status: "queued", prompt: null, startTime: null, endTime: null, result: null, progress: null },
     ])
   );
 
@@ -302,7 +320,8 @@ export function AgentsPanel({ client, scope = "client" }) {
             prompt: latest.prompt ?? null,
             startTime: formatTimestamp(latest.createdAt),
             endTime: latest.status === "processing" ? null : formatTimestamp(latest.updatedAt),
-            result: latest.result || latest.error || null,
+            result: latest.result || latest.error || latest.partialResult || null,
+            progress: latest.status === "processing" ? formatProgress(latest) : null,
           },
         };
       });
@@ -344,12 +363,14 @@ export function AgentsPanel({ client, scope = "client" }) {
       try {
         const job = await api.getAgentJob(clientCode, jobId);
         if (job.status === "processing") {
+          patchTicket(agentId, { progress: formatProgress(job), result: job.partialResult || null });
           pollJob(agentId, clientCode, jobId, attempt + 1);
           return;
         }
         patchTicket(agentId, {
           status: job.status === "completed" ? "done" : "error",
           result: job.result || job.error || "",
+          progress: null,
           endTime: formatNow(),
         });
       } catch (err) {
@@ -367,6 +388,7 @@ export function AgentsPanel({ client, scope = "client" }) {
       startTime: formatNow(),
       endTime: null,
       result: null,
+      progress: null,
     });
     try {
       const job = await api.submitAgentJob(jobClientCode, agent.id, prompt);
