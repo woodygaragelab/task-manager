@@ -6,7 +6,10 @@ download_file_contentをファイル数ぶん逐次呼ぶ」方式に代えて�
 
 使い方:
     python drive_sync_download.py <client_code> [--work-dir DIR]
-        [--receipt-folder-id ID] [--concurrency N]
+        [--receipt-folder-id ID] [--concurrency N] [--limit N]
+
+--limit は1回の実行で処理する新規ファイル数の上限(既定10)。超過分はダウンロード
+せず、出力の remaining に件数だけ返す(次回実行で再び新規として検出される)。
 
 client_code はtaskmanagerのクライアントマスタ(TaskClients)のclientCode。
 --receipt-folder-id を指定した場合はクライアントマスタの参照を省略できる
@@ -251,6 +254,7 @@ def main():
     parser.add_argument("--work-dir", default=None, help="デフォルト: /tmp/{client_code}")
     parser.add_argument("--receipt-folder-id", default=None)
     parser.add_argument("--concurrency", type=int, default=5)
+    parser.add_argument("--limit", type=int, default=10)
     args = parser.parse_args()
 
     work_dir = args.work_dir or os.path.join("/tmp", args.client_code)
@@ -283,7 +287,11 @@ def main():
         os.remove(local_filelist_path)
         log(f"[stale] Drive上にfilelistが無いため古いローカルコピーを削除: {local_filelist_path}")
 
-    new_files = diff_new_files(timing, remote_files, local_filelist_path, remarks)
+    all_new_files = diff_new_files(timing, remote_files, local_filelist_path, remarks)
+    new_files = all_new_files[: args.limit]
+    remaining = len(all_new_files) - len(new_files)
+    if remaining:
+        log(f"[limit] 新規{len(all_new_files)}件のうち{len(new_files)}件を処理対象とし、残り{remaining}件は次回に回す")
     download_new_files(timing, new_files, receipt_dir, args.concurrency)
 
     total_ms = timing.total()
@@ -293,6 +301,8 @@ def main():
         "receipt_folder_id": receipt_folder_id,
         "old_filelist_file_id": filelist_entry["id"] if filelist_entry else None,
         "new_files": new_files,
+        "total_new": len(all_new_files),
+        "remaining": remaining,
         "elapsed_ms": total_ms,
     }
     state_path = os.path.join(work_dir, "new_files.json")

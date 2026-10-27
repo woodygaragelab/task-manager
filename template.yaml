@@ -471,6 +471,13 @@ Resources:
               Resource:
                 - !Ref AgentRuntimeArn
                 - !Sub "${AgentRuntimeArn}/runtime-endpoint/*"
+        # 残りファイルがある間、次の10件を処理するため自分自身を非同期で再起動する。
+        # !Ref TaskAgentJobProcessorFunctionだと自己参照の循環依存になるため、固定の
+        # FunctionNameからARNを組み立てる。
+        - Statement:
+            - Effect: Allow
+              Action: lambda:InvokeFunction
+              Resource: !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:taskmanager-agent-job-processor"
 
 Outputs:
   TaskMcpFunctionUrl:

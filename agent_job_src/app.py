@@ -11,6 +11,7 @@ API Gatewayの背後にいないため、Timeoutを長く(900秒)取ることで
 
 import json
 import os
+import re
 
 import boto3
 from botocore.config import Config
@@ -30,6 +31,17 @@ agent_core_client = boto3.client(
     config=Config(connect_timeout=10, read_timeout=850, retries={"max_attempts": 1}),
 )
 
+# receipt-ocr-filelistは1回の実行で最大10ファイルしか処理せず、残りがあれば報告の
+# 最終行に `REMAINING: N` を出す。N>0の間、1ラウンド=1回のLambda起動として、自分自身を
+# 非同期(Event)で再起動し次の10件を新しいセッション(=新しいコンテキスト)で処理する。
+# ラウンドごとに別のLambda起動になるので、全体の所要時間はLambdaの900秒に縛られない。
+REMAINING_RE = re.compile(r"^\s*REMAINING:\s*(\d+)\s*$", re.MULTILINE)
+MAX_ROUNDS = 50
+# 非同期呼び出しのペイロード上限(256KB)対策。累積結果がこれを超えたら古い側を切り詰める。
+MAX_ACCUMULATED_CHARS = 60000
+
+lambda_client = boto3.client("lambda", region_name=REGION)
+
 
 def handler(event, context):
     client_code = event["clientCode"]
@@ -41,37 +53,82 @@ def handler(event, context):
     # 未指定時はprompt先頭10文字にフォールバックする。"unknown"で固定すると
     # ログ上でどの呼び出しか区別できなくなるため)。
     agent_id = event.get("agentId") or prompt[:10]
+    # 2ラウンド目以降は自己再起動で呼ばれる(round/prevRemaining/accumulatedを引き継ぐ)。
+    round_no = event.get("round", 1)
+    prev_remaining = event.get("prevRemaining")
+    accumulated = event.get("accumulated", "")
 
     # Lambdaの非同期(Event)呼び出しはエラー・タイムアウト時に既定でLambda全体を
     # 再試行するため、対策なしではAgentCore呼び出し(とDrive側の副作用)が同じ
     # job_idに対して繰り返されてしまう。条件付き書き込みでclaimし、競合に勝った
-    # 一回のみ処理を進める。
-    if not repo.claim_agent_job(client_code, job_id):
+    # 一回のみ処理を進める。claimはジョブ単位なので、自己再起動の2ラウンド目以降は
+    # 既にclaim済みのため行わない。
+    if round_no == 1 and not repo.claim_agent_job(client_code, job_id):
         return
 
     try:
-        payload = json.dumps(
-            {
-                "prompt": prompt,
-                "agentId": agent_id,
-                "clientCode": client_code,
-                "jobId": job_id,
-            }
-        ).encode()
-        result = agent_core_client.invoke_agent_runtime(
-            agentRuntimeArn=AGENT_RUNTIME_ARN,
-            runtimeSessionId=job_id,
-            payload=payload,
-            qualifier="DEFAULT",
-        )
-        chunks = list(result.get("response", []))
-        raw_bytes = b"".join(chunks)
-        try:
-            agent_result = json.loads(raw_bytes.decode("utf-8"))
-            result_text = agent_result.get("result", "")
-        except (UnicodeDecodeError, json.JSONDecodeError):
-            result_text = raw_bytes.decode("utf-8", errors="replace")
+        # 1ラウンド=新しいruntimeSessionId。round 1 は従来どおり job_id をそのまま使う。
+        session_id = job_id if round_no == 1 else f"{job_id}-{round_no}"
+        round_text = _invoke_round(session_id, prompt, agent_id, client_code, job_id)
+        results = accumulated + (round_text if round_no == 1 else f"\n\n--- {round_no}回目 ---\n{round_text}")
+        if len(results) > MAX_ACCUMULATED_CHARS:
+            results = "(前半省略)\n" + results[-MAX_ACCUMULATED_CHARS:]
 
-        repo.complete_agent_job(client_code, job_id, result_text)
+        remaining = _parse_remaining(round_text)
+        stop_reason = None
+        if remaining:
+            if prev_remaining is not None and remaining >= prev_remaining:
+                stop_reason = f"残り{remaining}件が前回から減らないため自動再実行を止めました。"
+            elif round_no >= MAX_ROUNDS:
+                stop_reason = f"自動再実行の上限({MAX_ROUNDS}回)に達しました。残り{remaining}件は未処理です。"
+        if remaining and not stop_reason:
+            lambda_client.invoke(
+                FunctionName=context.function_name,
+                InvocationType="Event",
+                Payload=json.dumps(
+                    {
+                        **event,
+                        "agentId": agent_id,
+                        "round": round_no + 1,
+                        "prevRemaining": remaining,
+                        "accumulated": results,
+                    }
+                ).encode(),
+            )
+            return  # ジョブは「実行中」のまま。最終ラウンドがcomplete/failを記録する。
+
+        if stop_reason:
+            results += f"\n\n[中断] {stop_reason}再実行してください。"
+        repo.complete_agent_job(client_code, job_id, results)
     except Exception as e:  # noqa: BLE001 - 失敗内容をポーリング側に残すため常に記録する
         repo.fail_agent_job(client_code, job_id, str(e))
+
+
+def _invoke_round(session_id, prompt, agent_id, client_code, job_id):
+    payload = json.dumps(
+        {
+            "prompt": prompt,
+            "agentId": agent_id,
+            "clientCode": client_code,
+            "jobId": job_id,
+        }
+    ).encode()
+    result = agent_core_client.invoke_agent_runtime(
+        agentRuntimeArn=AGENT_RUNTIME_ARN,
+        runtimeSessionId=session_id,
+        payload=payload,
+        qualifier="DEFAULT",
+    )
+    chunks = list(result.get("response", []))
+    raw_bytes = b"".join(chunks)
+    try:
+        agent_result = json.loads(raw_bytes.decode("utf-8"))
+        return agent_result.get("result", "")
+    except (UnicodeDecodeError, json.JSONDecodeError):
+        return raw_bytes.decode("utf-8", errors="replace")
+
+
+def _parse_remaining(text):
+    """報告末尾の `REMAINING: N` を返す。無い(他エージェント等)場合は0=再実行しない。"""
+    matches = REMAINING_RE.findall(text or "")
+    return int(matches[-1]) if matches else 0
