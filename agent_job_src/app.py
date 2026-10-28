@@ -35,7 +35,10 @@ agent_core_client = boto3.client(
 # 最終行に `REMAINING: N` を出す。N>0の間、1ラウンド=1回のLambda起動として、自分自身を
 # 非同期(Event)で再起動し次の5件を新しいセッション(=新しいコンテキスト)で処理する。
 # ラウンドごとに別のLambda起動になるので、全体の所要時間はLambdaの900秒に縛られない。
-REMAINING_RE = re.compile(r"^\s*REMAINING:\s*(\d+)\s*$", re.MULTILINE)
+# 行頭アンカーは付けない: task_agent.pyはTextBlockを区切りなしで連結するため、最終行が
+# 直前の文に続いて「…完了しました。REMAINING: 5」のように出ることがある。強調(**)や
+# バッククォートで囲まれていても拾えるようにする。
+REMAINING_RE = re.compile(r"REMAINING:\s*(\d+)[\s*`]*$", re.MULTILINE)
 MAX_ROUNDS = 50
 # 非同期呼び出しのペイロード上限(256KB)対策。累積結果がこれを超えたら古い側を切り詰める。
 MAX_ACCUMULATED_CHARS = 60000
