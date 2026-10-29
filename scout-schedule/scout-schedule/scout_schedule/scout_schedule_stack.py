@@ -1,4 +1,12 @@
+import shutil
+import subprocess
+import sys
+
+import jsii
 from aws_cdk import (
+    BundlingOptions,
+    DockerImage,
+    ILocalBundling,
     Stack,
     Duration,
     Tags,
@@ -7,6 +15,7 @@ from aws_cdk import (
     aws_iam as iam,
     aws_scheduler as scheduler,
     aws_logs as logs,
+    aws_secretsmanager as secretsmanager,
 )
 from constructs import Construct
 
@@ -18,6 +27,46 @@ AGENT_JOB_PROCESSOR_FUNCTION_NAME = "taskmanager-agent-job-processor"
 # 関与先ごとにジョブを分割するため、TaskClients(layer/python/task_repository.pyの
 # list_clientsと同じテーブル)を読み取り専用で参照する。
 CLIENTS_TABLE_NAME = "TaskClients"
+# コストレポート(lambda_cost_report)用。ログ集計対象のtask-agent(AgentCore Runtime)の
+# ロググループと、Google Drive認証に使うSecrets Managerのシークレット名
+# (task-agent側と共通のユーザーOAuthトークン)。
+TASK_AGENT_LOG_GROUP_ARN_PREFIX = (
+    "arn:aws:logs:ap-northeast-1:155830630328:log-group:"
+    "/aws/bedrock-agentcore/runtimes/task_agent-lAAoax7UkB-DEFAULT"
+)
+GOOGLE_USER_TOKEN_SECRET_NAME = "task-agent/google-drive-user-token"
+
+
+@jsii.implements(ILocalBundling)
+class _PipLocalBundling:
+    """Dockerを使わずにLambda用依存(Linux/x86_64向けwheel)をpipで直接取り込む。
+    失敗(pip無し等)した場合はFalseを返し、CDKがDockerバンドルにフォールバックする。"""
+
+    def __init__(self, source_dir: str) -> None:
+        self._source_dir = source_dir
+
+    def try_bundle(self, output_dir: str, *, image=None, **_kwargs) -> bool:
+        try:
+            subprocess.run(
+                [
+                    sys.executable, "-m", "pip", "install",
+                    "-r", f"{self._source_dir}/requirements.txt",
+                    "--target", output_dir,
+                    "--platform", "manylinux2014_x86_64",
+                    "--implementation", "cp",
+                    "--python-version", "3.12",
+                    "--only-binary=:all:",
+                    "--quiet",
+                ],
+                check=True,
+            )
+            shutil.copytree(
+                self._source_dir, output_dir, dirs_exist_ok=True,
+                ignore=shutil.ignore_patterns("__pycache__", "requirements.txt"),
+            )
+            return True
+        except Exception:
+            return False
 
 
 class ScoutScheduleStack(Stack):
@@ -219,6 +268,90 @@ class ScoutScheduleStack(Stack):
                 # 無効化しておく。失敗した関与先は次回のスケジュール実行で拾われる。
                 retry_policy=scheduler.CfnSchedule.RetryPolicyProperty(
                     maximum_retry_attempts=0,
+                    maximum_event_age_in_seconds=3600,
+                ),
+                input="{}",
+            ),
+        )
+
+        # --- Lambda: CloudWatch Logsのagent_invocation_costを日別に集計したExcelを
+        #     生成し、Google Driveへ保存する(同名ファイルは上書き)。
+        #     Driveの保存先フォルダIDはcdkコンテキストで渡す:
+        #       cdk deploy -c costReportFolderId=<DriveフォルダID> ---
+        cost_report_folder_id = self.node.try_get_context("costReportFolderId")
+        if not cost_report_folder_id:
+            raise ValueError(
+                "cdk deploy -c costReportFolderId=<DriveフォルダID> を指定してください"
+            )
+
+        cost_report_src = "lambda_cost_report"
+        cost_report_fn = _lambda.Function(
+            self,
+            "CostReportFunction",
+            function_name="taskmanager-cost-report",
+            runtime=_lambda.Runtime.PYTHON_3_12,
+            handler="handler.handler",
+            code=_lambda.Code.from_asset(
+                cost_report_src,
+                bundling=BundlingOptions(
+                    image=DockerImage.from_registry("public.ecr.aws/sam/build-python3.12"),
+                    local=_PipLocalBundling(cost_report_src),
+                    command=[
+                        "bash", "-c",
+                        "pip install -r requirements.txt -t /asset-output && "
+                        "cp -r *.py /asset-output",
+                    ],
+                ),
+            ),
+            timeout=Duration.seconds(300),
+            memory_size=512,
+            log_retention=logs.RetentionDays.ONE_MONTH,
+            environment={
+                "GOOGLE_USER_TOKEN_SECRET_NAME": GOOGLE_USER_TOKEN_SECRET_NAME,
+                "DRIVE_FOLDER_ID": cost_report_folder_id,
+            },
+        )
+
+        # Logs Insightsの実行権限。StartQueryは対象ロググループ、GetQueryResultsは
+        # クエリID単位でリソースを絞れないため"*"になる。
+        cost_report_fn.add_to_role_policy(
+            iam.PolicyStatement(
+                actions=["logs:StartQuery"],
+                resources=[TASK_AGENT_LOG_GROUP_ARN_PREFIX, TASK_AGENT_LOG_GROUP_ARN_PREFIX + ":*"],
+            )
+        )
+        cost_report_fn.add_to_role_policy(
+            iam.PolicyStatement(actions=["logs:GetQueryResults"], resources=["*"])
+        )
+        secretsmanager.Secret.from_secret_name_v2(
+            self, "GoogleUserTokenSecret", GOOGLE_USER_TOKEN_SECRET_NAME
+        ).grant_read(cost_report_fn)
+        Tags.of(cost_report_fn).add("Component", "cost-report")
+
+        cost_report_scheduler_role = iam.Role(
+            self,
+            "CostReportSchedulerRole",
+            assumed_by=iam.ServicePrincipal("scheduler.amazonaws.com"),
+        )
+        cost_report_fn.grant_invoke(cost_report_scheduler_role)
+        Tags.of(cost_report_scheduler_role).add("Component", "cost-report")
+
+        # 毎週月曜7時(JST)。ファイルを上書きするだけで冪等なため、失敗時はリトライさせる。
+        scheduler.CfnSchedule(
+            self,
+            "CostReportWeeklySchedule",
+            name="taskmanager-cost-report-weekly",
+            description="毎週月曜7時にtask-agentのコストレポート(Excel)をGoogle Driveへ保存",
+            schedule_expression="cron(0 7 ? * MON *)",
+            schedule_expression_timezone="Asia/Tokyo",
+            flexible_time_window=scheduler.CfnSchedule.FlexibleTimeWindowProperty(
+                mode="OFF"
+            ),
+            target=scheduler.CfnSchedule.TargetProperty(
+                arn=cost_report_fn.function_arn,
+                role_arn=cost_report_scheduler_role.role_arn,
+                retry_policy=scheduler.CfnSchedule.RetryPolicyProperty(
+                    maximum_retry_attempts=2,
                     maximum_event_age_in_seconds=3600,
                 ),
                 input="{}",

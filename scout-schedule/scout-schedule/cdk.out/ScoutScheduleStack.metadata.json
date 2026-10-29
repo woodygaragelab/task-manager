@@ -56,6 +56,19 @@
       ]
     }
   ],
+  "/ScoutScheduleStack/CostReportWeeklySchedule": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CostReportWeeklySchedule"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
   "/ScoutScheduleStack/BootstrapVersion": [
     {
       "type": "aws:cdk:logicalId",
@@ -164,6 +177,32 @@
     {
       "type": "aws:cdk:logicalId",
       "data": "ProgressSchedulerRole44D86470"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/ScoutScheduleStack/CostReportFunction/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CostReportFunction448FAB6F"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/ScoutScheduleStack/CostReportSchedulerRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CostReportSchedulerRoleD6DA910F"
     },
     {
       "type": "aws:cdk:creationStack",
@@ -316,6 +355,45 @@
       ]
     }
   ],
+  "/ScoutScheduleStack/CostReportFunction/ServiceRole/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CostReportFunctionServiceRole9391AC93"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/ScoutScheduleStack/CostReportFunction/LogRetention/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CostReportFunctionLogRetentionF7E64096"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime, node internals...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/ScoutScheduleStack/CostReportSchedulerRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CostReportSchedulerRoleDefaultPolicy426E1523"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
   "/ScoutScheduleStack/ScoutInvokeFunction/ServiceRole/DefaultPolicy/Resource": [
     {
       "type": "aws:cdk:logicalId",
@@ -364,6 +442,19 @@
       "type": "aws:cdk:creationStack",
       "data": [
         "...aws-cdk-lib...",
+        "(no user code in 10 frames, use --stack-trace-limit to capture more)"
+      ]
+    }
+  ],
+  "/ScoutScheduleStack/CostReportFunction/ServiceRole/DefaultPolicy/Resource": [
+    {
+      "type": "aws:cdk:logicalId",
+      "data": "CostReportFunctionServiceRoleDefaultPolicy445EBE4C"
+    },
+    {
+      "type": "aws:cdk:creationStack",
+      "data": [
+        "...aws-cdk-lib, jsii runtime...",
         "(no user code in 10 frames, use --stack-trace-limit to capture more)"
       ]
     }
