@@ -55,6 +55,7 @@ recreate any of these), tag them manually:
 import json
 import logging
 import os
+import re
 
 import boto3
 from bedrock_agentcore.runtime import BedrockAgentCoreApp
@@ -63,6 +64,8 @@ from claude_agent_sdk import (
     ClaudeAgentOptions,
     ResultMessage,
     TextBlock,
+    ToolResultBlock,
+    UserMessage,
     create_sdk_mcp_server,
     query,
     tool,
@@ -746,6 +749,45 @@ def build_agent_options() -> ClaudeAgentOptions:
     )
 
 
+def _tool_result_json(content) -> dict | None:
+    """ツール実行結果(Bash出力)に含まれる、行頭から始まるJSONオブジェクトを返す。
+    drive_sync_*.pyはprint(json.dumps(..., indent=2))で出力するため'{'は行頭に来る。
+    stderrのログ(例: extra={...})が前に混ざっていても拾えるよう、行頭の'{'を順に試す。"""
+    if isinstance(content, list):
+        content = "".join(
+            c.get("text", "") for c in content if isinstance(c, dict) and c.get("type") == "text"
+        )
+    if not isinstance(content, str):
+        return None
+    decoder = json.JSONDecoder()
+    for m in re.finditer(r"^\{", content, re.MULTILINE):
+        try:
+            data, _ = decoder.raw_decode(content[m.start():])
+        except ValueError:
+            continue
+        if isinstance(data, dict):
+            return data
+    return None
+
+
+def _file_counts(content) -> dict:
+    """ツール実行結果がdrive_sync_download.py / drive_sync_upload.pyの出力JSONなら、
+    ファイル数の増分を返す(該当しなければ空dict)。
+      download: downloaded=new_files件数, remaining=次回に回す残り件数
+      upload:   uploaded=整理済フォルダへアップロードできた件数(payment+others)"""
+    data = _tool_result_json(content)
+    if not data:
+        return {}
+    try:
+        if "new_files" in data and "remaining" in data:
+            return {"downloaded": len(data["new_files"]), "remaining": int(data["remaining"])}
+        if "payment" in data and "others" in data:
+            return {"uploaded": int(data["payment"]["count"]) + int(data["others"]["count"])}
+    except (KeyError, TypeError, ValueError):
+        pass
+    return {}
+
+
 @app.entrypoint
 async def agent_invocation(payload: dict, context) -> dict:
     """AgentCore Runtime entrypoint.
@@ -775,11 +817,23 @@ async def agent_invocation(payload: dict, context) -> dict:
 
     result_text = []
     result_message: ResultMessage | None = None
+    # downloaded/uploadedは複数回実行された分を合算、remainingは最後の実行時点の値
+    # (実行のたびに減っていくため)。ダウンロード/アップロードが無い呼び出しでは0。
+    downloaded_files = 0
+    processed_files = 0
+    remaining_files = 0
     async for message in query(prompt=prompt, options=options):
         if isinstance(message, AssistantMessage):
             for block in message.content:
                 if isinstance(block, TextBlock):
                     result_text.append(block.text)
+        elif isinstance(message, UserMessage) and isinstance(message.content, list):
+            for block in message.content:
+                if isinstance(block, ToolResultBlock):
+                    counts = _file_counts(block.content)
+                    downloaded_files += counts.get("downloaded", 0)
+                    processed_files += counts.get("uploaded", 0)
+                    remaining_files = counts.get("remaining", remaining_files)
         elif isinstance(message, ResultMessage):
             result_message = message
 
@@ -796,6 +850,9 @@ async def agent_invocation(payload: dict, context) -> dict:
                 "agentId": agent_id,
                 "clientCode": client_code,
                 "jobId": job_id,
+                "downloadedFiles": downloaded_files,
+                "processedFiles": processed_files,
+                "remainingFiles": remaining_files,
                 "sessionId": result_message.session_id if result_message else None,
                 "totalCostUsd": result_message.total_cost_usd if result_message else None,
                 "usage": result_message.usage if result_message else None,
