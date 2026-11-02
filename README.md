@@ -7,7 +7,8 @@ AgentCore上の外部AIエージェントをWeb UIから呼び出す「エージ
 経緯は [docs/設計書.md](docs/設計書.md) を参照。
 
 バックエンドのLambda・Cognito・API GatewayをまとめたAWS SAMスタック名は`amorphous`
-(2026-08-01にリポジトリ名と揃える形で`task-mcp-server`から移行済み。個々のLambda関数名も
+(2026-08-01にリポジトリ名と揃える形で`task-mcp-server`から`taskmanager`へ移行し、
+2026-11-02にフォルダ名変更に伴い`amorphous`へ再移行済み。個々のLambda関数名も
 `amorphous-mcp`/`amorphous-api`/`amorphous-agent-job-processor`に統一した)。
 
 ## ディレクトリ構成
@@ -47,7 +48,7 @@ amorphous/
             │                (mcp-remote)    Android等
             │ Event非同期invoke
             ▼
-  エージェントジョブ処理 (task-agent-job-processor)
+  エージェントジョブ処理 (amorphous-agent-job-processor)
             │ invoke_agent_runtime
             ▼
   Amazon Bedrock AgentCore Runtime ──▶ Google Drive(受領/renamedフォルダ)
@@ -159,7 +160,7 @@ aws cognito-idp admin-create-user `
 | POST | `/clients/{clientCode}/history` | 履歴エントリ新規追加(`date`必須) |
 | PATCH | `/clients/{clientCode}/history/{historyId}` | 履歴エントリの更新(未存在なら404) |
 | DELETE | `/clients/{clientCode}/history/{historyId}` | 履歴エントリの削除 |
-| POST | `/clients/{clientCode}/agent-jobs` | エージェントジョブの起動(202を返し、`task-agent-job-processor`をEvent非同期invoke) |
+| POST | `/clients/{clientCode}/agent-jobs` | エージェントジョブの起動(202を返し、`amorphous-agent-job-processor`をEvent非同期invoke) |
 | GET | `/clients/{clientCode}/agent-jobs/{jobId}` | エージェントジョブの状態取得(ポーリング用) |
 
 全エンドポイントは`Authorization: Bearer <Cognito IDトークン>`が必須(`DefaultAuthorizer: CognitoAuth`)。
@@ -177,7 +178,7 @@ CSVを自前パースし、行ごとに`POST /clients/{clientCode}/history`を�
 ```json
 {
   "mcpServers": {
-    "task-manager": {
+    "amorphous-mcp": {
       "command": "C:\\nvm4w\\nodejs\\mcp-remote.cmd",
       "args": [
         "https://xxxxxxxx.lambda-url.ap-northeast-1.on.aws/",

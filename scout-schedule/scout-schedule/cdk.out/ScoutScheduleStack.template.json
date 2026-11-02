@@ -36,7 +36,7 @@
      },
      {
       "Key": "Project",
-      "Value": "taskmanager"
+      "Value": "amorphous"
      }
     ]
    },
@@ -93,7 +93,7 @@
            {
             "Ref": "AWS::AccountId"
            },
-           ":function:taskmanager-agent-job-processor"
+           ":function:amorphous-agent-job-processor"
           ]
          ]
         },
@@ -109,7 +109,7 @@
            {
             "Ref": "AWS::AccountId"
            },
-           ":function:taskmanager-agent-job-processor:*"
+           ":function:amorphous-agent-job-processor:*"
           ]
          ]
         }
@@ -190,16 +190,16 @@
      "S3Bucket": {
       "Fn::Sub": "cdk-hnb659fds-assets-${AWS::AccountId}-ap-northeast-1"
      },
-     "S3Key": "6f56eeb56ee131fcbb7099f1aca944e058f7fb58763d0bb68332689d3df393fe.zip"
+     "S3Key": "12c94b73bdf14ab4450ded1cbca16c0de86eca62e53bc1175087c027ead6b4d9.zip"
     },
     "Environment": {
      "Variables": {
       "AGENT_JOBS_TABLE": "TaskAgentJobs",
-      "AGENT_JOB_PROCESSOR_FUNCTION_NAME": "taskmanager-agent-job-processor",
+      "AGENT_JOB_PROCESSOR_FUNCTION_NAME": "amorphous-agent-job-processor",
       "CLIENTS_TABLE": "TaskClients"
      }
     },
-    "FunctionName": "taskmanager-scout-email-summary-trigger",
+    "FunctionName": "amorphous-scout-email-summary-trigger",
     "Handler": "handler.handler",
     "Role": {
      "Fn::GetAtt": [
@@ -215,7 +215,7 @@
      },
      {
       "Key": "Project",
-      "Value": "taskmanager"
+      "Value": "amorphous"
      }
     ],
     "Timeout": 60
@@ -226,7 +226,7 @@
    ],
    "Metadata": {
     "aws:cdk:path": "ScoutScheduleStack/ScoutInvokeFunction/Resource",
-    "aws:asset:path": "asset.6f56eeb56ee131fcbb7099f1aca944e058f7fb58763d0bb68332689d3df393fe",
+    "aws:asset:path": "asset.12c94b73bdf14ab4450ded1cbca16c0de86eca62e53bc1175087c027ead6b4d9",
     "aws:asset:is-bundled": false,
     "aws:asset:property": "Code"
    }
@@ -289,7 +289,7 @@
     "Tags": [
      {
       "Key": "Project",
-      "Value": "taskmanager"
+      "Value": "amorphous"
      }
     ]
    },
@@ -345,7 +345,7 @@
     "Tags": [
      {
       "Key": "Project",
-      "Value": "taskmanager"
+      "Value": "amorphous"
      }
     ]
    },
@@ -382,7 +382,7 @@
      },
      {
       "Key": "Project",
-      "Value": "taskmanager"
+      "Value": "amorphous"
      }
     ]
    },
@@ -442,7 +442,7 @@
     "FlexibleTimeWindow": {
      "Mode": "OFF"
     },
-    "Name": "taskmanager-scout-email-summary-weekdays",
+    "Name": "amorphous-scout-email-summary-weekdays",
     "ScheduleExpression": "cron(0 6,12,18 ? * MON-FRI *)",
     "ScheduleExpressionTimezone": "Asia/Tokyo",
     "Target": {
@@ -505,7 +505,7 @@
      },
      {
       "Key": "Project",
-      "Value": "taskmanager"
+      "Value": "amorphous"
      }
     ]
    },
@@ -562,7 +562,7 @@
            {
             "Ref": "AWS::AccountId"
            },
-           ":function:taskmanager-agent-job-processor"
+           ":function:amorphous-agent-job-processor"
           ]
          ]
         },
@@ -578,7 +578,7 @@
            {
             "Ref": "AWS::AccountId"
            },
-           ":function:taskmanager-agent-job-processor:*"
+           ":function:amorphous-agent-job-processor:*"
           ]
          ]
         }
@@ -664,11 +664,11 @@
     "Environment": {
      "Variables": {
       "AGENT_JOBS_TABLE": "TaskAgentJobs",
-      "AGENT_JOB_PROCESSOR_FUNCTION_NAME": "taskmanager-agent-job-processor",
+      "AGENT_JOB_PROCESSOR_FUNCTION_NAME": "amorphous-agent-job-processor",
       "CLIENTS_TABLE": "TaskClients"
      }
     },
-    "FunctionName": "taskmanager-archivist-receipt-ocr-trigger",
+    "FunctionName": "amorphous-archivist-receipt-ocr-trigger",
     "Handler": "handler.handler",
     "Role": {
      "Fn::GetAtt": [
@@ -684,7 +684,7 @@
      },
      {
       "Key": "Project",
-      "Value": "taskmanager"
+      "Value": "amorphous"
      }
     ],
     "Timeout": 60
@@ -748,7 +748,7 @@
      },
      {
       "Key": "Project",
-      "Value": "taskmanager"
+      "Value": "amorphous"
      }
     ]
    },
@@ -808,7 +808,7 @@
     "FlexibleTimeWindow": {
      "Mode": "OFF"
     },
-    "Name": "taskmanager-archivist-receipt-ocr-weekdays",
+    "Name": "amorphous-archivist-receipt-ocr-weekdays",
     "ScheduleExpression": "cron(10 6,12,18 ? * MON-FRI *)",
     "ScheduleExpressionTimezone": "Asia/Tokyo",
     "Target": {
@@ -871,7 +871,7 @@
      },
      {
       "Key": "Project",
-      "Value": "taskmanager"
+      "Value": "amorphous"
      }
     ]
    },
@@ -928,7 +928,7 @@
            {
             "Ref": "AWS::AccountId"
            },
-           ":function:taskmanager-agent-job-processor"
+           ":function:amorphous-agent-job-processor"
           ]
          ]
         },
@@ -944,7 +944,7 @@
            {
             "Ref": "AWS::AccountId"
            },
-           ":function:taskmanager-agent-job-processor:*"
+           ":function:amorphous-agent-job-processor:*"
           ]
          ]
         }
@@ -1030,11 +1030,11 @@
     "Environment": {
      "Variables": {
       "AGENT_JOBS_TABLE": "TaskAgentJobs",
-      "AGENT_JOB_PROCESSOR_FUNCTION_NAME": "taskmanager-agent-job-processor",
+      "AGENT_JOB_PROCESSOR_FUNCTION_NAME": "amorphous-agent-job-processor",
       "CLIENTS_TABLE": "TaskClients"
      }
     },
-    "FunctionName": "taskmanager-progress-update-trigger",
+    "FunctionName": "amorphous-progress-update-trigger",
     "Handler": "handler.handler",
     "Role": {
      "Fn::GetAtt": [
@@ -1050,7 +1050,7 @@
      },
      {
       "Key": "Project",
-      "Value": "taskmanager"
+      "Value": "amorphous"
      }
     ],
     "Timeout": 60
@@ -1114,7 +1114,7 @@
      },
      {
       "Key": "Project",
-      "Value": "taskmanager"
+      "Value": "amorphous"
      }
     ]
    },
@@ -1174,7 +1174,7 @@
     "FlexibleTimeWindow": {
      "Mode": "OFF"
     },
-    "Name": "taskmanager-progress-update-weekdays",
+    "Name": "amorphous-progress-update-weekdays",
     "ScheduleExpression": "cron(20 6,12,18 ? * MON-FRI *)",
     "ScheduleExpressionTimezone": "Asia/Tokyo",
     "Target": {
@@ -1237,7 +1237,7 @@
      },
      {
       "Key": "Project",
-      "Value": "taskmanager"
+      "Value": "amorphous"
      }
     ]
    },
@@ -1315,7 +1315,7 @@
       "DRIVE_FOLDER_ID": "13_LyOEwcxT6wwgmx9HIIQ1P2TYBPXFZl"
      }
     },
-    "FunctionName": "taskmanager-cost-report",
+    "FunctionName": "amorphous-cost-report",
     "Handler": "handler.handler",
     "MemorySize": 512,
     "Role": {
@@ -1332,7 +1332,7 @@
      },
      {
       "Key": "Project",
-      "Value": "taskmanager"
+      "Value": "amorphous"
      }
     ],
     "Timeout": 300
@@ -1396,7 +1396,7 @@
      },
      {
       "Key": "Project",
-      "Value": "taskmanager"
+      "Value": "amorphous"
      }
     ]
    },
@@ -1456,7 +1456,7 @@
     "FlexibleTimeWindow": {
      "Mode": "OFF"
     },
-    "Name": "taskmanager-cost-report-weekly",
+    "Name": "amorphous-cost-report-weekly",
     "ScheduleExpression": "cron(0 7 ? * MON *)",
     "ScheduleExpressionTimezone": "Asia/Tokyo",
     "Target": {
@@ -1486,7 +1486,7 @@
   "CDKMetadata": {
    "Type": "AWS::CDK::Metadata",
    "Properties": {
-    "Analytics": "v2:deflate64:H4sIAAAAAAAA/zWNwY6CQBBEv8V707tK3LuaePJgYO+mmWlxlqEnoWdiCOHfNwxyqvcqqdQBDz9H/N7RWwtju8K7Bqc6kumA3vqY7CjUB9vgLzWez6QMnvrGEk7XJCa6ILncBC5P2XgGRz1OVfC81DnvwTszLrrSDFo+SJWj4mkJ0BLPyXQc17PQKt5CW3FkyQdqXmyT5wEvT6k/MkMe15FaJ21+Yw1pMAwbzHAf4yvIV4n7Eo+7P3WuGJJE1zNWa/4DcVF8LQ4BAAA="
+    "Analytics": "v2:deflate64:H4sIAAAAAAAA/zWNwYqDQBBEvyX3tncTCXtOAjnlEHTvoZ3pmFnHHrBnCCL+++IYT/VeQVEHPPwc8XtHby2M7QrvGpzqSKYDeutjsqNQH2yDv9R4PpMyeOobSzhdk5joguRyE7g8ZeMZHPU4VcHzUue8B+/MuOhKM2j5IFWOiqclQEs8J9NxXM9Cq3gLbcWRJR+oebFNnge8PKX+yAx5XEdqnbT5jTWkwTBsMMN9jK8gXyXuSzzu/tS5YkgSXc9YrfkP8b3vzg4BAAA="
    },
    "Metadata": {
     "aws:cdk:path": "ScoutScheduleStack/CDKMetadata/Default"

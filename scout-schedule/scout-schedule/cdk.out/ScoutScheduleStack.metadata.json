@@ -8,11 +8,15 @@
       ]
     },
     {
+      "type": "aws:cdk:templateFile",
+      "data": "ScoutScheduleStack.template.json"
+    },
+    {
       "type": "aws:cdk:stack-tags",
       "data": [
         {
           "key": "Project",
-          "value": "taskmanager"
+          "value": "amorphous"
         }
       ]
     }
