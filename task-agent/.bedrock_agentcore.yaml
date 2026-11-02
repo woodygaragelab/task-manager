@@ -4,12 +4,12 @@ agents:
     name: task_agent
     language: python
     node_version: '20'
-    entrypoint: C:/Users/woody/0woodyprojects/taskmanager/task-agent/task_agent.py
+    entrypoint: C:/Users/woody/0woodyprojects/amorphous/task-agent/task_agent.py
     deployment_type: container
     runtime_type: null
     platform: linux/arm64
     container_runtime: docker
-    source_path: C:\Users\woody\0woodyprojects\taskmanager\task-agent
+    source_path: C:\Users\woody\0woodyprojects\amorphous\task-agent
     aws:
       execution_role: arn:aws:iam::155830630328:role/AmazonBedrockAgentCoreSDKRuntime-ap-northeast-1-b93c04ec99
       execution_role_auto_create: false

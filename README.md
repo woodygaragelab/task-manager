@@ -13,7 +13,7 @@ AgentCore上の外部AIエージェントをWeb UIから呼び出す「エージ
 ## ディレクトリ構成
 
 ```
-taskmanager/
+amorphous/
 ├── tables.yaml          DynamoDBテーブル(Tasks/TaskClients/TaskSeries/TaskFrames/TaskHistory/TaskAgentJobs)の単独スタック
 ├── template.yaml        Lambda(MCPサーバー + Web API + エージェントジョブ処理)+ Cognito + API Gateway
 ├── layer/
