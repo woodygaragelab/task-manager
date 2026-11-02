@@ -1,11 +1,11 @@
 """
-taskmanager-mcp
+amorphous-mcp
 ================
 DynamoDB(Tasks / TaskClients / TaskSeries / TaskFrames)を操作する MCP サーバー。
 AWS Lambda 上で FastMCP (Streamable HTTP, stateless) として動作する。
 
 CRUDロジック本体は共通モジュール task_repository(Lambda Layer)に分離してあり、
-taskmanager-api(Web API用Lambda)と共有する。
+amorphous-api(Web API用Lambda)と共有する。
 
 重要: StreamableHTTPSessionManager.run() はインスタンスごとに1回しか呼べない制約があるため、
 FastMCP インスタンス(と Starlette app)はモジュールレベルで1つだけ作らず、

@@ -3,7 +3,7 @@ Google Driveのフォルダ作成・テンプレート複製(フォルダ+ファ
 
 task-agent(Bedrock AgentCore側)が使っているのと同じユーザーOAuthリフレッシュ
 トークン(Secrets Manager: task-agent/google-drive-user-token)を再利用する。
-このLambda(taskmanager-api)にはgoogleapiclientが同梱されていないため、
+このLambda(amorphous-api)にはgoogleapiclientが同梱されていないため、
 標準ライブラリのurllibでOAuthトークンのリフレッシュとDrive REST API v3を
 直接呼び出す(依存追加・Lambdaレイヤー変更を避けるため)。
 """

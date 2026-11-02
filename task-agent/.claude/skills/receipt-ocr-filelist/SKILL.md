@@ -10,14 +10,14 @@ description: |
   元ファイルは削除せずそのまま残す(整理済フォルダと受領フォルダの両方に同じファイルが
   残る形になる。次回実行時はファイル一覧を見て処理済みかどうかを判定し、未処理のものだけを
   処理するため、再実行しても重複コピーは発生しない)。対応する
-  関与先(案件)はtaskmanagerの案件マスタで管理しており、都度MCPツールで取得する
+  関与先(案件)はamorphousの案件マスタで管理しており、都度MCPツールで取得する
   (詳細は本文参照)。「領収書を整理して」「受領フォルダを整理して」「資料を整理してください」
   「領収書一覧を更新して」「領収書を分類して」「受領フォルダの中身を分類して」
   「11の領収書を処理して」「12の受領を整理して」「13の資料を整理してください」のように
   言われたら、または
   定期実行(スケジュール)で呼ばれたら必ずこのスキルを使うこと。特に、関与先コードを
   伴わない「資料を整理してください」「全クライアントの資料を整理してください」は、
-  taskmanagerのエージェントタブ「整理係」(archivist、frontend/src/AgentsPanel.jsxの
+  amorphousのエージェントタブ「整理係」(archivist、frontend/src/AgentsPanel.jsxの
   buildArchivistPrompt)が送る定型文言であり、email-summary(受付係/scout)や
   progress-update(進捗管理係)ではなく必ずこのスキルを使うこと。この場合ユーザーに
   確認は求めず、Step 0の自動判定ルールに従うこと。対象の関与先は
@@ -60,8 +60,8 @@ APIを直接(かつファイル単位の処理は並列に)呼び出して行う
 ## MCPツール名について(実行環境による違い)
 
 本文中の `mcp__task-manager__...` はAgentCore環境でのツール名。Claude Codeの
-claude.aiコネクタ経由など、別の実行環境では同じtaskmanager MCPサーバーが異なる
-プレフィックス(例: `mcp__claude_ai_taskmanager-mcp__...`)で登録されていることがある。
+claude.aiコネクタ経由など、別の実行環境では同じamorphous MCPサーバーが異なる
+プレフィックス(例: `mcp__claude_ai_amorphous-mcp__...`)で登録されていることがある。
 
 `mcp__task-manager__...` という名前のツールが見つからない場合、それだけで
 「このツールは利用できない」と判断してその処理(履歴登録など)をスキップしては
@@ -69,7 +69,7 @@ claude.aiコネクタ経由など、別の実行環境では同じtaskmanager MC
 
 1. まず本文記載のツール名でそのまま呼び出せるか試す。
 2. 見つからない場合、ツール検索の仕組み(例: `ToolSearch`)があれば、
-   `"taskmanager list_history create_history_entry update_history_entry list_frames list_clients"`
+   `"amorphous list_history create_history_entry update_history_entry list_frames list_clients"`
    のようなキーワードで検索し、この環境での実際のツール名を特定してから呼び出す。
 3. それでも該当するツールが見つからない場合に限り、ユーザーにその旨を報告する。
 
@@ -82,9 +82,9 @@ Step 6(アップロード・旧ファイルのtrash)は、下記の通り`script
 
 ## 対応する関与先(案件)とDriveフォルダID
 
-関与先コードと受領フォルダIDの対応表は、このファイルに直書きせず、taskmanagerの
+関与先コードと受領フォルダIDの対応表は、このファイルに直書きせず、amorphousの
 案件マスタ(DynamoDB `TaskClients`テーブル)を、MCPツール `mcp__task-manager__list_clients`
-から都度取得する(taskmanagerのWebアプリ・AgentsPanel.jsxも同じテーブルを参照しており、
+から都度取得する(amorphousのWebアプリ・AgentsPanel.jsxも同じテーブルを参照しており、
 マスタは1か所で管理している。旧`receipt-agent-clients`テーブル/APIは廃止済み)。
 
 `mcp__task-manager__list_clients` を引数なしで呼び出す。

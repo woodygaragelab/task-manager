@@ -50,7 +50,7 @@ Resources:
   TaskMcpFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: taskmanager-mcp
+      FunctionName: amorphous-mcp
       CodeUri: mcp_src/
       Handler: app.handler
       Layers:
@@ -90,7 +90,7 @@ Resources:
   UserPool:
     Type: AWS::Cognito::UserPool
     Properties:
-      UserPoolName: taskmanager-users
+      UserPoolName: amorphous-users
       AutoVerifiedAttributes:
         - email
       AdminCreateUserConfig:
@@ -107,7 +107,7 @@ Resources:
     Type: AWS::Cognito::UserPoolClient
     Properties:
       UserPoolId: !Ref UserPool
-      ClientName: taskmanager-webapp
+      ClientName: amorphous-webapp
       GenerateSecret: false
       ExplicitAuthFlows:
         - ALLOW_USER_PASSWORD_AUTH
@@ -149,7 +149,7 @@ Resources:
   TaskApiFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: taskmanager-api
+      FunctionName: amorphous-api
       CodeUri: api_src/
       Handler: app.handler
       Layers:
@@ -432,7 +432,7 @@ Resources:
   TaskAgentJobProcessorFunction:
     Type: AWS::Serverless::Function
     Properties:
-      FunctionName: taskmanager-agent-job-processor
+      FunctionName: amorphous-agent-job-processor
       CodeUri: agent_job_src/
       Handler: app.handler
       Timeout: 900
@@ -477,7 +477,7 @@ Resources:
         - Statement:
             - Effect: Allow
               Action: lambda:InvokeFunction
-              Resource: !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:taskmanager-agent-job-processor"
+              Resource: !Sub "arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:amorphous-agent-job-processor"
 
 Outputs:
   TaskMcpFunctionUrl:

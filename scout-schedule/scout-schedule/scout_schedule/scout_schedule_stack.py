@@ -20,10 +20,10 @@ from aws_cdk import (
 from constructs import Construct
 
 # メインスタック(template.yaml)側のリソース名。実処理(AgentCore Runtime呼び出し)は
-# taskmanager-agent-job-processorに委ね、このスタックはTaskAgentJobsへのジョブ登録と
+# amorphous-agent-job-processorに委ね、このスタックはTaskAgentJobsへのジョブ登録と
 # 非同期呼び出しのみを担う(Web版「エージェント」タブと同じ非同期ジョブの仕組みに乗せる)。
 AGENT_JOBS_TABLE_NAME = "TaskAgentJobs"
-AGENT_JOB_PROCESSOR_FUNCTION_NAME = "taskmanager-agent-job-processor"
+AGENT_JOB_PROCESSOR_FUNCTION_NAME = "amorphous-agent-job-processor"
 # 関与先ごとにジョブを分割するため、TaskClients(layer/python/task_repository.pyの
 # list_clientsと同じテーブル)を読み取り専用で参照する。
 CLIENTS_TABLE_NAME = "TaskClients"
@@ -79,7 +79,7 @@ class ScoutScheduleStack(Stack):
         # で統一する(例: scout-trigger, archivist-trigger, progress-trigger)。
         # 実処理(Bedrock/Claude呼び出し)はtask-agent側でComponent=task-agentとして
         # 一括計上され、エージェント種別ごとには分解できない点に注意。
-        Tags.of(self).add("Project", "taskmanager")
+        Tags.of(self).add("Project", "amorphous")
 
         agent_jobs_table = dynamodb.Table.from_table_name(
             self, "AgentJobsTable", AGENT_JOBS_TABLE_NAME
@@ -92,11 +92,11 @@ class ScoutScheduleStack(Stack):
         )
 
         # --- Lambda: TaskAgentJobsにジョブを登録し、AgentCore呼び出しを担う
-        #     taskmanager-agent-job-processorを非同期(Event)起動する薄いトリガー ---
+        #     amorphous-agent-job-processorを非同期(Event)起動する薄いトリガー ---
         invoke_fn = _lambda.Function(
             self,
             "ScoutInvokeFunction",
-            function_name="taskmanager-scout-email-summary-trigger",
+            function_name="amorphous-scout-email-summary-trigger",
             runtime=_lambda.Runtime.PYTHON_3_12,
             handler="handler.handler",
             code=_lambda.Code.from_asset("lambda"),
@@ -127,7 +127,7 @@ class ScoutScheduleStack(Stack):
         scheduler.CfnSchedule(
             self,
             "ScoutWeekdaySchedule",
-            name="taskmanager-scout-email-summary-weekdays",
+            name="amorphous-scout-email-summary-weekdays",
             description="平日6/12/18時にメール要約(scout)エージェントを起動",
             schedule_expression="cron(0 6,12,18 ? * MON-FRI *)",
             schedule_expression_timezone="Asia/Tokyo",
@@ -158,7 +158,7 @@ class ScoutScheduleStack(Stack):
         archivist_invoke_fn = _lambda.Function(
             self,
             "ArchivistInvokeFunction",
-            function_name="taskmanager-archivist-receipt-ocr-trigger",
+            function_name="amorphous-archivist-receipt-ocr-trigger",
             runtime=_lambda.Runtime.PYTHON_3_12,
             handler="handler.handler",
             code=_lambda.Code.from_asset("lambda_archivist"),
@@ -190,7 +190,7 @@ class ScoutScheduleStack(Stack):
         scheduler.CfnSchedule(
             self,
             "ArchivistWeekdaySchedule",
-            name="taskmanager-archivist-receipt-ocr-weekdays",
+            name="amorphous-archivist-receipt-ocr-weekdays",
             description="平日6:10/12:10/18:10時に領収書分類(archivist)エージェントを起動",
             schedule_expression="cron(10 6,12,18 ? * MON-FRI *)",
             schedule_expression_timezone="Asia/Tokyo",
@@ -219,7 +219,7 @@ class ScoutScheduleStack(Stack):
         progress_invoke_fn = _lambda.Function(
             self,
             "ProgressInvokeFunction",
-            function_name="taskmanager-progress-update-trigger",
+            function_name="amorphous-progress-update-trigger",
             runtime=_lambda.Runtime.PYTHON_3_12,
             handler="handler.handler",
             code=_lambda.Code.from_asset("lambda_progress"),
@@ -251,7 +251,7 @@ class ScoutScheduleStack(Stack):
         scheduler.CfnSchedule(
             self,
             "ProgressWeekdaySchedule",
-            name="taskmanager-progress-update-weekdays",
+            name="amorphous-progress-update-weekdays",
             description="平日6:20/12:20/18:20時に進捗反映(progress)エージェントを起動",
             schedule_expression="cron(20 6,12,18 ? * MON-FRI *)",
             schedule_expression_timezone="Asia/Tokyo",
@@ -288,7 +288,7 @@ class ScoutScheduleStack(Stack):
         cost_report_fn = _lambda.Function(
             self,
             "CostReportFunction",
-            function_name="taskmanager-cost-report",
+            function_name="amorphous-cost-report",
             runtime=_lambda.Runtime.PYTHON_3_12,
             handler="handler.handler",
             code=_lambda.Code.from_asset(
@@ -340,7 +340,7 @@ class ScoutScheduleStack(Stack):
         scheduler.CfnSchedule(
             self,
             "CostReportWeeklySchedule",
-            name="taskmanager-cost-report-weekly",
+            name="amorphous-cost-report-weekly",
             description="毎週月曜7時にtask-agentのコストレポート(Excel)をGoogle Driveへ保存",
             schedule_expression="cron(0 7 ? * MON *)",
             schedule_expression_timezone="Asia/Tokyo",

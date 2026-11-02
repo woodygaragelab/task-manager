@@ -88,7 +88,7 @@ const driveUrl = (folderId) =>
 
 // receipt-ocr-filelistスキルは関与先コードを自スキル側のDynamoDBテーブルで解決しようとし、
 // 未登録の場合はDrive上の受領フォルダURLをユーザーに尋ねてくる(SKILL.md参照)。
-// taskmanager側のTaskClientsに登録済みのフォルダIDを持っている場合は、都度尋ね返される
+// amorphous側のTaskClientsに登録済みのフォルダIDを持っている場合は、都度尋ね返される
 // 手戻りを避けるため指示文にURLを直接含めてしまう。
 // clientが無い場合(設定ページの「全クライアント」タブ)は、関与先コードを付けずに
 // 呼び出す。各スキルのSKILL.mdは関与先コード省略時、全関与先を順に処理する仕様になっている

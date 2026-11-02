@@ -11,7 +11,7 @@ download_file_contentをファイル数ぶん逐次呼ぶ」方式に代えて�
 --limit は1回の実行で処理する新規ファイル数の上限(既定5)。超過分はダウンロード
 せず、出力の remaining に件数だけ返す(次回実行で再び新規として検出される)。
 
-client_code はtaskmanagerのクライアントマスタ(TaskClients)のclientCode。
+client_code はamorphousのクライアントマスタ(TaskClients)のclientCode。
 --receipt-folder-id を指定した場合はクライアントマスタの参照を省略できる
 (DynamoDBの環境変数が無いローカル実行・テスト向け)。
 

@@ -3,7 +3,7 @@ task_repository
 ================
 DynamoDB(Tasks / TaskClients / TaskSeries / TaskFrames / TaskHistory)に対するCRUDロジックの共通モジュール。
 
-taskmanager-mcp(FastMCP)と taskmanager-api(Web API用Lambda)の両方から
+amorphous-mcp(FastMCP)と amorphous-api(Web API用Lambda)の両方から
 Lambda Layer として import される。ロジックの二重実装を避けるため、
 MCPツールのデコレータや Web API のルーティングには一切依存しない
 プレーンな関数のみをここに置く。

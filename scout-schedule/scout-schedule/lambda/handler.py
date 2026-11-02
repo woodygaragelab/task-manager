@@ -96,7 +96,7 @@ def handler(event, context):
     AgentCore Runtimeへの直接同期呼び出しは数十秒〜数分かかりうるため、Web版の
     「エージェント」タブ(AgentsPanel.jsx)と同じ非同期ジョブの仕組みに乗せる:
     TaskAgentJobsにジョブを登録したうえで、実際のAgentCore呼び出しを担う
-    taskmanager-agent-job-processor(api_src/app.pyのPOST /agent-jobsが使うのと
+    amorphous-agent-job-processor(api_src/app.pyのPOST /agent-jobsが使うのと
     同じLambda)をEvent(非同期)呼び出しする。
     """
     start = time.time()

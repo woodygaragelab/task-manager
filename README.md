@@ -1,4 +1,4 @@
-# taskmanager
+# amorphous
 
 DynamoDBベースのタスク管理システム。クライアント(Client) × シリーズ(Series、業務の種類) ×
 フレーム(Frame、対象月)の組み合わせでタスクを管理し、Webアプリ(社内数名向け)とClaude(MCP)が
@@ -6,9 +6,9 @@ DynamoDBベースのタスク管理システム。クライアント(Client) × 
 AgentCore上の外部AIエージェントをWeb UIから呼び出す「エージェント」機能を持つ。詳しい設計判断の
 経緯は [docs/設計書.md](docs/設計書.md) を参照。
 
-バックエンドのLambda・Cognito・API GatewayをまとめたAWS SAMスタック名は`taskmanager`
+バックエンドのLambda・Cognito・API GatewayをまとめたAWS SAMスタック名は`amorphous`
 (2026-08-01にリポジトリ名と揃える形で`task-mcp-server`から移行済み。個々のLambda関数名も
-`taskmanager-mcp`/`taskmanager-api`/`taskmanager-agent-job-processor`に統一した)。
+`amorphous-mcp`/`amorphous-api`/`amorphous-agent-job-processor`に統一した)。
 
 ## ディレクトリ構成
 
@@ -39,7 +39,7 @@ amorphous/
         DynamoDB(Tasks/TaskClients/TaskSeries/TaskFrames/TaskHistory/TaskAgentJobs)
             ┌────────────────┼────────────────┐
             │                                 │
-      Web API (taskmanager-api)        MCPサーバー (taskmanager-mcp)
+      Web API (amorphous-api)        MCPサーバー (amorphous-mcp)
       API Gateway HTTP API                  Function URL
       + Cognito JWT認証                      │
             │                    ┌───────────┼───────────┐
@@ -67,7 +67,7 @@ aws cloudformation deploy `
   --template-file tables.yaml `
   --stack-name task-tables `
   --region ap-northeast-1 `
-  --tags Project=taskmanager Component=data
+  --tags Project=amorphous Component=data
 ```
 
 `Tasks`/`TaskClients`/`TaskSeries`/`TaskFrames`/`TaskHistory`/`TaskAgentJobs`の6テーブルが作成される。
@@ -102,7 +102,7 @@ sam build --use-container --container-env-var-file pip-trusted-host.json
 
 | 項目 | 値 |
 |---|---|
-| Stack Name | `taskmanager` |
+| Stack Name | `amorphous` |
 | AWS Region | `ap-northeast-1` |
 | Parameter McpAuthToken | (推測されにくいランダム文字列) |
 | Parameter AgentRuntimeArn | 領収書分類エージェントのBedrock AgentCore Runtime ARN(デフォルト値あり。別スタックで管理されている既存のAgentCore Runtimeを指定する) |

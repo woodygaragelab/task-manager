@@ -8,12 +8,12 @@ Google service account. This avoids the AgentCore Identity 3LO
 bug (see awslabs/agentcore-samples#801) where the callback never
 receives authorizationCode/state.
 
-Also exposes taskmanager's client master (TaskClients) as an in-process
+Also exposes amorphous's client master (TaskClients) as an in-process
 MCP tool, backed by task_repository (the same DynamoDB CRUD module used
-by taskmanager-mcp/taskmanager-api/taskmanager-agent-job-processor).
+by amorphous-mcp/amorphous-api/amorphous-agent-job-processor).
 Unlike the old receipt-agent, which lived in a separate repository and
-had to reach the client master over HTTP via taskmanager's own MCP
-Function URL, task-agent lives in the taskmanager repo itself: the build
+had to reach the client master over HTTP via amorphous's own MCP
+Function URL, task-agent lives in the amorphous repo itself: the build
 step copies layer/python/task_repository.py into this directory (see
 the Dockerfile) so it can be imported directly, avoiding an extra
 network hop and a separate Bearer token just to read one table.
@@ -43,14 +43,14 @@ Cost allocation tags: `agentcore configure`/`launch` (bedrock-agentcore-starter-
 has no --tags option, so the AgentCore Runtime/ECR repo/CodeBuild project/IAM roles it
 creates are untagged by default. After each `agentcore launch` (including redeploys that
 recreate any of these), tag them manually:
-    aws resourcegroupstaggingapi tag-resources --region ap-northeast-1 --tags Project=taskmanager,Component=task-agent --resource-arn-list \
+    aws resourcegroupstaggingapi tag-resources --region ap-northeast-1 --tags Project=amorphous,Component=task-agent --resource-arn-list \
       arn:aws:bedrock-agentcore:ap-northeast-1:155830630328:runtime/task_agent-lAAoax7UkB \
       arn:aws:ecr:ap-northeast-1:155830630328:repository/bedrock-agentcore-task_agent \
       arn:aws:codebuild:ap-northeast-1:155830630328:project/bedrock-agentcore-task_agent-builder \
       arn:aws:iam::155830630328:role/AmazonBedrockAgentCoreSDKRuntime-ap-northeast-1-b93c04ec99 \
       arn:aws:iam::155830630328:role/AmazonBedrockAgentCoreSDKCodeBuild-ap-northeast-1-b93c04ec99
     aws secretsmanager tag-resource --region ap-northeast-1 --secret-id task-agent/google-drive-user-token \
-      --tags Key=Project,Value=taskmanager Key=Component,Value=task-agent
+      --tags Key=Project,Value=amorphous Key=Component,Value=task-agent
 """
 import json
 import logging
@@ -485,7 +485,7 @@ async def get_attachment(args: dict) -> dict:
 @tool(
     "label_message",
     "Add a Gmail label to one message (e.g. mark it as 処理済み after "
-    "successfully recording it in taskmanager history).",
+    "successfully recording it in amorphous history).",
     {"message_id": str, "label_id": str},
 )
 async def label_message(args: dict) -> dict:
@@ -518,7 +518,7 @@ gmail_server = create_sdk_mcp_server(
 
 
 # ---------------------------------------------------------------------------
-# taskmanager client master tool, backed directly by task_repository
+# amorphous client master tool, backed directly by task_repository
 # (no network hop / no separate MCP auth token needed now that this code
 # lives in the same repository and container image).
 # ---------------------------------------------------------------------------
@@ -526,7 +526,7 @@ gmail_server = create_sdk_mcp_server(
 
 @tool(
     "list_clients",
-    "List all registered taskmanager clients (clientCode, clientName, "
+    "List all registered amorphous clients (clientCode, clientName, "
     "receiptFolderId, renamedFolderId, senderEmails, uketoriFolderId).",
     {},
 )
@@ -537,7 +537,7 @@ async def list_clients(args: dict) -> dict:
 
 @tool(
     "list_history",
-    "List history entries for a taskmanager client (historyId, date, "
+    "List history entries for a amorphous client (historyId, date, "
     "category, assignee, status, content), sorted by category then date.",
     {"client_code": str},
 )
@@ -594,7 +594,7 @@ async def update_history_entry(args: dict) -> dict:
 
 @tool(
     "create_history_entry",
-    "Create one new history entry for a taskmanager client (date/category/"
+    "Create one new history entry for a amorphous client (date/category/"
     "series_code/frame_codes/assignee/status/content). status must be "
     "exactly one of: 未着手, 依頼中, 確認中, 進行中, 完了, -.",
     {
@@ -656,7 +656,7 @@ async def update_task(args: dict) -> dict:
 
 @tool(
     "list_frames",
-    "List all registered taskmanager frames (frameCode in YYYYMM format, "
+    "List all registered amorphous frames (frameCode in YYYYMM format, "
     "frameName).",
     {},
 )
@@ -667,7 +667,7 @@ async def list_frames(args: dict) -> dict:
 
 @tool(
     "list_series",
-    "List all registered taskmanager series (seriesCode, seriesName, "
+    "List all registered amorphous series (seriesCode, seriesName, "
     "taskGroup). taskGroup is the series' category (e.g. \"支払\"); "
     "seriesName is the series' display name (e.g. \"資料受領\").",
     {},

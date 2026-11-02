@@ -4,7 +4,7 @@ Google Driveへの決定的な(LLM判断を伴わない)機械的操作をまと
 
 - Secrets ManagerからのOAuthリフレッシュトークン取得・Drive v3クライアント構築
   (task_agent.py の _get_google_token_info / _get_drive_service と同じ方式)
-- taskmanagerのクライアントマスタ(TaskClients)からのフォルダID解決
+- amorphousのクライアントマスタ(TaskClients)からのフォルダID解決
   (task_repository.list_clients() 経由。DynamoDBの環境変数が無い実行環境向けに
   遅延importにしてあるので、--folder-id 系オプションだけで動かす分には不要)
 - レート制限(429/403 rateLimitExceeded等)に対する指数バックオフ再試行
@@ -87,7 +87,7 @@ def get_drive_service():
 
 
 def resolve_client_folders(client_code: str) -> dict:
-    """taskmanagerのクライアントマスタ(TaskClients)から、client_codeに対応する
+    """amorphousのクライアントマスタ(TaskClients)から、client_codeに対応する
     receiptFolderId/renamedFolderIdを取得する。DynamoDBアクセス用の環境変数
     (CLIENTS_TABLE等)が無い実行環境では、代わりに --receipt-folder-id /
     --organized-folder-id を明示的に渡すこと。"""

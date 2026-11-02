@@ -1,7 +1,7 @@
 ---
 name: progress-update
 description: |
-  taskmanagerの履歴(TaskHistory)エントリのうち、タスク名(seriesCode)・対象月(frameCodes)・
+  amorphousの履歴(TaskHistory)エントリのうち、タスク名(seriesCode)・対象月(frameCodes)・
   ステータス(status)の3項目が入力済みのものについて、対応するTask(clientCode+seriesCode+
   frameCodeで一意に決まる進捗レコード)のstatusへ反映する。Web UIの履歴パネルにある
   「進捗反映」ボタン(HistoryPanel.jsxのreflectProgress)が1件ずつ手動で行っている処理を、
@@ -19,24 +19,24 @@ description: |
 
 # 履歴の進捗反映(AgentCore版)
 
-taskmanagerの履歴(TaskHistory)のうち、タスク名(seriesCode)・対象月(frameCodes)・
+amorphousの履歴(TaskHistory)のうち、タスク名(seriesCode)・対象月(frameCodes)・
 ステータス(status)が入力済みのレコードについて、そのSeries×Frameの組み合わせに対応する
 Task(clientCode+seriesCode+frameCodeで一意に決まる進捗レコード)のstatusを、履歴と同じ
 値へ更新するスキル。Web UIの履歴パネル(`HistoryPanel.jsx`)の「進捗反映」ボタンが1件ずつ
 手動で行っている処理を、履歴に溜まった複数件についてまとめて実行する。
 
 このスキルは `mcp__task-manager__list_history` / `mcp__task-manager__update_task`
-(taskmanagerのTaskHistory/Tasksテーブルを操作するMCPツール)のみを使う。TaskHistory自体の
+(amorphousのTaskHistory/Tasksテーブルを操作するMCPツール)のみを使う。TaskHistory自体の
 date/category/assignee/contentは一切書き換えない。Google Driveやレシート処理には関与しない。
 
 ## MCPツール名について(実行環境による違い)
 
 本文中の `mcp__task-manager__...` はAgentCore環境でのツール名。Claude Codeの
-claude.aiコネクタ経由など、別の実行環境では同じtaskmanager MCPサーバーが異なる
-プレフィックス(例: `mcp__claude_ai_taskmanager-mcp__...`)で登録されていることがある。
+claude.aiコネクタ経由など、別の実行環境では同じamorphous MCPサーバーが異なる
+プレフィックス(例: `mcp__claude_ai_amorphous-mcp__...`)で登録されていることがある。
 その名前のツールが見つからない場合、それだけで「利用できない」と判断して処理を
 スキップしてはいけない。まずそのままの名前で呼び出しを試し、見つからなければ
-ツール検索の仕組み(例: `ToolSearch`)で `"taskmanager list_history update_task list_clients"`
+ツール検索の仕組み(例: `ToolSearch`)で `"amorphous list_history update_task list_clients"`
 のようなキーワード検索を行い、この環境での実際のツール名を特定してから使うこと。
 それでも見つからない場合に限り、ユーザーに報告する。
 
